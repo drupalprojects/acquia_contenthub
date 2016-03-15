@@ -1,0 +1,12 @@
+name: Acquia Content Hub Connector
+description: Module connects to the client library and performs CRUD operations.
+package: Content Hub
+type: module
+version: 1.0
+core: 8.x
+configure: content_hub_connector.admin_settings
+
+dependencies:
+  - serialization
+  - rest
+  - hal

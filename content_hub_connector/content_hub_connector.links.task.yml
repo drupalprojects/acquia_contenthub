@@ -1,0 +1,9 @@
+content_hub_connector.admin_settings:
+  route_name: content_hub_connector.admin_settings
+  title: 'Connection'
+  base_route: content_hub_connector.admin_settings
+content_hub_connector.entity_config:
+  route_name: content_hub_connector.entity_config
+  title: 'Entity Configuration'
+  weight: 100
+  base_route: content_hub_connector.admin_settings

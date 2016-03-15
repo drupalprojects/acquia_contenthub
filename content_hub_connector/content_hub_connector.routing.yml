@@ -1,0 +1,15 @@
+content_hub_connector.admin_settings:
+  path: '/admin/config/services/content-hub'
+  defaults:
+    _form: '\Drupal\content_hub_connector\Form\ContentHubConnectorSettingsForm'
+    _title: 'Content Hub Settings'
+  requirements:
+    _permission: 'administer content hub'
+
+content_hub_connector.entity_config:
+  path: '/admin/config/services/content-hub/configuration'
+  defaults:
+    _form: '\Drupal\content_hub_connector\Form\EntityConfigSettingsForm'
+    _title: 'Entity Configuration'
+  requirements:
+    _permission: 'administer content hub'

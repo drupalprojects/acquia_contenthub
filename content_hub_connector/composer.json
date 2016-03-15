@@ -1,0 +1,17 @@
+{
+  "name": "acquia/content_hub_connector",
+  "type": "drupal-module",
+  "description": "Content Hub Connector.",
+  "license": "proprietary",
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/acquia/content-hub-php"
+    }
+  ],
+  "require": {
+    "phpseclib/phpseclib": ">=0.3.0,<0.4.0",
+    "symfony/http-foundation": "~2.6",
+    "acquia/content-hub-php": "guzzle6-dev"
+  }
+}
