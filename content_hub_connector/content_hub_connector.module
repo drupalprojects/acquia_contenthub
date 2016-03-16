@@ -1,22 +1,24 @@
 <?php
 
+use Drupal\Core\Entity\EntityInterface;
+
 /**
  * Implements hook_entity_insert().
  */
 function content_hub_connector_entity_insert(EntityInterface $entity) {
-  content_hub_connector_entity_action($entity, $entity->getEntityTypeId(), 'INSERT');
+  //content_hub_connector_entity_action($entity, $entity->getEntityTypeId(), 'INSERT');
 }
 
 /**
  * Implements hook_entity_update().
  */
 function content_hub_connector_entity_update(EntityInterface $entity) {
-  content_hub_connector_entity_action($entity, $entity->getEntityTypeId(), 'UPDATE');
+  //content_hub_connector_entity_action($entity, $entity->getEntityTypeId(), 'UPDATE');
 }
 
 /**
  * Implements hook_entity_delete().
  */
 function content_hub_connector_entity_delete(EntityInterface $entity) {
-  content_hub_connector_entity_action($entity, $entity->getEntityTypeId(), 'DELETE');
+  //content_hub_connector_entity_action($entity, $entity->getEntityTypeId(), 'DELETE');
 }
