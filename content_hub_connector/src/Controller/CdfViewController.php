@@ -20,7 +20,6 @@ class CdfViewController extends EntityViewController {
    * {@inheritdoc}
    */
   public function view(EntityInterface $node, $view_mode = 'full', $langcode = NULL) {
-    // Get our normalizer service
     /** @var \Drupal\content_hub_connector\Normalizer\ContentEntityCdfNormalizer $normalizer */
     $entity_to_cdf_normalizer = \Drupal::service('content_hub_connector.normalizer.content_entity');
     $output = $entity_to_cdf_normalizer->normalize($node, $view_mode);

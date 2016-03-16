@@ -10,7 +10,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Url;
 
 /**
- * Provides a service for managing pending server tasks.
+ * Provides a service for managing entity actions for Content Hub.
  */
 class Manager {
 
@@ -25,8 +25,8 @@ class Manager {
    *   The action to perform on that entity: 'INSERT', 'UPDATE', 'DELETE'.
    */
   public function entityAction($entity, $type, $action) {
-    // Checking if the entity has already been synchronized so not to generate an
-    // endless loop.
+    // Checking if the entity has already been synchronized so not to generate
+    // an endless loop.
     if (isset($entity->__content_hub_synchronized)) {
       unset($entity->__content_hub_synchronized);
       return;

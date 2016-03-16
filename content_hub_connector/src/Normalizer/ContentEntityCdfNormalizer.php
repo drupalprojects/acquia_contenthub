@@ -7,7 +7,6 @@
 
 namespace Drupal\content_hub_connector\Normalizer;
 
-use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\content_hub_connector\ContentHubConnectorException;
 use Drupal\Component\Render\FormattableMarkup;
 use Drupal\serialization\Normalizer\EntityNormalizer;
@@ -71,19 +70,20 @@ class ContentEntityCdfNormalizer extends EntityNormalizer {
 
     $type_mapping = static::getFieldTypeMapping();
 
-    /** @var \Drupal\hal\Normalizer\FieldNormalizer $field_normalizer */
-    $field_normalizer = \Drupal::service('serializer.normalizer.field.hal');
-    /** @var \Drupal\hal\Normalizer\FieldItemNormalizer $field_item_normalizer */
-    $field_item_normalizer = \Drupal::service('serializer.normalizer.field_item.hal');
+    /** @todo
+    /* This is probably not the cleanest way to do this but at the moment
+    /* of writing this I do not understand the full chain in serializing.
+     */
 
-    // For each field item in a field, use the field_item_normalizer
-    $field_normalizer->setSerializer($field_item_normalizer);
+    /** @var /Symfony\Component\Serializer\Serializer $serializer */
+    $serializer =  \Drupal::service('serializer');
+    $serialized_object = $serializer->normalize($object, $format, $context);
 
     /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $field_definitions */
     $field_definitions = $object->getFieldDefinitions();
     foreach ($object as $name => $field) {
       $field_type = $field_definitions[$name]->getType();
-      $items = $field_normalizer->normalize($field, $format, $context);
+      $items = $serialized_object[$name];
       if ($items !== NULL && in_array($name, $included_fields)) {
 
         if (isset($type_mapping[$field_type])) {
@@ -96,16 +96,17 @@ class ContentEntityCdfNormalizer extends EntityNormalizer {
           throw new ContentHubConnectorException($message);
         }
 
-        // Skip if there is nothing in the field.
-        if (empty($items[$name])) {
-          continue;
+        // @todo Look at this, I have no idea if this assumption is accurate.
+        if (count($items) > 1) {
+          $attribute = new \Acquia\ContentHubClient\Attribute('array<' . $type . '>');
         }
-
-        $attribute = new \Acquia\ContentHubClient\Attribute($type);
+        else {
+          $attribute = new \Acquia\ContentHubClient\Attribute($type);
+        }
         $values = array();
 
         // Loop over the items to get the values for each field.
-        foreach ($items[$name] as $item) {
+        foreach ($items as $item) {
           $value = $item['value'];
 
           // Special case when Format is set. Include the whole item for
@@ -160,7 +161,7 @@ class ContentEntityCdfNormalizer extends EntityNormalizer {
       // It's easier to write and understand this array in the form of
       // $search_api_field_type => array($data_types) and flip it below.
       $default_mapping = array(
-        'array<string>' => array(
+        'string' => array(
           'string_long',
           'text_long',
           'text_with_summary',
@@ -173,14 +174,14 @@ class ContentEntityCdfNormalizer extends EntityNormalizer {
           'field_item:path',
           'language',
         ),
-        'array<reference>' => array(
+        'reference' => array(
           'entity_reference'
         ),
-        'array<integer>' => array(
+        'integer' => array(
           'integer',
           'timespan',
         ),
-        'array<number>' => array(
+        'number' => array(
           'decimal',
           'float',
         ),
@@ -189,7 +190,7 @@ class ContentEntityCdfNormalizer extends EntityNormalizer {
           'datetime_iso8601',
           'timestamp',
         ),
-        'array<boolean>' => array(
+        'boolean' => array(
           'boolean',
         ),
       );
