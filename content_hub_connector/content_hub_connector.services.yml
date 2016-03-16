@@ -3,11 +3,6 @@ services:
     class: Drupal\content_hub_connector\Routing\RouteSubscriber
     tags:
       - { name: event_subscriber }
-  content_hub_connector.normalizer.content_entity:
-    class: Drupal\content_hub_connector\Normalizer\ContentEntityCdfNormalizer
-    tags:
-      - { name: normalizer }
-    arguments: ['@entity.manager']
   content_hub_connector.entity_manager:
     class: Drupal\content_hub_connector\EntityManager.php
   content_hub_connector.client_manager:
