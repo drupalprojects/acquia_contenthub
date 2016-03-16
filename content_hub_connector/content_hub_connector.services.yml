@@ -8,3 +8,7 @@ services:
     tags:
       - { name: normalizer }
     arguments: ['@entity.manager']
+  content_hub_connector.entity_manager:
+    class: Drupal\content_hub_connector\EntityManager.php
+  content_hub_connector.client_manager:
+    class: Drupal\content_hub_connector\Client\Manager.php
