@@ -1,6 +1,7 @@
 <?php
 /**
  * @file
+ * Contains Drupal\content_hub_connector\Form\EntityConfigSettingsForm.
  */
 
 namespace Drupal\content_hub_connector\Form;
@@ -10,7 +11,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Form\ConfigFormBase;
 
 /**
- * Defines a form to configure module settings.
+ * Defines the form to configure the entity types and bundles to be exported.
  */
 class EntityConfigSettingsForm extends ConfigFormBase {
 

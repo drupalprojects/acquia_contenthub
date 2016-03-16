@@ -1,6 +1,7 @@
 <?php
 /**
  * @file
+ * Contains Drupal\content_hub_connector\Form\ContentHubConnectorSettingsForm.
  */
 
 namespace Drupal\content_hub_connector\Form;
@@ -12,7 +13,7 @@ use \GuzzleHttp\Exception\ClientException;
 use \GuzzleHttp\Exception\RequestException;
 
 /**
- * Defines a form to configure module settings.
+ * Defines the form to configure the Content Hub connection settings.
  */
 class ContentHubConnectorSettingsForm extends ConfigFormBase {
 
