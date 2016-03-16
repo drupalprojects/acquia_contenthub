@@ -1,0 +1,40 @@
+<?php
+
+/**
+ * @file
+ * Contains \Drupal\content_hub_connector\Encoder\JsonEncoder.
+ */
+
+namespace Drupal\content_hub_connector\Encoder;
+
+use Symfony\Component\Serializer\Encoder\JsonEncoder as SymfonyJsonEncoder;
+
+/**
+ * Encodes HAL data in JSON.
+ *
+ * Simply respond to hal_json format requests using the JSON encoder.
+ */
+class JsonEncoder extends SymfonyJsonEncoder {
+
+  /**
+   * The formats that this Encoder supports.
+   *
+   * @var string
+   */
+  protected $format = 'content_hub_cdf';
+
+  /**
+   * {@inheritdoc}
+   */
+  public function supportsEncoding($format) {
+    return $format == $this->format;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function supportsDecoding($format) {
+    return $format == $this->format;
+  }
+
+}

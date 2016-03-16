@@ -7,7 +7,6 @@
 
 namespace Drupal\content_hub_connector\Controller;
 
-use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\Controller\EntityViewController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -20,10 +19,10 @@ class CdfViewController extends EntityViewController {
   /**
    * {@inheritdoc}
    */
-  public function view(ContentEntityInterface $node, $view_mode = 'full') {
-    /** @var \Drupal\content_hub_connector\Normalizer\ContentEntityCdfNormalizer $normalizer */
-    $normalizer = \Drupal::service('content_hub_connector.normalizer.content_entity');
-    $output = $normalizer->normalize($node, $view_mode);
+  public function view(EntityInterface $node, $view_mode = 'full') {
+    /** @var \Symfony\Component\Serializer\Serializer $serializer */
+    $serializer =  \Drupal::service('serializer');
+    $output = $serializer->normalize($node, 'content_hub_cdf');
     return new JsonResponse($output);
   }
 
@@ -39,5 +38,7 @@ class CdfViewController extends EntityViewController {
   public function title(EntityInterface $node) {
     return $this->entityManager->getTranslationFromContext($node)->label();
   }
+
+
 
 }
