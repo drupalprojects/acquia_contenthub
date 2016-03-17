@@ -92,6 +92,11 @@ class ContentEntityNormalizer extends NormalizerBase {
       ->setCreated($created)
       ->setModified($modified);
 
+    // Add bundle/type attribute.
+    $attribute = new \Acquia\ContentHubClient\Attribute("string");
+    $attribute->setValue($entity->bundle(), 'und');
+    $content_hub_entity->setAttribute('type', $attribute);
+
     // Get our field mapping. This maps drupal field types to Content Hub
     // attribute types.
     $type_mapping = static::getFieldTypeMapping();
@@ -106,19 +111,8 @@ class ContentEntityNormalizer extends NormalizerBase {
       /** @var \Drupal\Core\Field\FieldItemListInterface[] $fields */
       $fields = $localized_entity->getFields();
 
-      // Add bundle/type attribute.
-      // If attribute exists already, append to the existing values.
-      $attribute = new \Acquia\ContentHubClient\Attribute("string");
-      $attribute->setValue($localized_entity->bundle(), $langcode);
-      if (!empty($content_hub_entity->getAttribute('type'))) {
-        $existing_attribute = $content_hub_entity->getAttribute('type');
-        $this->appendToAttribute($existing_attribute, $attribute->getValues());
-        $attribute = $existing_attribute;
-      }
-      $content_hub_entity->setAttribute('type', $attribute);
-
       // Ignore the entity ID and revision ID.
-      $exclude = array($localized_entity->getEntityType()->getKey('id'), $localized_entity->getEntityType()->getKey('revision'), 'type');
+      $exclude = array($localized_entity->getEntityType()->getKey('id'), $localized_entity->getEntityType()->getKey('revision'), 'type', 'uuid');
       foreach ($fields as $name => $field) {
         // Continue if this is an excluded field or the current user does not
         // have access to view it.
