@@ -165,14 +165,14 @@ class ContentHubConnectorSettingsForm extends ConfigFormBase {
         )), 'status');
       }
       catch (ClientException $ex) {
-        $response = $ex->getResponse()->json();
-        if (isset($response) && $error = $response['error']) {
+        $response = $ex->getResponse();
+        if (isset($response)) {
           drupal_set_message(t('Error registering client with name="@name" (Error Code = @error_code: @error_message)', array(
-            '@error_code' => $error['code'],
+            '@error_code' => $response->getStatusCode(),
             '@name' => $name,
-            '@error_message' => $error['message'],
+            '@error_message' => $response->getReasonPhrase(),
           )), 'error');
-          \Drupal::logger('content_hub_connector')->error($error['message']);
+          \Drupal::logger('content_hub_connector')->error($response->getReasonPhrase());
         }
       } catch (RequestException $ex) {
         // Some error connecting to Content Hub... are your credentials set
