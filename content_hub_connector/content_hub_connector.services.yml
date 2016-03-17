@@ -11,7 +11,7 @@ services:
     arguments: ['@logger.factory']
   serializer.normalizer.entity.content_hub_cdf:
     class: Drupal\content_hub_connector\Normalizer\ContentEntityNormalizer
-    arguments: ['@entity.manager', '@module_handler', '@logger.factory']
+    arguments: ['@logger.factory']
     tags:
       - { name: normalizer, priority: 10 }
   serializer.encoder.content_hub_cdf:

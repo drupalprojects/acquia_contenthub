@@ -9,7 +9,6 @@ namespace Drupal\content_hub_connector\Normalizer;
 
 use Drupal\Component\Render\FormattableMarkup;
 use Drupal\content_hub_connector\ContentHubConnectorException;
-use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Acquia\ContentHubClient\Entity as ChubEntity;
 use Drupal\Core\Logger\LoggerChannelFactory;
@@ -37,20 +36,6 @@ class ContentEntityNormalizer extends NormalizerBase {
   protected $supportedInterfaceOrClass = 'Drupal\Core\Entity\ContentEntityInterface';
 
   /**
-   * The entity manager.
-   *
-   * @var \Drupal\Core\Entity\EntityManagerInterface
-   */
-  protected $entityManager;
-
-  /**
-   * The module handler.
-   *
-   * @var \Drupal\Core\Extension\ModuleHandlerInterface
-   */
-  protected $moduleHandler;
-
-  /**
    * The specific content hub keys
    *
    * @var \Drupal\Core\Config\ImmutableConfig
@@ -67,9 +52,7 @@ class ContentEntityNormalizer extends NormalizerBase {
   /**
    * Constructs an ContentEntityNormalizer object.
    */
-  public function __construct(EntityManagerInterface $entity_manager, ModuleHandlerInterface $module_handler, LoggerChannelFactory $logger_factory) {
-    $this->entityManager = $entity_manager;
-    $this->moduleHandler = $module_handler;
+  public function __construct(LoggerChannelFactory $logger_factory) {
     $this->loggerFactory = $logger_factory;
     $this->contentHubAdminConfig = \Drupal::config('content_hub_connector.admin_settings');
   }
