@@ -10,7 +10,7 @@ namespace Drupal\content_hub_connector\EventSubscriber;
 use Drupal\Core\EventSubscriber\ExceptionJsonSubscriber;
 
 /**
- * Handle HAL JSON exceptions the same as JSON exceptions.
+ * Handle Content Hub CDF JSON exceptions the same as JSON exceptions.
  */
 class ExceptionCdfJsonSubscriber extends ExceptionJsonSubscriber {
 

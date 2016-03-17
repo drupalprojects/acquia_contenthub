@@ -10,9 +10,9 @@ namespace Drupal\content_hub_connector\Encoder;
 use Symfony\Component\Serializer\Encoder\JsonEncoder as SymfonyJsonEncoder;
 
 /**
- * Encodes HAL data in JSON.
+ * Encodes Content Hub CDF data in JSON.
  *
- * Simply respond to hal_json format requests using the JSON encoder.
+ * Simply respond to content_hub_cdf format requests using the JSON encoder.
  */
 class JsonEncoder extends SymfonyJsonEncoder {
 
