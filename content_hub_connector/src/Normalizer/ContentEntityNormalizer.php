@@ -7,6 +7,7 @@
 
 namespace Drupal\content_hub_connector\Normalizer;
 
+use Acquia\ContentHubClient\Attribute;
 use Drupal\Component\Render\FormattableMarkup;
 use Drupal\content_hub_connector\ContentHubConnectorException;
 use Drupal\Core\Extension\ModuleHandlerInterface;
@@ -105,8 +106,19 @@ class ContentEntityNormalizer extends NormalizerBase {
       /** @var \Drupal\Core\Field\FieldItemListInterface[] $fields */
       $fields = $localized_entity->getFields();
 
+      // Add bundle/type attribute.
+      // If attribute exists already, append to the existing values.
+      $attribute = new \Acquia\ContentHubClient\Attribute("string");
+      $attribute->setValue($localized_entity->bundle(), $langcode);
+      if (!empty($content_hub_entity->getAttribute('type'))) {
+        $existing_attribute = $content_hub_entity->getAttribute('type');
+        $this->appendToAttribute($existing_attribute, $attribute->getValues());
+        $attribute = $existing_attribute;
+      }
+      $content_hub_entity->setAttribute('type', $attribute);
+
       // Ignore the entity ID and revision ID.
-      $exclude = array($localized_entity->getEntityType()->getKey('id'), $localized_entity->getEntityType()->getKey('revision'));
+      $exclude = array($localized_entity->getEntityType()->getKey('id'), $localized_entity->getEntityType()->getKey('revision'), 'type');
       foreach ($fields as $name => $field) {
         // Continue if this is an excluded field or the current user does not
         // have access to view it.
@@ -205,25 +217,17 @@ class ContentEntityNormalizer extends NormalizerBase {
           $content_hub_entity->setAttribute('language', $attribute);
         }
 
-        // @todo
-        // Add more helper functions to the PHP library to allow for merging.
+        // If attribute exists already, append to the existing values.
         if (!empty($content_hub_entity->getAttribute($name))) {
           $existing_attribute = $content_hub_entity->getAttribute($name);
-          $values = $existing_attribute->getValues();
-          $new_values = $attribute->getValues();
-          $values = array_merge($values, $new_values);
-          $attribute->setValues($values);
+          $this->appendToAttribute($existing_attribute, $attribute->getValues());
+          $attribute = $existing_attribute;
         }
 
         // Add it to our content_hub entity.
         $content_hub_entity->setAttribute($name, $attribute);
       }
     }
-
-    // Add bundle attribute.
-    $attribute = new \Acquia\ContentHubClient\Attribute("string");
-    $attribute->setValue($entity->bundle(), $language);
-    $content_hub_entity->setAttribute('type', $attribute);
 
     // Create the array of normalized fields, starting with the URI.
     $normalized = array(
@@ -233,6 +237,19 @@ class ContentEntityNormalizer extends NormalizerBase {
     );
 
     return $normalized;
+  }
+
+  /**
+   * Append to existing values of Content Hub Attribute
+   *
+   * @param \Acquia\ContentHubClient\Attribute $attribute
+   * @param array $values
+   *
+   */
+  public function appendToAttribute(Attribute $attribute, $values) {
+    $old_values = $attribute->getValues();
+    $values = array_merge($old_values, $values);
+    $attribute->setValues($values);
   }
 
   /**
