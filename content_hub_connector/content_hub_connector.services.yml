@@ -19,6 +19,6 @@ services:
     tags:
       - { name: encoder, priority: 10, format: content_hub_cdf }
   exception.default_json:
-    class: Drupal\content_hub_connector\EventSubscriber\ExceptionContentHubCdfJsonSubscriber
+    class: Drupal\content_hub_connector\EventSubscriber\ExceptionCdfJsonSubscriber
     tags:
       - { name: event_subscriber }
