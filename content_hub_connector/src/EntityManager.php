@@ -118,7 +118,6 @@ class EntityManager {
       case 'UPDATE':
         try {
           $response = $client->updateEntity($resource_url, $entity->uuid());
-          dpm($response->getBody()->getContents());
         }
         catch (\GuzzleHttp\Exception\RequestException $e) {
           $args['%error'] = $e->getMessage();
