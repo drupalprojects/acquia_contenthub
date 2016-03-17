@@ -3,6 +3,7 @@
  * @file
  * Contains \Drupal\content_hub_connector\Client\ClientManagerInterface.
  */
+
 namespace Drupal\content_hub_connector\Client;
 
 /**

@@ -12,6 +12,6 @@
   "require": {
     "phpseclib/phpseclib": ">=0.3.0,<0.4.0",
     "symfony/http-foundation": "~2.6",
-    "acquia/content-hub-php": "guzzle6-dev"
+    "acquia/content-hub-php": "dev-CHMS-158-shay"
   }
 }

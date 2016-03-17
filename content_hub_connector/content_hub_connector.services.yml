@@ -4,12 +4,14 @@ services:
     tags:
       - { name: event_subscriber }
   content_hub_connector.entity_manager:
-    class: Drupal\content_hub_connector\EntityManager.php
+    class: Drupal\content_hub_connector\EntityManager
+    arguments: ['@logger.factory']
   content_hub_connector.client_manager:
-    class: Drupal\content_hub_connector\Client\Manager.php
+    class: Drupal\content_hub_connector\Client\ClientManager
+    arguments: ['@logger.factory']
   serializer.normalizer.entity.content_hub_cdf:
     class: Drupal\content_hub_connector\Normalizer\ContentEntityNormalizer
-    arguments: ['@entity.manager', '@module_handler']
+    arguments: ['@entity.manager', '@module_handler', '@logger.factory']
     tags:
       - { name: normalizer, priority: 10 }
   serializer.encoder.content_hub_cdf:

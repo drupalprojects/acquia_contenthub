@@ -8,13 +8,29 @@
 namespace Drupal\content_hub_connector\Client;
 
 use Acquia\ContentHubClient\ContentHub;
+use Drupal\Component\Render\FormattableMarkup;
 use Drupal\content_hub_connector\Cipher;
-use Drupal\content_hub_connector\ClientManagerInterface;
+use Drupal\content_hub_connector\ContentHubConnectorException;
+use Drupal\Core\Logger\LoggerChannelFactory;
 
 /**
  * Provides a service for managing pending server tasks.
  */
 class ClientManager implements ClientManagerInterface {
+
+  /**
+   * Logger.
+   *
+   * @var \Drupal\Core\Logger\LoggerChannelFactory
+   */
+  protected $loggerFactory;
+
+  /**
+   * Constructs an ContentEntityNormalizer object.
+   */
+  public function __construct(LoggerChannelFactory $logger_factory) {
+    $this->loggerFactory = $logger_factory;
+  }
 
   /**
    * Function returns content hub client.
@@ -24,6 +40,8 @@ class ClientManager implements ClientManagerInterface {
    *
    * @return \Acquia\ContentHubClient\ContentHub
    *   Returns the Content Hub Client
+   *
+   * @throws \Drupal\content_hub_connector\ContentHubConnectorException
    */
   public function getClient($config = array()) {
     // @todo Make sure this injects using proper service injection methods.
@@ -45,6 +63,10 @@ class ClientManager implements ClientManagerInterface {
     }
     else {
       $secret = $config_drupal->get('content_hub_connector_secret_key');
+    }
+    if (!$api || $secret || $origin || $config) {
+      $message = t('Could not create an Acquia Content Hub connection due to missing credentials. Please check your settings.');
+      throw new ContentHubConnectorException($message);
     }
 
     $client = new ContentHub($api, $secret, $origin, $config);

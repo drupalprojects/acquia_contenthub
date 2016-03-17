@@ -12,6 +12,7 @@ use Drupal\content_hub_connector\ContentHubConnectorException;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Acquia\ContentHubClient\Entity as ChubEntity;
+use Drupal\Core\Logger\LoggerChannelFactory;
 
 /**
  * Converts the Drupal entity object structure to a Acquia Content Hub CDF array
@@ -56,12 +57,20 @@ class ContentEntityNormalizer extends NormalizerBase {
    */
   protected $contentHubAdminConfig;
 
+  /**g
+   * Logger.
+   *
+   * @var \Drupal\Core\Logger\LoggerChannelFactory
+   */
+  protected $loggerFactory;
+
   /**
    * Constructs an ContentEntityNormalizer object.
    */
-  public function __construct(EntityManagerInterface $entity_manager, ModuleHandlerInterface $module_handler) {
+  public function __construct(EntityManagerInterface $entity_manager, ModuleHandlerInterface $module_handler, LoggerChannelFactory $logger_factory) {
     $this->entityManager = $entity_manager;
     $this->moduleHandler = $module_handler;
+    $this->loggerFactory = $logger_factory;
     $this->contentHubAdminConfig = \Drupal::config('content_hub_connector.admin_settings');
   }
 
@@ -90,7 +99,7 @@ class ContentEntityNormalizer extends NormalizerBase {
     $modified = date('c', $entity->get('created')->getValue()[0]['value']);
     $language = $entity->language();
 
-
+    // Initialize Content Hub entity.
     $content_hub_entity = new ChubEntity();
     $content_hub_entity
       ->setUuid($entity_uuid)
@@ -125,6 +134,7 @@ class ContentEntityNormalizer extends NormalizerBase {
         // Get the plain version of the field in regular json
         $serialized_field = $this->serializer->normalize($field, 'json', $context);
         $items = $serialized_field;
+
         // If there's nothing in this field, ignore it.
         if ($items == NULL) {
           continue;
@@ -137,11 +147,11 @@ class ContentEntityNormalizer extends NormalizerBase {
           $args['%property'] = $field->getFieldDefinition()->getLabel();
           $args['%type'] = $field_type;
           $message = new FormattableMarkup('No default field type mapping could be found for property %property of field type %type.', $args);
-          \Drupal::logger('my_module')->error($message);
+          $this->loggerFactory->get('content_hub_connector')->error($message);
           continue;
         }
 
-        // skip unsupported field types.
+        // Skip unsupported field types.
         if (empty($type_mapping[$field_type])) {
           continue;
         }
@@ -149,11 +159,13 @@ class ContentEntityNormalizer extends NormalizerBase {
         $values = array();
 
         if ($field instanceof \Drupal\Core\Field\EntityReferenceFieldItemList) {
+
           // Make sure it's a EntityReferenceFieldItemList. Maybe this check
           // is not necessary but to be sure we execute it anyway.
           if (false === $field instanceof \Drupal\Core\Field\EntityReferenceFieldItemList) {
             return FALSE;
           }
+
           /** @var \Drupal\Core\Field\EntityReferenceFieldItemList $field */
           $referenced_entities = $field->referencedEntities();
           foreach ($referenced_entities as $referenced_entity) {
@@ -163,19 +175,13 @@ class ContentEntityNormalizer extends NormalizerBase {
         else {
           // Loop over the items to get the values for each field.
           foreach ($items as $item) {
-            $value = $item['value'];
-
-            // Special case when Format is set. Include the whole item for
-            // transferring purposes.
-            if (isset($item['format'])) {
-              // Why are we doing this? Looks like it happens to support D8 to
-              // D7?
-              if ($item['format'] == 'basic_html') {
-                $item['format'] = 'filtered_html';
-              }
+            $keys = array_keys($item);
+            if (count($keys) == 1 && isset($item['value'])) {
+              $value = $item['value'];
+            }
+            else {
               $value = json_encode($item, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
             }
-
             $values[$langcode][] = $value;
           }
         }

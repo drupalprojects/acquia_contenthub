@@ -20,19 +20,25 @@ function content_hub_connector_help($route_name, RouteMatchInterface $route_matc
  * Implements hook_entity_insert().
  */
 function content_hub_connector_entity_insert(EntityInterface $entity) {
-  //content_hub_connector_entity_action($entity, $entity->getEntityTypeId(), 'INSERT');
+  /** @var \Drupal\content_hub_connector\EntityManager $entity_manager */
+  $entity_manager = \Drupal::service('content_hub_connector.entity_manager');
+  $entity_manager->entityAction($entity, 'INSERT');
 }
 
 /**
  * Implements hook_entity_update().
  */
 function content_hub_connector_entity_update(EntityInterface $entity) {
-  //content_hub_connector_entity_action($entity, $entity->getEntityTypeId(), 'UPDATE');
+  /** @var \Drupal\content_hub_connector\EntityManager $entity_manager */
+  $entity_manager = \Drupal::service('content_hub_connector.entity_manager');
+  $entity_manager->entityAction($entity, 'UPDATE');
 }
 
 /**
  * Implements hook_entity_delete().
  */
 function content_hub_connector_entity_delete(EntityInterface $entity) {
-  //content_hub_connector_entity_action($entity, $entity->getEntityTypeId(), 'DELETE');
+  /** @var \Drupal\content_hub_connector\EntityManager $entity_manager */
+  $entity_manager = \Drupal::service('content_hub_connector.entity_manager');
+  $entity_manager->entityAction($entity, 'DELETE');
 }

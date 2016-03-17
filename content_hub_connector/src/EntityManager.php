@@ -2,17 +2,33 @@
 
 /**
  * @file
- * Contains \Drupal\content_hub_connector\Task\Manager.
+ * Contains \Drupal\content_hub_connector/EntityManager.
  */
 
-namespace Drupal\content_hub_connector\Task;
+namespace Drupal\content_hub_connector;
+
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\Core\Url;
 
 /**
  * Provides a service for managing entity actions for Content Hub.
  */
-class Manager {
+class EntityManager {
+
+  /**
+   * Logger.
+   *
+   * @var \Drupal\Core\Logger\LoggerChannelFactory
+   */
+  protected $loggerFactory;
+
+  /**
+   * Constructs an ContentEntityNormalizer object.
+   */
+  public function __construct(LoggerChannelFactory $logger_factory) {
+    $this->loggerFactory = $logger_factory;
+  }
 
   /**
    * Executes an action in the Content Hub on a selected drupal entity.
@@ -24,7 +40,7 @@ class Manager {
    * @param string $action
    *   The action to perform on that entity: 'INSERT', 'UPDATE', 'DELETE'.
    */
-  public function entityAction($entity, $type, $action) {
+  public function entityAction($entity, $action) {
     // Checking if the entity has already been synchronized so not to generate
     // an endless loop.
     if (isset($entity->__content_hub_synchronized)) {
@@ -32,10 +48,13 @@ class Manager {
       return;
     }
 
-    // Entity has not been sync'ed, then procced with it.
-    $hubentity = $this->isElegibleEntity($entity, $type);
-    if ($hubentity) {
-      drupal_register_shutdown_function(array($this, 'entityActionSend', $action, $entity));
+    // Entity has not been sync'ed, then proceed with it.
+    if ($this->isElegibleEntity($entity)) {
+      // @todo In Drupal 7 this used the shutdown function
+      // drupal_register_shutdown_function(array($this, 'entityActionSend',
+      // $action, $entity));
+      // figure out if we really need to do this?
+      $this->entityActionSend($entity, $action);
     }
   }
 
@@ -48,10 +67,18 @@ class Manager {
    * @param EntityInterface $entity
    *   The Content Hub Entity.
    */
-  public function entityActionSend($action, EntityInterface $entity) {
+  public function entityActionSend(EntityInterface $entity, $action) {
     /** @var \Drupal\content_hub_connector\Client\ClientManagerInterface $client_manager */
     $client_manager = \Drupal::service('content_hub_connector.client_manager');
-    $client = $client_manager->getClient();
+
+    try {
+      $client = $client_manager->getClient();
+    }
+    catch (ContentHubConnectorException $e) {
+      $this->loggerFactory->get('content_hub_connector')->error($e->getMessage());
+      return;
+    }
+
     if($resource = $this->getResourceUrl($entity)) {
       switch ($action) {
         case 'INSERT':
@@ -83,18 +110,12 @@ class Manager {
   public function getResourceUrl(EntityInterface $entity) {
     switch ($entity->getEntityTypeId()) {
       case 'node':
-        $path = 'node/' . $entity->id();
-        break;
-
-      case 'taxonomy_term':
-        $path = '/term/taxonomy_term/' . $entity->id();
+        $path = 'node/' . $entity->id() . '/cdf';
         break;
 
       default:
         return FALSE;
-
     }
-    $path .= '?_format=json';
 
     $config = \Drupal::config('content_hub_connector.admin_settings');
     $rewrite_localdomain = $config->get('content_hub_connector_rewrite_localdomain');
@@ -116,20 +137,16 @@ class Manager {
    * @param string $type
    *   The Drupal entity type.
    *
-   * @return object|bool
-   *   The Drupal entity, if it is a Content Hub entity, FALSE otherwise.
+   * @return bool
+   *   True if it can be parsed, False if it not a suitable entity for sending
+   *   to content hub.
    */
-  function isElegibleEntity($entity, $type) {
+  function isElegibleEntity(EntityInterface $entity) {
     $config = \Drupal::config('content_hub_connector.entity_config');
-    $hubentities = $config->get('content_hub_connector_hubentities_' . $type);
-    if (empty($entity) || !isset($hubentities)) {
-      return FALSE;
-    }
-    if (!empty($entity->getType()) && isset($hubentities[$entity->getType()]) && $hubentities[$entity->getType()]) {
-      return $entity;
-    }
-    elseif (isset($hubentities[$type]) && $hubentities[$type]) {
-      return $entity;
+    $hubentities = $config->get('content_hub_connector_hubentities_' . $entity->getEntityTypeId());
+    $bundle = $entity->bundle();
+    if (isset($hubentities[$bundle]) && $hubentities[$bundle] == $bundle) {
+      return TRUE;
     }
     return FALSE;
   }

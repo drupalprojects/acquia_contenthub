@@ -98,6 +98,10 @@ class EntityConfigSettingsForm extends ConfigFormBase {
 
     $entity_config = $this->config('content_hub_connector.entity_config');
     foreach ($entity_types as $type => $bundle) {
+      // @todo Fix this. Total hack to only support explicit content types.
+      if ($type != 'node') {
+        continue;
+      }
       $form['entity_config'][$type] = array(
         '#type' => 'fieldset',
         '#title' => $type,
