@@ -77,7 +77,7 @@ class ContentEntityNormalizer extends NormalizerBase {
     // Set our required CDF properties
     $entity_type_id = $context['entity_type'] = $entity->getEntityTypeId();
     $entity_uuid = $entity->uuid();
-    $origin = $this->contentHubAdminConfig->get('content_hub_connector_origin');
+    $origin = $this->contentHubAdminConfig->get('origin');
     $created = date('c', $entity->get('created')->getValue()[0]['value']);
     $modified = date('c', $entity->get('created')->getValue()[0]['value']);
     $language = $entity->language();

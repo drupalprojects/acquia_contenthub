@@ -113,10 +113,10 @@ class EntityConfigSettingsForm extends ConfigFormBase {
         $hub_entities[$bundle_id] = $bundle_name;
       }
 
-      $form['entity_config'][$type]['content_hub_connector_hubentities_' . $type] = array(
+      $form['entity_config'][$type]['hubentities_' . $type] = array(
         '#type' => 'checkboxes',
         '#options' => $hub_entities,
-        '#default_value' => $entity_config->get('content_hub_connector_hubentities_' . $type) ?: array(),
+        '#default_value' => $entity_config->get('hubentities_' . $type) ?: array(),
       );
       $form['entity_config'][$type]['rendering_config'] = array(
         '#type' => 'fieldgroup',
@@ -176,8 +176,8 @@ class EntityConfigSettingsForm extends ConfigFormBase {
     $entity_types = $this->content_hub_connector_get_entity_types();
 
     foreach ($entity_types as $type => $bundles) {
-      if ($form_state->hasValue('content_hub_connector_hubentities_' . $type)) {
-        $config->set('content_hub_connector_hubentities_' . $type, $form_state->getValue('content_hub_connector_hubentities_' . $type));
+      if ($form_state->hasValue('hubentities_' . $type)) {
+        $config->set('hubentities_' . $type, $form_state->getValue('hubentities_' . $type));
       }
       foreach ($bundles as $bundle => $label) {
         if ($form_state->hasValue('rendering_config_' . $type . '_' . $bundle)) {

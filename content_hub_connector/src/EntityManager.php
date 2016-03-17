@@ -7,6 +7,7 @@
 
 namespace Drupal\content_hub_connector;
 
+use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\Core\Url;
@@ -66,6 +67,8 @@ class EntityManager {
    *   The action to execute for bulk upload: 'INSERT' or 'UPDATE'.
    * @param EntityInterface $entity
    *   The Content Hub Entity.
+   *
+   *
    */
   public function entityActionSend(EntityInterface $entity, $action) {
     /** @var \Drupal\content_hub_connector\Client\ClientManagerInterface $client_manager */
@@ -79,21 +82,70 @@ class EntityManager {
       return;
     }
 
-    if($resource = $this->getResourceUrl($entity)) {
-      switch ($action) {
-        case 'INSERT':
-          $client->createEntities($resource);
-          break;
-
-        case 'UPDATE':
-          $client->updateEntity($resource, $entity->uuid());
-          break;
-
-        case 'DELETE':
-          $client->deleteEntity($entity->uuid());
-          break;
-      }
+    $resource_url = $this->getResourceUrl($entity);
+    if (!$resource_url) {
+      $args = array(
+        '%type' => $entity->getEntityTypeId(),
+        '%uuid' => $entity->uuid(),
+        '%id' => $entity->id(),
+      );
+      $message = new FormattableMarkup('Error trying to form a unique resource Url for %type with uuid %uuid and id %id', $args);
+      $this->loggerFactory->get('content_hub_connector')->error($message);
+      return;
     }
+
+    $response = NULL;
+    $args = array(
+      '%type' => $entity->getEntityTypeId(),
+      '%uuid' => $entity->uuid(),
+      '%id' => $entity->id(),
+    );
+    $message_string = 'Error trying to post the resource url for %type with uuid %uuid and id %id with a response from the API: %error';
+
+    switch ($action) {
+      case 'INSERT':
+        try {
+          $response = $client->createEntities($resource_url);
+        }
+        catch (\GuzzleHttp\Exception\RequestException $e) {
+          $args['%error'] = $e->getMessage();
+          $message = new FormattableMarkup($message_string, $args);
+          $this->loggerFactory->get('content_hub_connector')->error($message);
+          return;
+        }
+        break;
+
+      case 'UPDATE':
+        try {
+          $response = $client->updateEntity($resource_url, $entity->uuid());
+          dpm($response->getBody()->getContents());
+        }
+        catch (\GuzzleHttp\Exception\RequestException $e) {
+          $args['%error'] = $e->getMessage();
+          $message = new FormattableMarkup($message_string, $args);
+          $this->loggerFactory->get('content_hub_connector')->error($message);
+          return;
+        }
+        break;
+
+      case 'DELETE':
+        try {
+          $response = $client->deleteEntity($entity->uuid());
+        }
+        catch (\GuzzleHttp\Exception\RequestException $e) {
+          $args['%error'] = $e->getMessage();
+          $message = new FormattableMarkup($message_string, $args);
+          $this->loggerFactory->get('content_hub_connector')->error($message);
+          return;
+        }
+        break;
+    }
+    // Make sure it is within the 2XX range. Expected response is a 202.
+    if ($response->getStatusCode()[0] == '2' && $response->getStatusCode()[1] == '0') {
+      $message = new FormattableMarkup($message_string, $args);
+      $this->loggerFactory->get('content_hub_connector')->error($message);
+    }
+
   }
 
   /**
@@ -118,7 +170,7 @@ class EntityManager {
     }
 
     $config = \Drupal::config('content_hub_connector.admin_settings');
-    $rewrite_localdomain = $config->get('content_hub_connector_rewrite_localdomain');
+    $rewrite_localdomain = $config->get('rewrite_domain');
     if ($rewrite_localdomain) {
       $url = Url::fromUri($rewrite_localdomain . '/' . $path);
     }
@@ -143,7 +195,7 @@ class EntityManager {
    */
   function isElegibleEntity(EntityInterface $entity) {
     $config = \Drupal::config('content_hub_connector.entity_config');
-    $hubentities = $config->get('content_hub_connector_hubentities_' . $entity->getEntityTypeId());
+    $hubentities = $config->get('hubentities_' . $entity->getEntityTypeId());
     $bundle = $entity->bundle();
     if (isset($hubentities[$bundle]) && $hubentities[$bundle] == $bundle) {
       return TRUE;

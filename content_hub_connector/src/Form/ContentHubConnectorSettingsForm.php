@@ -6,16 +6,25 @@
 
 namespace Drupal\content_hub_connector\Form;
 
+use Drupal\content_hub_connector\Client\ClientManager;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Acquia\ContentHubClient;
 use \GuzzleHttp\Exception\ClientException;
 use \GuzzleHttp\Exception\RequestException;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Defines the form to configure the Content Hub connection settings.
  */
 class ContentHubConnectorSettingsForm extends ConfigFormBase {
+
+  /**
+   * The entity manager.
+   *
+   * @var |Drupal\content_hub_connector\Client\ClientManager
+   */
+  protected $clientManager;
 
   /**
    * {@inheritdoc}
@@ -32,6 +41,23 @@ class ContentHubConnectorSettingsForm extends ConfigFormBase {
   }
 
   /**
+   * ContentHubConnectorSettingsForm constructor.
+   *
+   * @param \Drupal\content_hub_connector\Client\ClientManager $client_manager
+   */
+  public function __construct(ClientManager $client_manager) {
+    $this->clientManager = $client_manager;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    $client_manager = \Drupal::service('content_hub_connector.client_manager');
+    return new static($client_manager);
+  }
+
+  /**
    *
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
@@ -43,30 +69,39 @@ class ContentHubConnectorSettingsForm extends ConfigFormBase {
       '#description' => t('Settings for connection to Content Hub'),
     );
 
-    $form['conn_settings']['content_hub_connector_hostname'] = array(
+    $form['conn_settings']['hostname'] = array(
       '#type' => 'textfield',
       '#title' => t('Content Hub Connector Hostname'),
       '#description' => t('The hostname of the content hub connector api, e.g. http://localhost:5000'),
-      '#default_value' => $config->get('content_hub_connector_hostname'),
+      '#default_value' => $config->get('hostname'),
       '#required' => TRUE,
     );
 
-    $form['conn_settings']['content_hub_connector_api_key'] = array(
+    $form['conn_settings']['api_key'] = array(
       '#type' => 'textfield',
       '#title' => t('API Key'),
-      '#default_value' => $config->get('content_hub_connector_api_key'),
+      '#default_value' => $config->get('api_key'),
       '#required' => TRUE,
     );
 
-    $form['conn_settings']['content_hub_connector_secret_key'] = array(
+    $form['conn_settings']['secret_key'] = array(
       '#type' => 'password',
       '#title' => t('Secret Key'),
+      '#default_value' => $config->get('secret_key'),
     );
 
-    $client_name = $config->get('content_hub_connector_client_name');
+    $form['conn_settings']['rewrite_domain'] = array(
+      '#type' => 'url',
+      '#title' => t('Rewrite domain before sending to Content Hub.'),
+      '#description' => t('Useful when working with a site behind a proxy such as ngrok. Will transform the URL to what you add in here so that Acquia Content Hub knows where to fetch the resource. Eg.: localhost:80/node/1 becomes myexternalsite.someproxy.com/node/1'),
+      '#default_value' => $config->get('rewrite_domain'),
+      '#required' => FALSE,
+    );
+
+    $client_name = $config->get('client_name');
     $readonly = empty($client_name) ? [] : ['readonly' => TRUE];
 
-    $form['conn_settings']['content_hub_connector_client_name'] = array(
+    $form['conn_settings']['client_name'] = array(
       '#type' => 'textfield',
       '#title' => t('Client Name'),
       '#default_value' => $client_name,
@@ -75,10 +110,10 @@ class ContentHubConnectorSettingsForm extends ConfigFormBase {
       '#attributes' => $readonly,
     );
 
-    $form['conn_settings']['content_hub_connector_origin'] = array(
+    $form['conn_settings']['origin'] = array(
       '#type' => 'item',
       '#title' => t("Site's Origin UUID"),
-      '#markup' => $config->get('content_hub_connector_origin', 'Client NOT registered.'),
+      '#markup' => $config->get('origin', 'Client NOT registered.'),
     );
 
     return parent::buildForm($form, $form_state);
@@ -90,37 +125,49 @@ class ContentHubConnectorSettingsForm extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     parent::submitForm($form, $form_state);
     $config = $this->config('content_hub_connector.admin_settings');
+
     /*// Let active plugins save their settings.
     foreach ($this->configurableInstances as $instance) {
     $instance->submitConfigurationForm($form, $form_state);
     }*/
 
-    if ($form_state->hasValue('content_hub_connector_hostname')) {
-      $hostname = $form_state->getValue('content_hub_connector_hostname');
-      $config->set('content_hub_connector_hostname', $form_state->getValue('content_hub_connector_hostname'));
+    $hostname = NULL;
+    if ($form_state->hasValue('hostname')) {
+      $hostname = $form_state->getValue('hostname');
+      $config->set('hostname', $form_state->getValue('hostname'));
     }
-    if ($form_state->hasValue('content_hub_connector_api_key')) {
-      $api = $form_state->getValue('content_hub_connector_api_key');
-      $config->set('content_hub_connector_api_key', $form_state->getValue('content_hub_connector_api_key'));
+
+    $api = NULL;
+    if ($form_state->hasValue('api_key')) {
+      $api = $form_state->getValue('api_key');
+      $config->set('api_key', $form_state->getValue('api_key'));
     }
-    if ($form_state->hasValue('content_hub_connector_secret_key')) {
-      $secret = $form_state->getValue('content_hub_connector_secret_key');
-      $config->set('content_hub_connector_secret_key', $form_state->getValue('content_hub_connector_secret_key'));
+
+    $secret = NULL;
+    if ($form_state->hasValue('secret_key')) {
+      $secret = $form_state->getValue('secret_key');
+      $config->set('secret_key', $form_state->getValue('secret_key'));
     }
-    if ($form_state->hasValue('content_hub_connector_client_name')) {
-      $config->set('content_hub_connector_client_name', $form_state->getValue('content_hub_connector_client_name'));
+
+    if ($form_state->hasValue('rewrite_domain')) {
+      $config->set('rewrite_domain', $form_state->getValue('rewrite_domain'));
     }
-    if ($form_state->hasValue('content_hub_connector_origin')) {
-      $config->set('content_hub_connector_origin', $form_state->getValue('content_hub_connector_origin'));
+
+    if ($form_state->hasValue('client_name')) {
+      $config->set('client_name', $form_state->getValue('client_name'));
+    }
+
+    if ($form_state->hasValue('origin')) {
+      $config->set('origin', $form_state->getValue('origin'));
     }
 
     // Only reset the secret if it is passed. If encryption is activated,
     // then encrypt it too.
-    $encryption = $config->get('content_hub_connector_encryption_key_file', '');
+    $encryption = $config->get('encryption_key_file');
 
     // Encrypting the secret, to save for later use.
-    if ($secret && !empty($encryption)) {
-      $encrypted_secret = content_hub_connector_cipher()->encrypt($secret);
+    if (!empty($secret) && !empty($encryption)) {
+      $encrypted_secret = $this->clientManager->cipher()->encrypt($secret);
       $decrypted_secret = $secret;
     }
     elseif ($secret) {
@@ -131,63 +178,73 @@ class ContentHubConnectorSettingsForm extends ConfigFormBase {
       // We need a decrypted secret to make the API call, but sometimes it might
       // not be given.
       // Secret was not provided, try to get it from the variable.
-      $secret = $config->get('content_hub_connector_secret_key', '');
+      $secret = $config->get('secret_key');
       $encrypted_secret = $secret;
 
       if ($secret && !empty($encryption)) {
-        $decrypted_secret = content_hub_connector_cipher()->decrypt($secret);
+        $decrypted_secret = $this->clientManager->cipher()->decrypt($secret);
       }
       else {
         $decrypted_secret = $secret;
       }
     }
 
-    $origin = $config->get('content_hub_connector_origin', '');
-
+    $origin = $config->get('origin');
     $client = new ContentHubClient\ContentHub($api, $decrypted_secret, $origin, ['base_url' => $hostname]);
 
-    if (empty($origin)) {
-      $name = $form_state->getValue('content_hub_connector_client_name');
+    // We are always able to change these variables.
+    $config->set('hostname', $hostname);
+    $config->set('api_key', $api);
+    $config->set('secret_key', $encrypted_secret);
+    $config->save();
 
-      // Register Client.
-      try {
-        $site = $client->register($name);
-
-        // Registration successful. Setting up the origin and other variables.
-        $config->set('content_hub_connector_origin', $site['uuid']);
-        $config->set('content_hub_connector_client_name', $name);
-
-        // Resetting the origin now that we have one.
-        $origin = $site['uuid'];
-        drupal_set_message(t('Successful Client registration with name "@name" (UUID = @uuid)', array(
-          '@name' => $name,
-          '@uuid' => $origin,
-        )), 'status');
-      }
-      catch (ClientException $ex) {
-        $response = $ex->getResponse();
-        if (isset($response)) {
-          drupal_set_message(t('Error registering client with name="@name" (Error Code = @error_code: @error_message)', array(
-            '@error_code' => $response->getStatusCode(),
-            '@name' => $name,
-            '@error_message' => $response->getReasonPhrase(),
-          )), 'error');
-          \Drupal::logger('content_hub_connector')->error($response->getReasonPhrase());
-        }
-      } catch (RequestException $ex) {
-        // Some error connecting to Content Hub... are your credentials set
-        // correctly?
-        $msg = $ex->getMessage();
-        form_set_error('content_hub_connector_secret_key', t("Couldn't get authorization from Content Hub. Are your credentials inserted correctly? The following error was returned: @msg", array(
-          '@msg' => $msg,
-        )));
-      }
+    // Content Hub does not support a new registration when we already have a
+    // client_name.
+    if ($config->get('client_name')) {
+      //return;
     }
 
-    // We are always able to change these variables.
-    $config->set('content_hub_connector_hostname', $hostname);
-    $config->set('content_hub_connector_api_key', $api);
-    $config->set('content_hub_connector_secret_key', $encrypted_secret);
+    // Get the client name.
+    $name = $form_state->getValue('client_name');
+
+    try {
+      // This will fail if the name was already registered.
+      $site = $client->register($name);
+    }
+    catch (ClientException $e) {
+      $response = $e->getResponse();
+      if (isset($response)) {
+        drupal_set_message(t('Error registering client with name="@name" (Error Code = @error_code: @error_message)', array(
+          '@error_code' => $response->getStatusCode(),
+          '@name' => $name,
+          '@error_message' => $response->getReasonPhrase(),
+        )), 'error');
+        // @todo inject this with a service
+        \Drupal::logger('content_hub_connector')->error($response->getReasonPhrase());
+      }
+      return;
+    } catch (RequestException $e) {
+      // Some error connecting to Content Hub... are your credentials set
+      // correctly?
+      $message = $e->getMessage();
+      drupal_set_message(t('Couldn\'t get authorization from Content Hub. Are your credentials inserted correctly? The following error was returned: @msg', array(
+        '@msg' => $message,
+      )), 'error');
+      \Drupal::logger('content_hub_connector')->error($message);
+      return;
+    }
+
+    // Registration successful. Setting up the origin and other variables.
+    $config->set('origin', $site['uuid']);
+    $config->set('client_name', $name);
+
+    // Resetting the origin now that we have one.
+    $origin = $site['uuid'];
+    drupal_set_message(t('Successful Client registration with name "@name" (UUID = @uuid)', array(
+      '@name' => $name,
+      '@uuid' => $origin,
+    )), 'status');
+
     $config->save();
   }
 

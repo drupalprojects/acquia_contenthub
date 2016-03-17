@@ -49,22 +49,22 @@ class ClientManager implements ClientManagerInterface {
 
     // Override configuration.
     $config = array_merge(array(
-      'base_url' => $config_drupal->get('content_hub_connector_hostname'),
+      'base_url' => $config_drupal->get('hostname'),
     ), $config);
 
     // Get API information
-    $api = $config_drupal->get('content_hub_connector_api_key');
-    $origin = $config_drupal->get('content_hub_connector_origin');
-    $encryption = (bool) $config_drupal->get('content_hub_connector_encryption_key_file');
+    $api = $config_drupal->get('api_key');
+    $origin = $config_drupal->get('origin');
+    $encryption = (bool) $config_drupal->get('encryption_key_file');
 
     if ($encryption) {
-      $secret = $config_drupal->get('content_hub_connector_secret_key');
+      $secret = $config_drupal->get('secret_key');
       $secret = $this->cipher()->decrypt($secret);
     }
     else {
-      $secret = $config_drupal->get('content_hub_connector_secret_key');
+      $secret = $config_drupal->get('secret_key');
     }
-    if (!$api || $secret || $origin || $config) {
+    if (!$api || !$secret || !$origin || !$config) {
       $message = t('Could not create an Acquia Content Hub connection due to missing credentials. Please check your settings.');
       throw new ContentHubConnectorException($message);
     }
@@ -84,7 +84,7 @@ class ClientManager implements ClientManagerInterface {
   public function cipher() {
     // @todo Make sure this injects using proper service injection methods.
     $config = \Drupal::config('content_hub_connector.admin_settings');
-    $filepath = $config->get('content_hub_connector_encryption_key_file');
+    $filepath = $config->get('encryption_key_file');
     $cipher = new Cipher($filepath);
     return $cipher;
   }
