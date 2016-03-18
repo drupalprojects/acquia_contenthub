@@ -8,3 +8,4 @@ configure: content_hub_connector.admin_settings
 
 dependencies:
   - serialization
+  - rest

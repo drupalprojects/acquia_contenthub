@@ -13,3 +13,21 @@ content_hub_connector.entity_config:
     _title: 'Entity Configuration'
   requirements:
     _permission: 'administer content hub'
+
+content_hub_connector.content_hub_cdf.node:
+  path: '/node/{node}'
+  methods:
+    - GET
+  defaults:
+    _controller: 'Drupal\rest\RequestHandler::handle'
+    _plugin: 'entity:node'
+  requirements:
+    _method: GET
+    _format: content_hub_cdf
+    # This is fine as the rest module will check if the account has permissions
+    # to view the node.
+    _access: 'TRUE'
+  options:
+    parameters:
+      node:
+        type: 'entity:node'

@@ -91,23 +91,16 @@ class ContentEntityNormalizer extends NormalizerBase {
       ->setCreated($created)
       ->setModified($modified);
 
-    // @todo This is a total hack
-    // For D7 compatibility, we add a "fake" und language as well so that we can
-    // allow importing to happen. und has to go first as it is the default it
-    // expects and Drupal 7 has a bug that causes it not to loop over all the
-    // values but only takes the first one.
-    $content_hub_entity = $this->addFieldsToContentHubEntity($content_hub_entity, $entity, 'und');
-
     // @todo Fix this in Drupal 7!!
     // We have to iterate over the entity translations and add all the
     // translations here as well.
     // Disable this for now as it causes issues with D7 imports.
-    /*$languages = $entity->getTranslationLanguages();
+    $languages = $entity->getTranslationLanguages();
     foreach ($languages as $language) {
       $langcode = $language->getId();
       $localized_entity = $entity->getTranslation($langcode);
       $content_hub_entity = $this->addFieldsToContentHubEntity($content_hub_entity, $localized_entity, $langcode, $context);
-    }*/
+    }
 
     // Create the array of normalized fields, starting with the URI.
     $normalized = array(
@@ -246,22 +239,6 @@ class ContentEntityNormalizer extends NormalizerBase {
       // Add it to our content_hub entity.
       $content_hub_entity->setAttribute($name, $attribute);
     }
-
-    // TOTAL HACK
-    // convert
-    // array('und' => 'en')
-    // to
-    // array('und' => 'und')
-    // For compatibility with Drupal 7, duplicate langcode to language.
-    $langcode_attr = $content_hub_entity->getAttribute('langcode');
-    // We have to make sure we use the given language, otherwise we have Drupal
-    // 7 incompatibilities.
-    $langcodes = $langcode_attr->getValues();
-    foreach ($langcodes as $langcode_id => $langcode_value) {
-      $langcodes[$langcode_id] = $langcode_id;
-    }
-    $langcode_attr->setValues($langcodes);
-    $content_hub_entity->setAttribute('language', $langcode_attr);
 
     // For compatibility with Drupal 7, Add bundle/type attribute as a string.
     // If attribute exists already, append to the existing values.
