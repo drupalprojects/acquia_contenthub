@@ -8,10 +8,10 @@
 namespace Drupal\content_hub_connector\Client;
 
 use Acquia\ContentHubClient\ContentHub;
-use Drupal\Component\Render\FormattableMarkup;
 use Drupal\content_hub_connector\Cipher;
 use Drupal\content_hub_connector\ContentHubConnectorException;
 use Drupal\Core\Logger\LoggerChannelFactory;
+use Drupal\Core\Config\ConfigFactory;
 
 /**
  * Provides a service for managing pending server tasks.
@@ -19,17 +19,27 @@ use Drupal\Core\Logger\LoggerChannelFactory;
 class ClientManager implements ClientManagerInterface {
 
   /**
-   * Logger.
+   * Logger Factory.
    *
    * @var \Drupal\Core\Logger\LoggerChannelFactory
    */
   protected $loggerFactory;
 
   /**
-   * Constructs an ContentEntityNormalizer object.
+   * Config Factory.
+   *
+   * @var \Drupal\Core\Config\ConfigFactory
    */
-  public function __construct(LoggerChannelFactory $logger_factory) {
+  protected $configFactory;
+
+  /**
+   * ClientManager constructor.
+   * @param \Drupal\Core\Logger\LoggerChannelFactory $logger_factory
+   * @param \Drupal\Core\Config\ConfigFactory $config_factory
+   */
+  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory) {
     $this->loggerFactory = $logger_factory;
+    $this->configFactory = $config_factory;
   }
 
   /**
@@ -45,7 +55,7 @@ class ClientManager implements ClientManagerInterface {
    */
   public function getClient($config = array()) {
     // @todo Make sure this injects using proper service injection methods.
-    $config_drupal = \Drupal::config('content_hub_connector.admin_settings');
+    $config_drupal = $this->configFactory->get('content_hub_connector.admin_settings');
 
     // Override configuration.
     $config = array_merge(array(
@@ -83,7 +93,7 @@ class ClientManager implements ClientManagerInterface {
    */
   public function cipher() {
     // @todo Make sure this injects using proper service injection methods.
-    $config = \Drupal::config('content_hub_connector.admin_settings');
+    $config = $this->configFactory->get('content_hub_connector.admin_settings');
     $filepath = $config->get('encryption_key_file');
     $cipher = new Cipher($filepath);
     return $cipher;

@@ -13,6 +13,7 @@ use Drupal\content_hub_connector\ContentHubConnectorException;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Acquia\ContentHubClient\Entity as ChubEntity;
 use Drupal\Core\Logger\LoggerChannelFactory;
+use Drupal\Core\Config\ConfigFactory;
 
 /**
  * Converts the Drupal entity object structure to a Acquia Content Hub CDF array
@@ -43,7 +44,7 @@ class ContentEntityNormalizer extends NormalizerBase {
    */
   protected $contentHubAdminConfig;
 
-  /**g
+  /**
    * Logger.
    *
    * @var \Drupal\Core\Logger\LoggerChannelFactory
@@ -51,11 +52,19 @@ class ContentEntityNormalizer extends NormalizerBase {
   protected $loggerFactory;
 
   /**
+   * Config Factory.
+   *
+   * @var \Drupal\Core\Config\ConfigFactory
+   */
+  protected $configFactory;
+
+  /**
    * Constructs an ContentEntityNormalizer object.
    */
-  public function __construct(LoggerChannelFactory $logger_factory) {
+  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory) {
     $this->loggerFactory = $logger_factory;
-    $this->contentHubAdminConfig = \Drupal::config('content_hub_connector.admin_settings');
+    $this->configFactory = $config_factory;
+    $this->contentHubAdminConfig = $this->configFactory->get('content_hub_connector.admin_settings');
   }
 
   /**

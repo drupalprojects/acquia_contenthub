@@ -113,7 +113,7 @@ class ContentHubConnectorSettingsForm extends ConfigFormBase {
     $form['conn_settings']['origin'] = array(
       '#type' => 'item',
       '#title' => t("Site's Origin UUID"),
-      '#markup' => $config->get('origin', 'Client NOT registered.'),
+      '#markup' => $config->get('origin'),
     );
 
     return parent::buildForm($form, $form_state);
@@ -227,7 +227,7 @@ class ContentHubConnectorSettingsForm extends ConfigFormBase {
       // Some error connecting to Content Hub... are your credentials set
       // correctly?
       $message = $e->getMessage();
-      drupal_set_message(t('Couldn\'t get authorization from Content Hub. Are your credentials inserted correctly? The following error was returned: @msg', array(
+      drupal_set_message(t("Couldn't get authorization from Content Hub. Are your credentials inserted correctly? The following error was returned: @msg", array(
         '@msg' => $message,
       )), 'error');
       \Drupal::logger('content_hub_connector')->error($message);

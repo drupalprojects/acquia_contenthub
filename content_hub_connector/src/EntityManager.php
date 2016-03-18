@@ -8,9 +8,11 @@
 namespace Drupal\content_hub_connector;
 
 use Drupal\Component\Render\FormattableMarkup;
+use Drupal\content_hub_connector\Client\ClientManager;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\Core\Url;
+use Drupal\Core\Config\ConfigFactory;
 
 /**
  * Provides a service for managing entity actions for Content Hub.
@@ -25,10 +27,27 @@ class EntityManager {
   protected $loggerFactory;
 
   /**
+   * Config Factory.
+   *
+   * @var \Drupal\Core\Config\ConfigFactory
+   */
+  protected $configFactory;
+
+  /**
+   * Content Hub Client Manager.
+   *
+   * @var \Drupal\content_hub_connector\Client\ClientManager
+   */
+  protected $clientManager;
+
+
+  /**
    * Constructs an ContentEntityNormalizer object.
    */
-  public function __construct(LoggerChannelFactory $logger_factory) {
+  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManager $client_manager) {
     $this->loggerFactory = $logger_factory;
+    $this->configFactory = $config_factory;
+    $this->clientManager = $client_manager;
   }
 
   /**
@@ -72,10 +91,8 @@ class EntityManager {
    */
   public function entityActionSend(EntityInterface $entity, $action) {
     /** @var \Drupal\content_hub_connector\Client\ClientManagerInterface $client_manager */
-    $client_manager = \Drupal::service('content_hub_connector.client_manager');
-
     try {
-      $client = $client_manager->getClient();
+      $client = $this->clientManager->getClient();
     }
     catch (ContentHubConnectorException $e) {
       $this->loggerFactory->get('content_hub_connector')->error($e->getMessage());
@@ -168,7 +185,7 @@ class EntityManager {
         return FALSE;
     }
 
-    $config = \Drupal::config('content_hub_connector.admin_settings');
+    $config = $this->configFactory->get('content_hub_connector.admin_settings');
     $rewrite_localdomain = $config->get('rewrite_domain');
     if ($rewrite_localdomain) {
       $url = Url::fromUri($rewrite_localdomain . '/' . $path);
@@ -193,7 +210,7 @@ class EntityManager {
    *   to content hub.
    */
   function isElegibleEntity(EntityInterface $entity) {
-    $config = \Drupal::config('content_hub_connector.entity_config');
+    $config = $this->configFactory->get('content_hub_connector.entity_config');
     $hubentities = $config->get('hubentities_' . $entity->getEntityTypeId());
     $bundle = $entity->bundle();
     if (isset($hubentities[$bundle]) && $hubentities[$bundle] == $bundle) {

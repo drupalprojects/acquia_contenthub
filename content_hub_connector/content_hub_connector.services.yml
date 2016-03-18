@@ -1,17 +1,13 @@
 services:
-  content_hub_connector.route_subscriber:
-    class: Drupal\content_hub_connector\Routing\RouteSubscriber
-    tags:
-      - { name: event_subscriber }
   content_hub_connector.entity_manager:
     class: Drupal\content_hub_connector\EntityManager
-    arguments: ['@logger.factory']
+    arguments: ['@logger.factory', '@config.factory', '@content_hub_connector.client_manager']
   content_hub_connector.client_manager:
     class: Drupal\content_hub_connector\Client\ClientManager
-    arguments: ['@logger.factory']
+    arguments: ['@logger.factory', '@config.factory']
   serializer.normalizer.entity.content_hub_cdf:
     class: Drupal\content_hub_connector\Normalizer\ContentEntityNormalizer
-    arguments: ['@logger.factory']
+    arguments: ['@logger.factory', '@config.factory']
     tags:
       - { name: normalizer, priority: 10 }
   serializer.encoder.content_hub_cdf:
