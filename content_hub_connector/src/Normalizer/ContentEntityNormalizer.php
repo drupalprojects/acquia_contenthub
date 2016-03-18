@@ -177,7 +177,7 @@ class ContentEntityNormalizer extends NormalizerBase {
       if (isset($type_mapping[$name])) {
         $type = $type_mapping[$name];
       }
-      if (isset($type_mapping[$field_type])) {
+      elseif (isset($type_mapping[$field_type])) {
         // Set it to the fallback type which is string.
         $type = $type_mapping[$field_type];
       }
