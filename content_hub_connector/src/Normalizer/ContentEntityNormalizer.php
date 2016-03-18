@@ -91,135 +91,22 @@ class ContentEntityNormalizer extends NormalizerBase {
       ->setCreated($created)
       ->setModified($modified);
 
-    // Add bundle/type attribute.
-    $attribute = new \Acquia\ContentHubClient\Attribute("string");
-    $attribute->setValue($entity->bundle(), 'und');
-    $content_hub_entity->setAttribute('type', $attribute);
-
-    // Get our field mapping. This maps drupal field types to Content Hub
-    // attribute types.
-    $type_mapping = static::getFieldTypeMapping();
+    // @todo This is a total hack
+    // For D7 compatibility, we add a "fake" und language as well so that we can
+    // allow importing to happen. und has to go first as it is the default it
+    // expects and Drupal 7 has a bug that causes it not to loop over all the
+    // values but only takes the first one.
+    $content_hub_entity = $this->addFieldsToContentHubEntity($content_hub_entity, $entity, 'und');
 
     // We have to iterate over the entity translations and add all the
     // translations here as well.
-    $languages = $entity->getTranslationLanguages();
+    // Disable this for now as it causes issues with D7 imports.
+    /*$languages = $entity->getTranslationLanguages();
     foreach ($languages as $language) {
-
       $langcode = $language->getId();
       $localized_entity = $entity->getTranslation($langcode);
-      /** @var \Drupal\Core\Field\FieldItemListInterface[] $fields */
-      $fields = $localized_entity->getFields();
-
-      // Ignore the entity ID and revision ID.
-      // Excluded comes here
-      $excluded_fields = $this->excludedProperties($localized_entity);
-      foreach ($fields as $name => $field) {
-        // Continue if this is an excluded field or the current user does not
-        // have access to view it.
-        if (in_array($field->getFieldDefinition()->getName(), $excluded_fields) || !$field->access('view', $context['account'])) {
-          continue;
-        }
-
-        // Get the plain version of the field in regular json
-        $serialized_field = $this->serializer->normalize($field, 'json', $context);
-        $items = $serialized_field;
-
-        // If there's nothing in this field, ignore it.
-        if ($items == NULL) {
-          continue;
-        }
-
-        // Try to map it to a known field type.
-        $field_type = $field->getFieldDefinition()->getType();
-        // Print an error to watchdog if the drupal field type is not known.
-        if (!isset($type_mapping[$field_type])) {
-          $args['%property'] = $field->getFieldDefinition()->getLabel();
-          $args['%type'] = $field_type;
-          $message = new FormattableMarkup('No default field type mapping could be found for property %property of field type %type.', $args);
-          $this->loggerFactory->get('content_hub_connector')->error($message);
-          continue;
-        }
-
-        // Skip unsupported field types.
-        if (empty($type_mapping[$field_type])) {
-          continue;
-        }
-
-        $values = array();
-
-        if ($field instanceof \Drupal\Core\Field\EntityReferenceFieldItemList) {
-
-          // Make sure it's a EntityReferenceFieldItemList. Maybe this check
-          // is not necessary but to be sure we execute it anyway.
-          if (false === $field instanceof \Drupal\Core\Field\EntityReferenceFieldItemList) {
-            return FALSE;
-          }
-
-          /** @var \Drupal\Core\Field\EntityReferenceFieldItemList $field */
-          $referenced_entities = $field->referencedEntities();
-          foreach ($referenced_entities as $referenced_entity) {
-            $values[$langcode][] = $referenced_entity->uuid();
-          }
-        }
-        else {
-          // Loop over the items to get the values for each field.
-          foreach ($items as $item) {
-            $keys = array_keys($item);
-            if (count($keys) == 1 && isset($item['value'])) {
-              $value = $item['value'];
-            }
-            else {
-              $value = json_encode($item, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
-            }
-            $values[$langcode][] = $value;
-          }
-        }
-
-        // Count if we need to use an array as type or not.
-        $count = 0;
-        foreach ($values as $language => $l_values) {
-          if ($count > 1) {
-            break;
-          }
-          $count = count($l_values);
-        }
-
-        // Set our attribute type and assign the values to it.
-        $type = $type_mapping[$field_type];
-        try {
-          // If we have multiple languages or multiple values, always use an
-          // array.
-          if ($count > 1 || count($values) > 1) {
-            $type = 'array<' . $type_mapping[$field_type] . '>';
-            $attribute = new \Acquia\ContentHubClient\Attribute($type);
-            $attribute->setValues($values);
-          }
-          else {
-            $attribute = new \Acquia\ContentHubClient\Attribute($type);
-            $value = array_pop($values[$language]);
-            $attribute->setValue($value, $language);
-          }
-        }
-        catch (\Exception $e) {
-          $args['%type'] = $type;
-          $message =  new FormattableMarkup('No type could be registered for %type.', $args);
-          throw new ContentHubConnectorException($message);
-        }
-
-        // If attribute exists already, append to the existing values.
-        if (!empty($content_hub_entity->getAttribute($name))) {
-          $existing_attribute = $content_hub_entity->getAttribute($name);
-          $this->appendToAttribute($existing_attribute, $attribute->getValues());
-          $attribute = $existing_attribute;
-        }
-
-        // Add it to our content_hub entity.
-        $content_hub_entity->setAttribute($name, $attribute);
-      }
-      // For compatibility with Drupal 7, duplicate langcode to language.
-      $langcode_attr = $content_hub_entity->getAttribute('langcode');
-      $content_hub_entity->setAttribute('language', $langcode_attr);
-    }
+      $content_hub_entity = $this->addFieldsToContentHubEntity($content_hub_entity, $localized_entity, $langcode, $context);
+    }*/
 
     // Create the array of normalized fields, starting with the URI.
     $normalized = array(
@@ -229,6 +116,164 @@ class ContentEntityNormalizer extends NormalizerBase {
     );
 
     return $normalized;
+  }
+
+
+  /**
+   * Get the fields from a given entity and add them to the given content hub
+   * entity object.
+   *
+   * @param \Acquia\ContentHubClient\Entity $content_hub_entity
+   * @param \Drupal\Core\Entity\ContentEntityInterface $entity
+   * @param $langcode
+   *
+   * @return \Acquia\ContentHubClient\Entity ChubEntity
+   *
+   * @throws \Drupal\content_hub_connector\ContentHubConnectorException
+   */
+  protected function addFieldsToContentHubEntity(ChubEntity $content_hub_entity, \Drupal\Core\Entity\ContentEntityInterface $entity, $langcode = 'und', array $context = array()) {
+    /** @var \Drupal\Core\Field\FieldItemListInterface[] $fields */
+    $fields = $entity->getFields();
+
+    // Get our field mapping. This maps drupal field types to Content Hub
+    // attribute types.
+    $type_mapping = static::getFieldTypeMapping();
+
+    // Ignore the entity ID and revision ID.
+    // Excluded comes here
+    $excluded_fields = $this->excludedProperties($entity);
+    foreach ($fields as $name => $field) {
+      // Continue if this is an excluded field or the current user does not
+      // have access to view it.
+      if (in_array($field->getFieldDefinition()->getName(), $excluded_fields) || !$field->access('view', $context['account'])) {
+        continue;
+      }
+
+      // Get the plain version of the field in regular json
+      $serialized_field = $this->serializer->normalize($field, 'json', $context);
+      $items = $serialized_field;
+
+      // If there's nothing in this field, ignore it.
+      if ($items == NULL) {
+        continue;
+      }
+
+      // Try to map it to a known field type.
+      $field_type = $field->getFieldDefinition()->getType();
+      // Print an error to watchdog if the drupal field type is not known.
+      if (!isset($type_mapping[$field_type])) {
+        $args['%property'] = $field->getFieldDefinition()->getLabel();
+        $args['%type'] = $field_type;
+        $message = new FormattableMarkup('No default field type mapping could be found for property %property of field type %type.', $args);
+        $this->loggerFactory->get('content_hub_connector')->error($message);
+        continue;
+      }
+
+      // Skip unsupported field types.
+      if (empty($type_mapping[$field_type])) {
+        continue;
+      }
+
+      $values = array();
+
+      if ($field instanceof \Drupal\Core\Field\EntityReferenceFieldItemList) {
+
+        // Make sure it's a EntityReferenceFieldItemList. Maybe this check
+        // is not necessary but to be sure we execute it anyway.
+        if (false === $field instanceof \Drupal\Core\Field\EntityReferenceFieldItemList) {
+          return FALSE;
+        }
+
+        /** @var \Drupal\Core\Field\EntityReferenceFieldItemList $field */
+        $referenced_entities = $field->referencedEntities();
+        foreach ($referenced_entities as $referenced_entity) {
+          $values[$langcode][] = $referenced_entity->uuid();
+        }
+      }
+      else {
+        // Loop over the items to get the values for each field.
+        foreach ($items as $item) {
+          $keys = array_keys($item);
+          if (count($keys) == 1 && isset($item['value'])) {
+            $value = $item['value'];
+          }
+          else {
+            $value = json_encode($item, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+          }
+          $values[$langcode][] = $value;
+        }
+      }
+
+      // Count if we need to use an array as type or not.
+      $count = 0;
+      foreach ($values as $language => $l_values) {
+        if ($count > 1) {
+          break;
+        }
+        $count = count($l_values);
+      }
+
+      // Set our attribute type and assign the values to it.
+      $type = $type_mapping[$field_type];
+      try {
+        // If we have multiple languages or multiple values, always use an
+        // array.
+        if ($count > 1 || count($values) > 1) {
+          $type = 'array<' . $type_mapping[$field_type] . '>';
+          $attribute = new \Acquia\ContentHubClient\Attribute($type);
+          $attribute->setValues($values);
+        }
+        else {
+          $attribute = new \Acquia\ContentHubClient\Attribute($type);
+          $value = array_pop($values[$langcode]);
+          $attribute->setValue($value, $langcode);
+        }
+      }
+      catch (\Exception $e) {
+        $args['%type'] = $type;
+        $message =  new FormattableMarkup('No type could be registered for %type.', $args);
+        throw new ContentHubConnectorException($message);
+      }
+
+      // If attribute exists already, append to the existing values.
+      if (!empty($content_hub_entity->getAttribute($name))) {
+        $existing_attribute = $content_hub_entity->getAttribute($name);
+        $this->appendToAttribute($existing_attribute, $attribute->getValues());
+        $attribute = $existing_attribute;
+      }
+
+      // Add it to our content_hub entity.
+      $content_hub_entity->setAttribute($name, $attribute);
+    }
+
+    // TOTAL HACK
+    // convert
+    // array('und' => 'en')
+    // to
+    // array('und' => 'und')
+    // For compatibility with Drupal 7, duplicate langcode to language.
+    $langcode_attr = $content_hub_entity->getAttribute('langcode');
+    // We have to make sure we use the given language, otherwise we have Drupal
+    // 7 incompatibilities.
+    $langcodes = $langcode_attr->getValues();
+    foreach ($langcodes as $langcode_id => $langcode_value) {
+      $langcodes[$langcode_id] = $langcode_id;
+    }
+    $langcode_attr->setValues($langcodes);
+    $content_hub_entity->setAttribute('language', $langcode_attr);
+
+    // For compatibility with Drupal 7, Add bundle/type attribute as a string.
+    // If attribute exists already, append to the existing values.
+    $attribute = new \Acquia\ContentHubClient\Attribute("string");
+    $attribute->setValue($entity->bundle(), $langcode);
+    if (!empty($content_hub_entity->getAttribute('type'))) {
+      $existing_attribute = $content_hub_entity->getAttribute('type');
+      $this->appendToAttribute($existing_attribute, $attribute->getValues());
+      $attribute = $existing_attribute;
+    }
+    $content_hub_entity->setAttribute('type', $attribute);
+
+    return $content_hub_entity;
   }
 
   /**
@@ -385,6 +430,7 @@ class ContentEntityNormalizer extends NormalizerBase {
       // Translation fields
       'content_translation_outdated',
       'content_translation_source',
+      'default_langcode',
 
       // Do not include comments
       'comment' => 'comment',
