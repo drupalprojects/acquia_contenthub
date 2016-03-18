@@ -288,7 +288,8 @@ class ContentEntityNormalizer extends NormalizerBase {
       // $search_api_field_type => array($data_types) and flip it below.
       $default_mapping = array(
         'string' => array(
-          // These are special field names that we do not want to parse as arrays.
+          // These are special field names that we do not want to parse as
+          // arrays.
           'title',
           'langcode',
         ),
