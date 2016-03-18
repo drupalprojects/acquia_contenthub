@@ -5,7 +5,6 @@
  */
 
 use Drupal\Component\Uuid\Uuid;
-use Drupal\content_hub_connector;
 use Guzzle\Http\Exception\BadResponseException;
 use Guzzle\Http\Exception\ServerErrorResponseException;
 use GuzzleHttp\Exception\ClientException;
