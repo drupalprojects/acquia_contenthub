@@ -81,7 +81,6 @@ class ContentEntityNormalizer extends NormalizerBase {
     $origin = $this->contentHubAdminConfig->get('origin');
     $created = date('c', $entity->get('created')->getValue()[0]['value']);
     $modified = date('c', $entity->get('created')->getValue()[0]['value']);
-    $language = $entity->language();
 
     // Initialize Content Hub entity.
     $content_hub_entity = new ChubEntity();
@@ -112,7 +111,18 @@ class ContentEntityNormalizer extends NormalizerBase {
       $fields = $localized_entity->getFields();
 
       // Ignore the entity ID and revision ID.
-      $exclude = array($localized_entity->getEntityType()->getKey('id'), $localized_entity->getEntityType()->getKey('revision'), 'type', 'uuid');
+      $exclude = array(
+        $localized_entity->getEntityType()->getKey('id'),
+        $localized_entity->getEntityType()->getKey('revision'),
+        'type',
+        'uuid',
+        'status',
+        'sticky',
+        'promote',
+        'revision_uid',
+        'revision_translation_affected',
+        'revision_timestamp',
+      );
       foreach ($fields as $name => $field) {
         // Continue if this is an excluded field or the current user does not
         // have access to view it.
@@ -206,11 +216,6 @@ class ContentEntityNormalizer extends NormalizerBase {
           throw new ContentHubConnectorException($message);
         }
 
-        // For compatibility with Drupal 7, duplicate langcode to language.
-        if ($name == 'langcode') {
-          $content_hub_entity->setAttribute('language', $attribute);
-        }
-
         // If attribute exists already, append to the existing values.
         if (!empty($content_hub_entity->getAttribute($name))) {
           $existing_attribute = $content_hub_entity->getAttribute($name);
@@ -221,6 +226,9 @@ class ContentEntityNormalizer extends NormalizerBase {
         // Add it to our content_hub entity.
         $content_hub_entity->setAttribute($name, $attribute);
       }
+      // For compatibility with Drupal 7, duplicate langcode to language.
+      $langcode_attr = $content_hub_entity->getAttribute('langcode');
+      $content_hub_entity->setAttribute('language', $langcode_attr);
     }
 
     // Create the array of normalized fields, starting with the URI.
