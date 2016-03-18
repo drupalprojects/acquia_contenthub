@@ -20,10 +20,10 @@ class CdfViewController extends EntityViewController {
    * {@inheritdoc}
    */
   public function view(EntityInterface $node, $view_mode = 'full') {
+    $account = \Drupal::currentUser();
     /** @var \Symfony\Component\Serializer\Serializer $serializer */
     $serializer =  \Drupal::service('serializer');
-    $output = $serializer->normalize($node, 'content_hub_cdf');
-    return new JsonResponse($output);
+    return new JsonResponse($serializer->normalize($node, 'content_hub_cdf', array('account' => $account)));
   }
 
   /**

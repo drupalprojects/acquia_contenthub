@@ -98,6 +98,7 @@ class ContentEntityNormalizer extends NormalizerBase {
     // values but only takes the first one.
     $content_hub_entity = $this->addFieldsToContentHubEntity($content_hub_entity, $entity, 'und');
 
+    // @todo Fix this in Drupal 7!!
     // We have to iterate over the entity translations and add all the
     // translations here as well.
     // Disable this for now as it causes issues with D7 imports.

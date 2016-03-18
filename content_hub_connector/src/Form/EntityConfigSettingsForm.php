@@ -149,7 +149,6 @@ class EntityConfigSettingsForm extends ConfigFormBase {
           $form['entity_config'][$type]['rendering_config']['#description'] = t('No available view modes found to render.');
         }
       }
-
     }
 
     $roles = user_role_names();
@@ -159,7 +158,7 @@ class EntityConfigSettingsForm extends ConfigFormBase {
       '#description' => $this->t('Your item will be rendered as seen by a user with the selected role. We recommend to just use "@anonymous" here to prevent data leaking out to unauthorized roles.', array('@anonymous' => $roles[AccountInterface::ANONYMOUS_ROLE])),
       '#options' => $roles,
       '#multiple' => FALSE,
-      '#default_value' => $entity_config->get('role'),
+      '#default_value' => $entity_config->get('role') ? $entity_config->get('role') : AccountInterface::ANONYMOUS_ROLE,
       '#required' => TRUE,
     );
 
