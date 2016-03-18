@@ -100,10 +100,8 @@ class ContentEntityNormalizer extends NormalizerBase {
       ->setCreated($created)
       ->setModified($modified);
 
-    // @todo Fix this in Drupal 7!!
     // We have to iterate over the entity translations and add all the
-    // translations here as well.
-    // Disable this for now as it causes issues with D7 imports.
+    // translations versions.
     $languages = $entity->getTranslationLanguages();
     foreach ($languages as $language) {
       $langcode = $language->getId();
@@ -123,16 +121,28 @@ class ContentEntityNormalizer extends NormalizerBase {
 
 
   /**
+   * Get fields from given entity.
+   *
    * Get the fields from a given entity and add them to the given content hub
    * entity object.
    *
    * @param \Acquia\ContentHubClient\Entity $content_hub_entity
+   *   The Content Hub Entity that will contain all the Drupal entity fields.
+   *
    * @param \Drupal\Core\Entity\ContentEntityInterface $entity
-   * @param $langcode
+   *   The Drupal Entity
+   *
+   * @param string $langcode
+   *   The language that we are parsing
+   *
+   * @param array $context
+   *   Additional Context such as the account.
    *
    * @return \Acquia\ContentHubClient\Entity ChubEntity
+   *   The Content Hub Entity with all the data in it.
    *
    * @throws \Drupal\content_hub_connector\ContentHubConnectorException
+   *   The Exception will be thrown if something is going awol.
    */
   protected function addFieldsToContentHubEntity(ChubEntity $content_hub_entity, \Drupal\Core\Entity\ContentEntityInterface $entity, $langcode = 'und', array $context = array()) {
     /** @var \Drupal\Core\Field\FieldItemListInterface[] $fields */
@@ -143,7 +153,7 @@ class ContentEntityNormalizer extends NormalizerBase {
     $type_mapping = static::getFieldTypeMapping();
 
     // Ignore the entity ID and revision ID.
-    // Excluded comes here
+    // Excluded comes here.
     $excluded_fields = $this->excludedProperties($entity);
     foreach ($fields as $name => $field) {
       // Continue if this is an excluded field or the current user does not
@@ -152,10 +162,9 @@ class ContentEntityNormalizer extends NormalizerBase {
         continue;
       }
 
-      // Get the plain version of the field in regular json
+      // Get the plain version of the field in regular json.
       $serialized_field = $this->serializer->normalize($field, 'json', $context);
       $items = $serialized_field;
-
       // If there's nothing in this field, ignore it.
       if ($items == NULL) {
         continue;
@@ -163,34 +172,36 @@ class ContentEntityNormalizer extends NormalizerBase {
 
       // Try to map it to a known field type.
       $field_type = $field->getFieldDefinition()->getType();
-      // Print an error to watchdog if the drupal field type is not known.
-      if (!isset($type_mapping[$field_type])) {
-        $args['%property'] = $field->getFieldDefinition()->getLabel();
-        $args['%type'] = $field_type;
-        $message = new FormattableMarkup('No default field type mapping could be found for property %property of field type %type.', $args);
-        $this->loggerFactory->get('content_hub_connector')->error($message);
-        continue;
+      // Go to the fallback data type when the field type is not known.
+      $type = $type_mapping['fallback'];
+      if (isset($type_mapping[$name])) {
+        $type = $type_mapping[$name];
       }
-
-      // Skip unsupported field types.
-      if (empty($type_mapping[$field_type])) {
-        continue;
+      if (isset($type_mapping[$field_type])) {
+        // Set it to the fallback type which is string.
+        $type = $type_mapping[$field_type];
       }
 
       $values = array();
-
       if ($field instanceof \Drupal\Core\Field\EntityReferenceFieldItemList) {
 
         // Make sure it's a EntityReferenceFieldItemList. Maybe this check
         // is not necessary but to be sure we execute it anyway.
-        if (false === $field instanceof \Drupal\Core\Field\EntityReferenceFieldItemList) {
+        if (FALSE === $field instanceof \Drupal\Core\Field\EntityReferenceFieldItemList) {
           return FALSE;
         }
 
-        /** @var \Drupal\Core\Field\EntityReferenceFieldItemList $field */
+        /** @var \Drupal\Core\Field\EntityReferenceFieldItemList $referenced_entities */
         $referenced_entities = $field->referencedEntities();
         foreach ($referenced_entities as $referenced_entity) {
-          $values[$langcode][] = $referenced_entity->uuid();
+          // Special case for type as we do not want the reference for the
+          // bundle.
+          if ($name === 'type') {
+            $values[$langcode][] = $referenced_entity->id();
+          }
+          else {
+            $values[$langcode][] = $referenced_entity->uuid();
+          }
         }
       }
       else {
@@ -207,35 +218,20 @@ class ContentEntityNormalizer extends NormalizerBase {
         }
       }
 
-      // Count if we need to use an array as type or not.
-      $count = 0;
-      foreach ($values as $language => $l_values) {
-        if ($count > 1) {
-          break;
-        }
-        $count = count($l_values);
-      }
-
-      // Set our attribute type and assign the values to it.
-      $type = $type_mapping[$field_type];
       try {
-        // If we have multiple languages or multiple values, always use an
-        // array.
-        if ($count > 1 || count($values) > 1) {
-          $type = 'array<' . $type_mapping[$field_type] . '>';
-          $attribute = new \Acquia\ContentHubClient\Attribute($type);
-          $attribute->setValues($values);
-        }
-        else {
-          $attribute = new \Acquia\ContentHubClient\Attribute($type);
-          $value = array_pop($values[$langcode]);
-          $attribute->setValue($value, $langcode);
-        }
+        $attribute = new \Acquia\ContentHubClient\Attribute($type);
       }
       catch (\Exception $e) {
         $args['%type'] = $type;
-        $message =  new FormattableMarkup('No type could be registered for %type.', $args);
+        $message = new FormattableMarkup('No type could be registered for %type.', $args);
         throw new ContentHubConnectorException($message);
+      }
+
+      if (strstr($type, 'array')) {
+        $attribute->setValues($values);
+      }
+      else {
+        $attribute->setValue($value, $langcode);
       }
 
       // If attribute exists already, append to the existing values.
@@ -248,17 +244,6 @@ class ContentEntityNormalizer extends NormalizerBase {
       // Add it to our content_hub entity.
       $content_hub_entity->setAttribute($name, $attribute);
     }
-
-    // For compatibility with Drupal 7, Add bundle/type attribute as a string.
-    // If attribute exists already, append to the existing values.
-    $attribute = new \Acquia\ContentHubClient\Attribute("string");
-    $attribute->setValue($entity->bundle(), $langcode);
-    if (!empty($content_hub_entity->getAttribute('type'))) {
-      $existing_attribute = $content_hub_entity->getAttribute('type');
-      $this->appendToAttribute($existing_attribute, $attribute->getValues());
-      $attribute = $existing_attribute;
-    }
-    $content_hub_entity->setAttribute('type', $attribute);
 
     return $content_hub_entity;
   }
@@ -281,12 +266,12 @@ class ContentEntityNormalizer extends NormalizerBase {
    * Inspired by the getFieldTypeMapping in search_api.
    *
    * Search API uses the complex data format to normalize the data into a
-   * documentstructure suitable for search engines. However, since content hub
+   * document-structure suitable for search engines. However, since content hub
    * for Drupal 8 just got started, it focusses on the field types for now
    * instead of on the complex data types. Changing this architecture would
    * mean that we have to adopt a very similar structure as can be seen in the
    * Utility class of Search API. That would also mean we no longer have to
-   * explicitely support certain field types as they map back to the known
+   * explicitly support certain field types as they map back to the known
    * complex data types such as string, uri that are known in Drupal Core.
    *
    * @return string[]
@@ -303,42 +288,22 @@ class ContentEntityNormalizer extends NormalizerBase {
       // $search_api_field_type => array($data_types) and flip it below.
       $default_mapping = array(
         'string' => array(
-          // Core Fields FieldTypes
-          'changed',
-          'created',
-          'email',
-          'language',
-          'map',
-          'string',
-          'string_long',
-          'timestamp',
-          'uri',
-          'uuid',
-
-          // text module FieldTypes
-          'text',
-          'text_long',
-          'text_with_summary',
-
-          // comment module FieldTypes
-          'comment',
-
-          // datetime module FieldTypes
-          'datetime',
-
-          // link module FieldTypes
-          'link',
-
+          // These are special field names that we do not want to parse as arrays.
+          'title',
+          'langcode',
         ),
-        'reference' => array(
+        'array<string>' => array(
+          'fallback',
+        ),
+        'array<reference>' => array(
           'entity_reference',
         ),
-        'integer' => array(
+        'array<integer>' => array(
           'integer',
           'timespan',
           'timestamp',
         ),
-        'number' => array(
+        'array<number>' => array(
           'decimal',
           'float',
         ),
@@ -347,9 +312,8 @@ class ContentEntityNormalizer extends NormalizerBase {
           'password',
           'file',
           'image',
-
         ),
-        'boolean' => array(
+        'array<boolean>' => array(
           'boolean',
         ),
       );
