@@ -38,7 +38,7 @@ class ContentEntityNormalizer extends NormalizerBase {
   protected $supportedInterfaceOrClass = 'Drupal\Core\Entity\ContentEntityInterface';
 
   /**
-   * The specific content hub keys
+   * The specific content hub keys.
    *
    * @var \Drupal\Core\Config\ImmutableConfig
    */
@@ -84,7 +84,7 @@ class ContentEntityNormalizer extends NormalizerBase {
     /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
     $entity = $object;
 
-    // Set our required CDF properties
+    // Set our required CDF properties.
     $entity_type_id = $context['entity_type'] = $entity->getEntityTypeId();
     $entity_uuid = $entity->uuid();
     $origin = $this->contentHubAdminConfig->get('origin');
@@ -361,7 +361,7 @@ class ContentEntityNormalizer extends NormalizerBase {
       'created' => 'created',
       'changed' => 'changed',
 
-      // Getting rid of workflow fields
+      // Getting rid of workflow fields.
       'status',
       'sticky',
       'promote',
@@ -379,12 +379,12 @@ class ContentEntityNormalizer extends NormalizerBase {
       'revision_translation_affected',
       'revision_timestamp',
 
-      // Translation fields
+      // Translation fields.
       'content_translation_outdated',
       'content_translation_source',
       'default_langcode',
 
-      // Do not include comments
+      // Do not include comments.
       'comment' => 'comment',
       'comment_count' => 'comment_count',
       'comment_count_new' => 'comment_count_new',
@@ -399,8 +399,6 @@ class ContentEntityNormalizer extends NormalizerBase {
     $excluded = array_merge($excluded, $excluded_to_alter);
     return $excluded;
   }
-
-
 
   /**
    * Denormalizes data back into an object of the given class.
