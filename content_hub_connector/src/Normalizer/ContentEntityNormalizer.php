@@ -10,7 +10,7 @@ namespace Drupal\content_hub_connector\Normalizer;
 use Acquia\ContentHubClient\Attribute;
 use Drupal\Component\Render\FormattableMarkup;
 use Drupal\content_hub_connector\ContentHubConnectorException;
-use Drupal\Core\Extension\ModuleHandlerInterface;
+use Drupal\Core\Entity\ContentEntityInterface;
 use Acquia\ContentHubClient\Entity as ChubEntity;
 use Drupal\Core\Logger\LoggerChannelFactory;
 
@@ -111,22 +111,12 @@ class ContentEntityNormalizer extends NormalizerBase {
       $fields = $localized_entity->getFields();
 
       // Ignore the entity ID and revision ID.
-      $exclude = array(
-        $localized_entity->getEntityType()->getKey('id'),
-        $localized_entity->getEntityType()->getKey('revision'),
-        'type',
-        'uuid',
-        'status',
-        'sticky',
-        'promote',
-        'revision_uid',
-        'revision_translation_affected',
-        'revision_timestamp',
-      );
+      // Excluded comes here
+      $excluded_fields = $this->excludedProperties($localized_entity);
       foreach ($fields as $name => $field) {
         // Continue if this is an excluded field or the current user does not
         // have access to view it.
-        if (in_array($field->getFieldDefinition()->getName(), $exclude) || !$field->access('view', $context['account'])) {
+        if (in_array($field->getFieldDefinition()->getName(), $excluded_fields) || !$field->access('view', $context['account'])) {
           continue;
         }
 
@@ -347,6 +337,72 @@ class ContentEntityNormalizer extends NormalizerBase {
 
     return static::$fieldTypeMapping;
   }
+
+  /**
+   * Provides a list of entity properties that will be excluded from the CDF.
+   *
+   * When building the CDF entity for the Content Hub we are exporting Drupal
+   * entities that will be imported by other Drupal sites, so nids, tids, fids,
+   * etc. should not be transferred, as they will be different in different
+   * Drupal sites. We are relying in Drupal <uuid>'s as the entity identifier.
+   * So <uuid>'s will persist through the different sites.
+   * (We will need to verify this claim!)
+   *
+   * @param \Drupal\Core\Entity\ContentEntityInterface $entity
+   *
+   * @return array
+   *   An array of excluded properties.
+   */
+  protected function excludedProperties(ContentEntityInterface $entity) {
+    $excluded = array(
+      // The following properties are always included in constructor, so we do
+      // not need to check them again.
+      $entity->getEntityType()->getKey('id'),
+      $entity->getEntityType()->getKey('revision'),
+      'uuid' => 'uuid',
+      'type' => 'type',
+      'created' => 'created',
+      'changed' => 'changed',
+
+      // Getting rid of workflow fields
+      'status',
+      'sticky',
+      'promote',
+
+      // Getting rid of identifiers and others.
+      'vid' => 'vid',
+      'nid' => 'nid',
+      'fid' => 'fid',
+      'tid' => 'tid',
+      'uid' => 'uid',
+      'cid' => 'cid',
+
+      // Do not send revisions.
+      'revision_uid',
+      'revision_translation_affected',
+      'revision_timestamp',
+
+      // Translation fields
+      'content_translation_outdated',
+      'content_translation_source',
+
+      // Do not include comments
+      'comment' => 'comment',
+      'comment_count' => 'comment_count',
+      'comment_count_new' => 'comment_count_new',
+    );
+
+    $excluded_to_alter = array();
+
+    // Allow users to define more excluded properties.
+    // Allow other modules to intercept and define what default type they want
+    // to use for their data type.
+    \Drupal::moduleHandler()->alter('content_hub_connector_exclude_fields', $excluded_to_alter);
+    $excluded = array_merge($excluded, $excluded_to_alter);
+    return $excluded;
+  }
+
+
 
   /**
    * Denormalizes data back into an object of the given class.
