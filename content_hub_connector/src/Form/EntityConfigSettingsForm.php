@@ -135,6 +135,11 @@ class EntityConfigSettingsForm extends ConfigFormBase {
             '#options' => $view_modes,
             '#description' => "You can select or deselect any option. Selecting none will avoid rendering that specific content to be included in Acquia Content Hub.",
             '#multiple' => TRUE,
+            '#states' => [
+              'visible' => [
+                ':input[name="hubentities_' . $type . '[' . $bundle_id . ']"]' => ['checked' => TRUE],
+              ],
+            ],
           );
           $previous_rendering_config = $entity_config->get('rendering_config_' . $type . '_' . $bundle_id);
           if (isset($previous_rendering_config)) {
