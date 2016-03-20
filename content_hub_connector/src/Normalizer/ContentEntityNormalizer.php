@@ -45,6 +45,13 @@ class ContentEntityNormalizer extends NormalizerBase {
   protected $contentHubAdminConfig;
 
   /**
+   * The content entity view modes normalizer.
+   *
+   * @var \Drupal\content_hub_connector\Normalizer\ContentEntityViewModesNormalizer
+   */
+  protected $contentEntityViewModesNormalizer;
+
+  /**
    * Logger.
    *
    * @var \Drupal\Core\Logger\LoggerChannelFactory
@@ -60,8 +67,16 @@ class ContentEntityNormalizer extends NormalizerBase {
 
   /**
    * Constructs an ContentEntityNormalizer object.
+   *
+   * @param \Drupal\content_hub_connector\Normalizer\ContentEntityViewModesNormalizer $content_entity_view_modes_normalizer
+   *   The content entity view modes normalizer.
+   * @param \Drupal\Core\Logger\LoggerChannelFactory $logger_factory
+   *   The logger factory.
+   * @param \Drupal\Core\Config\ConfigFactory $config_factory
+   *   The config factory.
    */
-  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory) {
+  public function __construct(ContentEntityViewModesNormalizer $content_entity_view_modes_normalizer, LoggerChannelFactory $logger_factory, ConfigFactory $config_factory) {
+    $this->contentEntityViewModesNormalizer = $content_entity_view_modes_normalizer;
     $this->loggerFactory = $logger_factory;
     $this->configFactory = $config_factory;
     $this->contentHubAdminConfig = $this->configFactory->get('content_hub_connector.admin_settings');
@@ -98,7 +113,10 @@ class ContentEntityNormalizer extends NormalizerBase {
       ->setType($entity_type_id)
       ->setOrigin($origin)
       ->setCreated($created)
-      ->setModified($modified);
+      ->setModified($modified)
+      ->setMetadata(array(
+        'view_modes' => $this->contentEntityViewModesNormalizer->normalize($entity, $format),
+      ));
 
     // We have to iterate over the entity translations and add all the
     // translations versions.

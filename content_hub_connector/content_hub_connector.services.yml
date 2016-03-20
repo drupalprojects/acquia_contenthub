@@ -7,7 +7,12 @@ services:
     arguments: ['@logger.factory', '@config.factory']
   serializer.normalizer.entity.content_hub_cdf:
     class: Drupal\content_hub_connector\Normalizer\ContentEntityNormalizer
-    arguments: ['@logger.factory', '@config.factory']
+    arguments: ['@content_hub_connector.normalizer.content_entity_view_modes_normalizer', '@logger.factory', '@config.factory']
+    tags:
+      - { name: normalizer, priority: 10 }
+  content_hub_connector.normalizer.content_entity_view_modes_normalizer:
+    class: Drupal\content_hub_connector\Normalizer\ContentEntityViewModesNormalizer
+    arguments: ['@entity.manager', '@renderer', '@config.factory']
     tags:
       - { name: normalizer, priority: 10 }
   serializer.encoder.content_hub_cdf:
