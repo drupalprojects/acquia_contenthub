@@ -69,7 +69,7 @@ class EntityManager {
     }
 
     // Entity has not been sync'ed, then proceed with it.
-    if ($this->isElegibleEntity($entity)) {
+    if ($this->isEligibleEntity($entity)) {
       // @todo In Drupal 7 this used the shutdown function
       // drupal_register_shutdown_function(array($this, 'entityActionSend',
       // $action, $entity));
@@ -209,14 +209,12 @@ class EntityManager {
    *   True if it can be parsed, False if it not a suitable entity for sending
    *   to content hub.
    */
-  function isElegibleEntity(EntityInterface $entity) {
-    $config = $this->configFactory->get('content_hub_connector.entity_config');
-    $hubentities = $config->get('hubentities_' . $entity->getEntityTypeId());
-    $bundle = $entity->bundle();
-    if (isset($hubentities[$bundle]) && $hubentities[$bundle] == $bundle) {
-      return TRUE;
+  function isEligibleEntity(EntityInterface $entity) {
+    $entity_type_config = $this->configFactory->get('content_hub_connector.entity_config')->get('entities.' . $entity->getEntityTypeId());
+    $bundle_id = $entity->bundle();
+    if (empty($entity_type_config) || empty($entity_type_config[$bundle_id]) || empty($entity_type_config[$bundle_id]['enabled'])) {
+      return FALSE;
     }
-    return FALSE;
+    return TRUE;
   }
-
 }

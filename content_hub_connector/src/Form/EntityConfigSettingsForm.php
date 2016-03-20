@@ -88,118 +88,127 @@ class EntityConfigSettingsForm extends ConfigFormBase {
       '#description' => t('Select the bundles of the entity types you would like to publish to Acquia Content Hub. <br/><br/><strong>Optional</strong><br/>Choose a view mode for each of the selected bundles to be rendered before sending to Acquia Content Hub. <br/>You can choose the view modes to use for rendering the items of different datasources and bundles. We recommend using a dedicated view mode to make sure that only relevant data (especially no field labels) will be transferred to Content Hub.'),
     );
 
-    $form['entity_config'] = array(
-      '#type' => 'fieldgroup',
-      '#title' => t('Entity Configuration'),
-      '#collapsible' => TRUE,
-    );
-    // Get all allowed entity types.
-    $entity_types = $this->content_hub_connector_get_entity_types();
+    $form['entity_config']['entities'] = $this->buildEntitiesForm();
+    $form['entity_config']['user_role'] = $this->buildUserRoleForm();
 
-    $entity_config = $this->config('content_hub_connector.entity_config');
+    return parent::buildForm($form, $form_state);
+  }
+
+  /**
+   * Build entities form.
+   *
+   * @return array
+   *   Entities form.
+   */
+  private function buildEntitiesForm() {
+    $form = array(
+      '#type' => 'fieldgroup',
+      '#title' => t('Entities'),
+      '#tree' => TRUE,
+    );
+    $entity_types = $this->getEntityTypes();
     foreach ($entity_types as $type => $bundle) {
       // @todo Fix this. Total hack to only support explicit content types.
       if ($type != 'node') {
         continue;
       }
-      $form['entity_config'][$type] = array(
-        '#type' => 'fieldset',
+      $form[$type] = array(
         '#title' => $type,
-        '#collapsible' => TRUE,
+        '#type' => 'details',
+        '#tree' => TRUE,
+        '#description' => "Select the content types that you would like to publish to Content Hub.",
       );
-
-      $hub_entities = array();
-      foreach ($bundle as $bundle_id => $bundle_name) {
-        $hub_entities[$bundle_id] = $bundle_name;
-      }
-
-      $form['entity_config'][$type]['hubentities_' . $type] = array(
-        '#type' => 'checkboxes',
-        '#options' => $hub_entities,
-        '#default_value' => $entity_config->get('hubentities_' . $type) ?: array(),
-      );
-      $form['entity_config'][$type]['rendering_config'] = array(
-        '#type' => 'fieldgroup',
-        '#title' => t('Entity View Modes'),
-        '#collapsible' => TRUE,
-        '#description' => t('Select the view modes for the bundles you would like to publish to Acquia Content Hub.'),
-      );
-
-      foreach ($bundle as $bundle_id => $bundle_name) {
-        $view_modes = $this->entityDisplayRepository->getViewModeOptionsByBundle($type, $bundle_id);
-        $entity_label = $this->entityTypeManager->getDefinition($type)->getLabel();
-        if (count($view_modes) > 0) {
-          $form['entity_config'][$type]['rendering_config_' . $type . '_' . $bundle_id] = array(
-            '#type' => 'select',
-            '#title' => $this->t('View mode for %entitytype » %bundle', array('%entitytype' => $entity_label, '%bundle' => $hub_entities[$bundle_id])),
-            '#options' => $view_modes,
-            '#description' => "You can select or deselect any option. Selecting none will avoid rendering that specific content to be included in Acquia Content Hub.",
-            '#multiple' => TRUE,
-            '#states' => [
-              'visible' => [
-                ':input[name="hubentities_' . $type . '[' . $bundle_id . ']"]' => ['checked' => TRUE],
-              ],
-            ],
-          );
-          $previous_rendering_config = $entity_config->get('rendering_config_' . $type . '_' . $bundle_id);
-          if (isset($previous_rendering_config)) {
-            $form['entity_config'][$type]['rendering_config_' . $type . '_' . $bundle_id]['#default_value'] = $entity_config->get('rendering_config_' . $type . '_' . $bundle_id);
-          }
-        }
-        else {
-          $form['entity_config'][$type]['rendering_config_' . $type . '_' . $bundle_id] = array(
-            '#type' => 'value',
-            '#value' => $view_modes ? key($view_modes) : FALSE,
-          );
-          $form['entity_config'][$type]['rendering_config']['#description'] = t('No available view modes found to render.');
-        }
-      }
+      $form[$type] += $this->buildEntitiesBundleForm($type, $bundle);
     }
+    return $form;
+  }
 
-    $roles = user_role_names();
-    $form['role'] = array(
+  /**
+   * Build entities bundle form.
+   *
+   * @param array $type Type
+   * @param array $bundle Bundle
+   * @return array
+   *   Entities bundle form.
+   */
+  private function buildEntitiesBundleForm($type, $bundle) {
+    $entities = $this->config('content_hub_connector.entity_config')->get('entities');
+    $form = array();
+    foreach ($bundle as $bundle_id => $bundle_name) {
+      $view_modes = $this->entityDisplayRepository->getViewModeOptionsByBundle($type, $bundle_id);
+      $entity_type_label = $this->entityTypeManager->getDefinition($type)->getLabel();
+      $form[$bundle_id] = array(
+        '#type' => 'fieldset',
+        '#title' => $this->t('%entity_type_label » %bundle_name', array('%entity_type_label' => $entity_type_label, '%bundle_name' => $bundle_name)),
+        '#collapsible' => TRUE,
+      );
+      $form[$bundle_id]['enabled'] = [
+        '#type' => 'checkbox',
+        '#title' => $this->t('Publish this type ...'),
+        '#disabled' => empty($view_modes),
+        '#default_value' => empty($view_modes) ? FALSE : $entities[$type][$bundle_id]['enabled'],
+        '#description' => empty($view_modes) ? $this->t('is disabled because there is no available view modes.') : NULL,
+      ];
+
+      $rendering = $entities[$type][$bundle_id]['rendering'];
+      $title = empty($view_modes) ? NULL : $this->t('with selecting the following view mode(s):');
+      $default_value = (empty($view_modes) || empty($rendering)) ? array() : $rendering;
+      $form[$bundle_id]['rendering'] = array(
+        '#type' => 'select',
+        '#options' => $view_modes,
+        '#multiple' => TRUE,
+        '#title' => $title,
+        '#default_value' => $default_value,
+        '#states' => [
+          'visible' => [
+            ':input[name="entities[' . $type . '][' . $bundle_id . '][enabled]"]' => ['checked' => TRUE],
+          ],
+        ],
+        '#description' => $this->t('You can hold ctrl (or cmd) key to select multiple view mode(s).'),
+      );
+    }
+    return $form;
+  }
+
+  /**
+   * Build user role form.
+   *
+   * @return array
+   *   User role form.
+   */
+  private function buildUserRoleForm() {
+    $user_role = $this->config('content_hub_connector.entity_config')->get('user_role');
+    $user_role_names = user_role_names();
+    $form = array(
       '#type' => 'select',
-      '#title' => $this->t('User role'),
-      '#description' => $this->t('Your item will be rendered as seen by a user with the selected role. We recommend to just use "@anonymous" here to prevent data leaking out to unauthorized roles.', array('@anonymous' => $roles[AccountInterface::ANONYMOUS_ROLE])),
-      '#options' => $roles,
+      '#title' => $this->t('User Role'),
+      '#description' => $this->t('Your item will be rendered as seen by a user with the selected role. We recommend to just use "@anonymous" here to prevent data leaking out to unauthorized roles.', array('@anonymous' => $user_role_names[AccountInterface::ANONYMOUS_ROLE])),
+      '#options' => $user_role_names,
       '#multiple' => FALSE,
-      '#default_value' => $entity_config->get('role') ? $entity_config->get('role') : AccountInterface::ANONYMOUS_ROLE,
+      '#default_value' => $user_role ?: AccountInterface::ANONYMOUS_ROLE,
       '#required' => TRUE,
     );
-
-    return parent::buildForm($form, $form_state);
+    return $form;
   }
 
   /**
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    parent::submitForm($form, $form_state);
+    $values = $form_state->getValues();
 
     $config = $this->config('content_hub_connector.entity_config');
-    $entity_types = $this->content_hub_connector_get_entity_types();
-
-    foreach ($entity_types as $type => $bundles) {
-      if ($form_state->hasValue('hubentities_' . $type)) {
-        $config->set('hubentities_' . $type, $form_state->getValue('hubentities_' . $type));
-      }
-      foreach ($bundles as $bundle => $label) {
-        if ($form_state->hasValue('rendering_config_' . $type . '_' . $bundle)) {
-          $config->set('rendering_config_' . $type . '_' . $bundle, $form_state->getValue('rendering_config_' . $type . '_' . $bundle));
-        }
-      }
-    }
-    if ($form_state->hasValue('role')) {
-      $config->set('role', $form_state->getValue('role'));
-    }
-
+    $config->set('entities', $values['entities']);
+    $config->set('user_role', $values['user_role']);
     $config->save();
+
+    parent::submitForm($form, $form_state);
   }
 
   /**
    * Obtains the list of entity types.
    */
-  public function content_hub_connector_get_entity_types() {
+  public function getEntityTypes() {
     $types = $this->entityTypeManager->getDefinitions();
 
     $entity_types = array();
@@ -219,10 +228,8 @@ class EntityConfigSettingsForm extends ConfigFormBase {
           // selected.
           $entity_types[$type][$type] = $entity['label'];
         }
-
       }
     }
     return $entity_types;
   }
-
 }
