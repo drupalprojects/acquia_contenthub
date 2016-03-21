@@ -7,6 +7,9 @@
 
 namespace Drupal\content_hub_connector;
 
+use Drupal\Core\Asset\AssetCollectionRendererInterface;
+use Drupal\Core\Asset\AssetResolverInterface;
+use Drupal\Core\Asset\AttachedAssets;
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityDisplayRepository;
@@ -57,11 +60,14 @@ class ContentEntityViewModesExtractor {
    * @param \Drupal\Core\Render\Renderer $renderer
    *   The renderer.
    */
-  public function __construct(ConfigFactory $config_factory, EntityDisplayRepository $entity_display_repository, EntityTypeManager $entity_type_manager, Renderer $renderer) {
+  public function __construct(ConfigFactory $config_factory, EntityDisplayRepository $entity_display_repository, EntityTypeManager $entity_type_manager, Renderer $renderer, AssetResolverInterface $asset_resolver, AssetCollectionRendererInterface $css_collection_renderer, AssetCollectionRendererInterface $js_collection_renderer) {
     $this->entityConfig = $config_factory->get('content_hub_connector.entity_config');
     $this->entityDisplayRepository = $entity_display_repository;
     $this->entityTypeManager = $entity_type_manager;
     $this->renderer = $renderer;
+    $this->assetResolver = $asset_resolver;
+    $this->cssCollectionRenderer = $css_collection_renderer;
+    $this->jsCollectionRenderer = $js_collection_renderer;
   }
 
   /**
@@ -121,9 +127,10 @@ class ContentEntityViewModesExtractor {
       if (!in_array($view_mode_id, $object_config['rendering'])) {
         continue;
       }
-      $view = $view_builder->view($object, $view_mode_id);
-      // @todo check https://github.com/kylebrowning/services/blob/4cc045c2b977b61d6f676813a6069a02c56d2803/src/Plugin/ServiceDefinition/EntityView.php#L75 for more detailed extraction including assets.
-      $html = $this->renderer->renderPlain($view);
+      $render_array = $view_builder->view($object, $view_mode_id);
+      $html['body'] = $this->renderer->renderRoot($render_array);
+      $all_assets = $this->gatherAssetMarkup($render_array);
+      $html += $this->renderAssets($all_assets);
       $normalized[$view_mode_id] = array(
         'id' => $view_mode_id,
         'label' => $view_mode['label'],
@@ -133,4 +140,43 @@ class ContentEntityViewModesExtractor {
     return $normalized;
   }
 
+  /**
+   * Renders an array of assets.
+   *
+   * @param array $all_assets
+   *   An array of all unrendered assets keyed by type.
+   *
+   * @return array
+   *   An array of all rendered assets keyed by type.
+   */
+  private function renderAssets(array $all_assets) {
+    $renderer_assets = [];
+    foreach ($all_assets as $asset_type => $assets) {
+      $renderer_assets[$asset_type] = [];
+      foreach ($assets as $asset) {
+        $renderer_assets[$asset_type][] = $this->renderer->renderRoot($asset);
+      }
+    }
+    return $renderer_assets;
+  }
+
+  /**
+   * Gathers the markup for each type of asset.
+   *
+   * @param array $render_array
+   *   The render array for the entity.
+   *
+   * @return array
+   *   An array of rendered assets. See self::getRenderedEntity() for the keys.
+   */
+  private function gatherAssetMarkup(array $render_array) {
+    $assets = AttachedAssets::createFromRenderArray($render_array);
+    // Render the asset collections.
+    $css_assets = $this->assetResolver->getCssAssets($assets, FALSE);
+    $all_assets['styles'] = $this->cssCollectionRenderer->render($css_assets);
+    list($js_assets_header, $js_assets_footer) = $this->assetResolver->getJsAssets($assets, FALSE);
+    $all_assets['scripts'] = $this->jsCollectionRenderer->render($js_assets_header);
+    $all_assets['scripts_bottom'] = $this->jsCollectionRenderer->render($js_assets_footer);
+    return $all_assets;
+  }
 }
