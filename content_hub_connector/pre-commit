@@ -1,0 +1,24 @@
+#!/bin/bash
+# PHP CodeSniffer pre-commit hook for git
+
+if [ ! -x content_hub_connector/vendor/bin/phpcs ]; then
+    echo "PHP CodeSniffer bin not found or executable -> $PHPCS_BIN. Please be sure to composer install all dev-dependencies."
+    exit 1
+fi
+
+FILES=$(git diff-index --name-only --cached --diff-filter=ACMR HEAD -- )
+
+if [ "$FILES" == "" ]; then
+    exit 0
+fi
+
+cd content_hub_connector;
+OUTPUT=$(vendor/bin/phpcs)
+
+if [ "$OUTPUT" != "" ]
+then
+  echo "$OUTPUT"
+  exit 1
+fi
+
+exit 0

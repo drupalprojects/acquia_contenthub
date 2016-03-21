@@ -15,5 +15,11 @@
   "require-dev": {
     "squizlabs/php_codesniffer": "~2.0",
     "drupal/coder": "^8.2"
+  },
+  "scripts": {
+    "post-install-cmd": [
+        "@installprecommit"
+    ],
+    "installprecommit": "cp pre-commit ../.git/hooks/pre-commit"
   }
 }
