@@ -53,6 +53,7 @@ class ClientManager implements ClientManagerInterface {
    *   Returns the Content Hub Client
    *
    * @throws \Drupal\content_hub_connector\ContentHubConnectorException
+   *   Throws exception when cannot connect to Content Hub.
    */
   public function getClient($config = array()) {
     // @todo Make sure this injects using proper service injection methods.
