@@ -14,21 +14,13 @@ use Drupal\content_hub_connector\ContentHubConnectorException;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Acquia\ContentHubClient\Entity as ChubEntity;
 use Drupal\Core\Config\ConfigFactory;
+use Drupal\Core\Extension\ModuleHandlerInterface;
 
 /**
  * Converts the Drupal entity object structure to a Acquia Content Hub CDF array
  * structure.
  */
 class ContentEntityNormalizer extends NormalizerBase {
-
-  /**
-   * Static cache for the field type mapping.
-   *
-   * @var array
-   *
-   * @see getFieldTypeMapping()
-   */
-  protected static $fieldTypeMapping = array();
 
   /**
    * The interface or class that this Normalizer supports.
@@ -51,6 +43,13 @@ class ContentEntityNormalizer extends NormalizerBase {
    */
   protected $contentEntityViewModesNormalizer;
 
+  /**
+   * The module handler service to create alter hooks.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
+   */
+  protected $moduleHandler;
+
 
   /**
    * Config Factory.
@@ -66,11 +65,14 @@ class ContentEntityNormalizer extends NormalizerBase {
    *   The content entity view modes normalizer.
    * @param \Drupal\Core\Config\ConfigFactory $config_factory
    *   The config factory.
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_hander
+   *   The module handler to create alter hooks.
    */
-  public function __construct(ConfigFactory $config_factory, ContentEntityViewModesExtractor $content_entity_view_modes_normalizer) {
+  public function __construct(ConfigFactory $config_factory, ContentEntityViewModesExtractor $content_entity_view_modes_normalizer, ModuleHandlerInterface $module_hander) {
     $this->configFactory = $config_factory;
     $this->contentHubAdminConfig = $this->configFactory->get('content_hub_connector.admin_settings');
     $this->contentEntityViewModesNormalizer = $content_entity_view_modes_normalizer;
+    $this->moduleHandler = $module_hander;
   }
 
   /**
@@ -167,7 +169,7 @@ class ContentEntityNormalizer extends NormalizerBase {
 
     // Get our field mapping. This maps drupal field types to Content Hub
     // attribute types.
-    $type_mapping = static::getFieldTypeMapping();
+    $type_mapping = $this->getFieldTypeMapping();
 
     // Ignore the entity ID and revision ID.
     // Excluded comes here.
@@ -269,6 +271,11 @@ class ContentEntityNormalizer extends NormalizerBase {
       $content_hub_entity->setAttribute($name, $attribute);
     }
 
+    // Allow alterations of the CDF to happen.
+    $context['entity'] = $entity;
+    $context['langcode'] = $langcode;
+    $this->moduleHandler->alter('content_hub_connector_cdf', $content_hub_entity, $context);
+
     return $content_hub_entity;
   }
 
@@ -286,6 +293,7 @@ class ContentEntityNormalizer extends NormalizerBase {
 
   /**
    * Retrieves the mapping for known data types to Content Hub's internal types.
+   *
    * Inspired by the getFieldTypeMapping in search_api.
    *
    * Search API uses the complex data format to normalize the data into a
@@ -304,58 +312,54 @@ class ContentEntityNormalizer extends NormalizerBase {
    *
    * @see hook_content_hub_connector_field_type_mapping_alter()
    */
-  public static function getFieldTypeMapping() {
-    // Check the static cache first.
-    if (empty(static::$fieldTypeMapping)) {
-      // It's easier to write and understand this array in the form of
-      // $search_api_field_type => array($data_types) and flip it below.
-      $default_mapping = array(
-        'string' => array(
-          // These are special field names that we do not want to parse as
-          // arrays.
-          'title',
-          'langcode',
-        ),
-        'array<string>' => array(
-          'fallback',
-        ),
-        'array<reference>' => array(
-          'entity_reference',
-        ),
-        'array<integer>' => array(
-          'integer',
-          'timespan',
-          'timestamp',
-        ),
-        'array<number>' => array(
-          'decimal',
-          'float',
-        ),
-        // Types we know about but want/have to ignore.
-        NULL => array(
-          'password',
-          'file',
-          'image',
-        ),
-        'array<boolean>' => array(
-          'boolean',
-        ),
-      );
+  public function getFieldTypeMapping() {
+    $mapping = array();
+    // It's easier to write and understand this array in the form of
+    // $default_mapping => array($data_types) and flip it below.
+    $default_mapping = array(
+      'string' => array(
+        // These are special field names that we do not want to parse as
+        // arrays.
+        'title',
+        'langcode',
+      ),
+      'array<string>' => array(
+        'fallback',
+      ),
+      'array<reference>' => array(
+        'entity_reference',
+      ),
+      'array<integer>' => array(
+        'integer',
+        'timespan',
+        'timestamp',
+      ),
+      'array<number>' => array(
+        'decimal',
+        'float',
+      ),
+      // Types we know about but want/have to ignore.
+      NULL => array(
+        'password',
+        'file',
+        'image',
+      ),
+      'array<boolean>' => array(
+        'boolean',
+      ),
+    );
 
-      foreach ($default_mapping as $content_hub_type => $data_types) {
-        foreach ($data_types as $data_type) {
-          $mapping[$data_type] = $content_hub_type;
-        }
+    foreach ($default_mapping as $content_hub_type => $data_types) {
+      foreach ($data_types as $data_type) {
+        $mapping[$data_type] = $content_hub_type;
       }
-
-      // Allow other modules to intercept and define what default type they want
-      // to use for their data type.
-      \Drupal::moduleHandler()->alter('content_hub_connector_field_type_mapping', $mapping);
-
-      static::$fieldTypeMapping = $mapping;
     }
 
-    return static::$fieldTypeMapping;
+    // Allow other modules to intercept and define what default type they want
+    // to use for their data type.
+    $this->moduleHandler->alter('content_hub_connector_field_type_mapping', $mapping);
+
+    return $mapping;
   }
 
   /**
@@ -379,10 +383,10 @@ class ContentEntityNormalizer extends NormalizerBase {
       // not need to check them again.
       $entity->getEntityType()->getKey('id'),
       $entity->getEntityType()->getKey('revision'),
-      'uuid' => 'uuid',
-      'type' => 'type',
-      'created' => 'created',
-      'changed' => 'changed',
+      'uuid',
+      'type',
+      'created',
+      'changed',
 
       // Getting rid of workflow fields.
       'status',
@@ -390,12 +394,12 @@ class ContentEntityNormalizer extends NormalizerBase {
       'promote',
 
       // Getting rid of identifiers and others.
-      'vid' => 'vid',
-      'nid' => 'nid',
-      'fid' => 'fid',
-      'tid' => 'tid',
-      'uid' => 'uid',
-      'cid' => 'cid',
+      'vid',
+      'nid',
+      'fid',
+      'tid',
+      'uid',
+      'cid',
 
       // Do not send revisions.
       'revision_uid',
@@ -408,9 +412,9 @@ class ContentEntityNormalizer extends NormalizerBase {
       'default_langcode',
 
       // Do not include comments.
-      'comment' => 'comment',
-      'comment_count' => 'comment_count',
-      'comment_count_new' => 'comment_count_new',
+      'comment',
+      'comment_count',
+      'comment_count_new',
     );
 
     $excluded_to_alter = array();
@@ -418,7 +422,7 @@ class ContentEntityNormalizer extends NormalizerBase {
     // Allow users to define more excluded properties.
     // Allow other modules to intercept and define what default type they want
     // to use for their data type.
-    \Drupal::moduleHandler()->alter('content_hub_connector_exclude_fields', $excluded_to_alter);
+    $this->moduleHandler->alter('content_hub_connector_exclude_fields', $excluded_to_alter, $entity);
     $excluded = array_merge($excluded, $excluded_to_alter);
     return $excluded;
   }
