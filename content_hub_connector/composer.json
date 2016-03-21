@@ -18,8 +18,8 @@
   },
   "scripts": {
     "post-install-cmd": [
-        "@installprecommit"
+        "@install-pre-commit"
     ],
-    "installprecommit": "cp pre-commit ../.git/hooks/pre-commit"
+    "install-pre-commit": "if [ -x ../.git/hooks ]; then cp pre-commit ../.git/hooks/pre-commit; fi"
   }
 }

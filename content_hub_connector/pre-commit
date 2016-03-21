@@ -15,8 +15,7 @@ fi
 cd content_hub_connector;
 OUTPUT=$(vendor/bin/phpcs)
 
-if [ "$OUTPUT" != "" ]
-then
+if [ "$OUTPUT" != "" ]; then
   echo "$OUTPUT"
   exit 1
 fi
