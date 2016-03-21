@@ -117,6 +117,7 @@ class EntityConfigSettingsForm extends ConfigFormBase {
         '#type' => 'details',
         '#tree' => TRUE,
         '#description' => "Select the content types that you would like to publish to Content Hub.",
+        '#open' => TRUE,
       );
       $form[$type] += $this->buildEntitiesBundleForm($type, $bundle);
     }
@@ -144,14 +145,14 @@ class EntityConfigSettingsForm extends ConfigFormBase {
       );
       $form[$bundle_id]['enabled'] = [
         '#type' => 'checkbox',
-        '#title' => $this->t('Publish this type ...'),
+        '#title' => $this->t('Publish'),
         '#disabled' => empty($view_modes),
         '#default_value' => empty($view_modes) ? FALSE : $entities[$type][$bundle_id]['enabled'],
         '#description' => empty($view_modes) ? $this->t('is disabled because there is no available view modes.') : NULL,
       ];
 
       $rendering = $entities[$type][$bundle_id]['rendering'];
-      $title = empty($view_modes) ? NULL : $this->t('with selecting the following view mode(s):');
+      $title = empty($view_modes) ? NULL : $this->t('Do you want to include the result of any of the following view mode(s)?');
       $default_value = (empty($view_modes) || empty($rendering)) ? array() : $rendering;
       $form[$bundle_id]['rendering'] = array(
         '#type' => 'select',
@@ -164,7 +165,7 @@ class EntityConfigSettingsForm extends ConfigFormBase {
             ':input[name="entities[' . $type . '][' . $bundle_id . '][enabled]"]' => ['checked' => TRUE],
           ],
         ],
-        '#description' => $this->t('You can hold ctrl (or cmd) key to select multiple view mode(s).'),
+        '#description' => $this->t('You can hold ctrl (or cmd) key to select multiple view mode(s). Including any of these view modes is usually done in combination with Acquia Lift. Please read the documentation for more information.'),
       );
     }
     return $form;

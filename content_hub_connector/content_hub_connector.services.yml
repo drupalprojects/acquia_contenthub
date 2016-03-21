@@ -5,21 +5,21 @@ services:
   content_hub_connector.client_manager:
     class: Drupal\content_hub_connector\Client\ClientManager
     arguments: ['@logger.factory', '@config.factory']
-  serializer.normalizer.entity.content_hub_cdf:
+  content_hub_connector.normalizer.entity.content_hub_cdf:
     class: Drupal\content_hub_connector\Normalizer\ContentEntityNormalizer
-    arguments: ['@content_hub_connector.normalizer.content_entity_view_modes_normalizer', '@logger.factory', '@config.factory']
+    arguments: ['@config.factory', '@content_hub_connector.content_entity_view_modes_extractor', ]
     tags:
       - { name: normalizer, priority: 10 }
-  content_hub_connector.normalizer.content_entity_view_modes_normalizer:
-    class: Drupal\content_hub_connector\Normalizer\ContentEntityViewModesNormalizer
-    arguments: ['@entity.manager', '@renderer', '@config.factory']
+  content_hub_connector.content_entity_view_modes_extractor:
+    class: Drupal\content_hub_connector\ContentEntityViewModesExtractor
+    arguments: ['@config.factory', '@entity_display.repository', '@entity_type.manager', '@renderer']
     tags:
       - { name: normalizer, priority: 10 }
-  serializer.encoder.content_hub_cdf:
+  content_hub_connector.encoder.content_hub_cdf:
     class: Drupal\content_hub_connector\Encoder\JsonEncoder
     tags:
       - { name: encoder, priority: 10, format: content_hub_cdf }
-  exception.default_json:
+  content_hub_connector.exception.default_json:
     class: Drupal\content_hub_connector\EventSubscriber\ExceptionCdfJsonSubscriber
     tags:
       - { name: event_subscriber }

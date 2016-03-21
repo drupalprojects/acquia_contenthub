@@ -9,10 +9,10 @@ namespace Drupal\content_hub_connector\Normalizer;
 
 use Acquia\ContentHubClient\Attribute;
 use Drupal\Component\Render\FormattableMarkup;
+use Drupal\content_hub_connector\ContentEntityViewModesExtractor;
 use Drupal\content_hub_connector\ContentHubConnectorException;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Acquia\ContentHubClient\Entity as ChubEntity;
-use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\Core\Config\ConfigFactory;
 
 /**
@@ -47,16 +47,10 @@ class ContentEntityNormalizer extends NormalizerBase {
   /**
    * The content entity view modes normalizer.
    *
-   * @var \Drupal\content_hub_connector\Normalizer\ContentEntityViewModesNormalizer
+   * @var \Drupal\content_hub_connector\ContentEntityViewModesExtractor
    */
   protected $contentEntityViewModesNormalizer;
 
-  /**
-   * Logger.
-   *
-   * @var \Drupal\Core\Logger\LoggerChannelFactory
-   */
-  protected $loggerFactory;
 
   /**
    * Config Factory.
@@ -68,36 +62,39 @@ class ContentEntityNormalizer extends NormalizerBase {
   /**
    * Constructs an ContentEntityNormalizer object.
    *
-   * @param \Drupal\content_hub_connector\Normalizer\ContentEntityViewModesNormalizer $content_entity_view_modes_normalizer
+   * @param \Drupal\content_hub_connector\ContentEntityViewModesExtractor $content_entity_view_modes_normalizer
    *   The content entity view modes normalizer.
-   * @param \Drupal\Core\Logger\LoggerChannelFactory $logger_factory
-   *   The logger factory.
    * @param \Drupal\Core\Config\ConfigFactory $config_factory
    *   The config factory.
    */
-  public function __construct(ContentEntityViewModesNormalizer $content_entity_view_modes_normalizer, LoggerChannelFactory $logger_factory, ConfigFactory $config_factory) {
-    $this->contentEntityViewModesNormalizer = $content_entity_view_modes_normalizer;
-    $this->loggerFactory = $logger_factory;
+  public function __construct(ConfigFactory $config_factory, ContentEntityViewModesExtractor $content_entity_view_modes_normalizer) {
     $this->configFactory = $config_factory;
     $this->contentHubAdminConfig = $this->configFactory->get('content_hub_connector.admin_settings');
+    $this->contentEntityViewModesNormalizer = $content_entity_view_modes_normalizer;
   }
 
   /**
-   * {@inheritdoc}
+   * Normalizes an object into a set of arrays/scalars.
+   *
+   * @param \Drupal\Core\Entity\ContentEntityInterface $entity
+   *   Object to normalize. Due to the constraints of the class, we know that
+   *   the object will be of the ContentEntityInterface type.
+   * @param string $format
+   *   format the normalization result will be encoded as
+   * @param array  $context
+   *   Context options for the normalizer
+   *
+   * @return array|string|bool|int|float|null
    */
-  public function normalize($object, $format = NULL, array $context = array()) {
+  public function normalize($entity, $format = NULL, array $context = array()) {
     $context += array(
       'account' => NULL,
     );
 
-    // Make sure it's a content entity. Maybe this check is not necessary but
-    // to be sure we execute it anyway.
-    if (false === $object instanceof \Drupal\Core\Entity\ContentEntityInterface) {
-      return FALSE;
+    // Exit if the class does not support normalizing to the given format.
+    if (!$this->supportsNormalization($entity, $format)) {
+      return NULL;
     }
-
-    /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
-    $entity = $object;
 
     // Set our required CDF properties.
     $entity_type_id = $context['entity_type'] = $entity->getEntityTypeId();
@@ -113,10 +110,11 @@ class ContentEntityNormalizer extends NormalizerBase {
       ->setType($entity_type_id)
       ->setOrigin($origin)
       ->setCreated($created)
-      ->setModified($modified)
-      ->setMetadata(array(
-        'view_modes' => $this->contentEntityViewModesNormalizer->normalize($entity, $format),
-      ));
+      ->setModified($modified);
+
+    if ($view_modes = $this->contentEntityViewModesNormalizer->getRenderedViewModes($entity)) {
+      $content_hub_entity->setMetadata(array('view_modes' => $view_modes));
+    }
 
     // We have to iterate over the entity translations and add all the
     // translations versions.
@@ -211,7 +209,14 @@ class ContentEntityNormalizer extends NormalizerBase {
 
         /** @var \Drupal\Core\Field\EntityReferenceFieldItemList $referenced_entities */
         $referenced_entities = $field->referencedEntities();
+        /*
+         * @todo Should we check the class type here?
+         * I think we need to make sure it is also an entity that we support?
+         * The return value could be anything that is compatible with TypedData.
+         */
         foreach ($referenced_entities as $referenced_entity) {
+
+
           // Special case for type as we do not want the reference for the
           // bundle.
           if ($name === 'type') {
@@ -249,6 +254,7 @@ class ContentEntityNormalizer extends NormalizerBase {
         $attribute->setValues($values);
       }
       else {
+        $value = array_pop($values[$langcode]);
         $attribute->setValue($value, $langcode);
       }
 
@@ -421,10 +427,14 @@ class ContentEntityNormalizer extends NormalizerBase {
   /**
    * Denormalizes data back into an object of the given class.
    *
-   * @param mixed $data data to restore
-   * @param string $class the expected class to instantiate
-   * @param string $format format the given data was extracted from
-   * @param array $context options available to the denormalizer
+   * @param mixed $data
+   *   Data to restore.
+   * @param string $class
+   *   The expected class to instantiate.
+   * @param string $format
+   *   Format the given data was extracted from.
+   * @param array $context
+   *   Options available to the denormalizer.
    *
    * @return object
    */
