@@ -8,6 +8,7 @@
 namespace Drupal\content_hub_connector;
 
 use Drupal\Core\Config\ConfigFactory;
+use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityDisplayRepository;
 use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Render\Renderer;
@@ -64,13 +65,13 @@ class ContentEntityViewModesExtractor {
   }
 
   /**
-   * Checks whether the given class is supported for normalization by this
-   * normalizer.
+   * Checks whether the given class is supported for normalization.
    *
    * @param mixed $data
    *   Data to normalize.
    *
    * @return bool
+   *   TRUE if is child of supported class.
    */
   public function isChildOfSupportedClass($data) {
     // If we aren't dealing with an object that is not supported return
@@ -97,7 +98,7 @@ class ContentEntityViewModesExtractor {
    *   Returns the extracted view modes or null if the given object is not
    *   supported or if it was not configured in the Content Hub settings.
    */
-  public function getRenderedViewModes($object) {
+  public function getRenderedViewModes(ContentEntityInterface $object) {
     $normalized = array();
 
     // Exit if the class does not support normalizing to the given format.

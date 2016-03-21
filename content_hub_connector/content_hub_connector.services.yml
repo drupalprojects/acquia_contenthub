@@ -13,8 +13,6 @@ services:
   content_hub_connector.content_entity_view_modes_extractor:
     class: Drupal\content_hub_connector\ContentEntityViewModesExtractor
     arguments: ['@config.factory', '@entity_display.repository', '@entity_type.manager', '@renderer']
-    tags:
-      - { name: normalizer, priority: 10 }
   content_hub_connector.encoder.content_hub_cdf:
     class: Drupal\content_hub_connector\Encoder\JsonEncoder
     tags:
