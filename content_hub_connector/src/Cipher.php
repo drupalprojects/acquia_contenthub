@@ -81,4 +81,5 @@ class Cipher implements CipherInterface {
   public function decrypt($data) {
     return $this->isPlainText ? $data : $this->cipher->decrypt($data);
   }
+
 }

@@ -12,7 +12,7 @@ namespace Drupal\content_hub_connector\Client;
 interface ClientManagerInterface {
 
   /**
-   * Gets a Content Hub Client Object
+   * Gets a Content Hub Client Object.
    *
    * @param array $config
    *   Configuration array.
@@ -21,4 +21,5 @@ interface ClientManagerInterface {
    *   Returns the Content Hub Client
    */
   public function getClient();
+
 }

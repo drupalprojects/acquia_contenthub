@@ -86,8 +86,6 @@ class EntityManager {
    *   The action to execute for bulk upload: 'INSERT' or 'UPDATE'.
    * @param EntityInterface $entity
    *   The Content Hub Entity.
-   *
-   *
    */
   public function entityActionSend(EntityInterface $entity, $action) {
     /** @var \Drupal\content_hub_connector\Client\ClientManagerInterface $client_manager */
@@ -217,4 +215,5 @@ class EntityManager {
     }
     return TRUE;
   }
+
 }

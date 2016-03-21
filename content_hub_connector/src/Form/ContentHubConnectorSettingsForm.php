@@ -201,7 +201,7 @@ class ContentHubConnectorSettingsForm extends ConfigFormBase {
     // Content Hub does not support a new registration when we already have a
     // client_name.
     if ($config->get('client_name')) {
-      //return;
+      // return;.
     }
 
     // Get the client name.

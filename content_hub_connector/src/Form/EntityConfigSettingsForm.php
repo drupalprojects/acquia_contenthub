@@ -127,8 +127,11 @@ class EntityConfigSettingsForm extends ConfigFormBase {
   /**
    * Build entities bundle form.
    *
-   * @param array $type Type
-   * @param array $bundle Bundle
+   * @param array $type
+   *   Type
+   * @param array $bundle
+   *   Bundle
+   *
    * @return array
    *   Entities bundle form.
    */
@@ -233,4 +236,5 @@ class EntityConfigSettingsForm extends ConfigFormBase {
     }
     return $entity_types;
   }
+
 }

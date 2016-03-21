@@ -34,6 +34,7 @@ class ClientManager implements ClientManagerInterface {
 
   /**
    * ClientManager constructor.
+   *
    * @param \Drupal\Core\Logger\LoggerChannelFactory $logger_factory
    * @param \Drupal\Core\Config\ConfigFactory $config_factory
    */
@@ -62,7 +63,7 @@ class ClientManager implements ClientManagerInterface {
       'base_url' => $config_drupal->get('hostname'),
     ), $config);
 
-    // Get API information
+    // Get API information.
     $api = $config_drupal->get('api_key');
     $origin = $config_drupal->get('origin');
     $encryption = (bool) $config_drupal->get('encryption_key_file');
@@ -98,6 +99,5 @@ class ClientManager implements ClientManagerInterface {
     $cipher = new Cipher($filepath);
     return $cipher;
   }
-
 
 }

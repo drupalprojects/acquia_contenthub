@@ -81,7 +81,8 @@ class ContentEntityNormalizer extends NormalizerBase {
    *   the object will be of the ContentEntityInterface type.
    * @param string $format
    *   format the normalization result will be encoded as
-   * @param array  $context
+   * @param array $contextContext
+   *   options for the normalizer
    *   Context options for the normalizer
    *
    * @return array|string|bool|int|float|null
@@ -216,7 +217,6 @@ class ContentEntityNormalizer extends NormalizerBase {
          */
         foreach ($referenced_entities as $referenced_entity) {
 
-
           // Special case for type as we do not want the reference for the
           // bundle.
           if ($name === 'type') {
@@ -273,11 +273,10 @@ class ContentEntityNormalizer extends NormalizerBase {
   }
 
   /**
-   * Append to existing values of Content Hub Attribute
+   * Append to existing values of Content Hub Attribute.
    *
    * @param \Acquia\ContentHubClient\Attribute $attribute
    * @param array $values
-   *
    */
   public function appendToAttribute(Attribute $attribute, $values) {
     $old_values = $attribute->getValues();
@@ -441,4 +440,5 @@ class ContentEntityNormalizer extends NormalizerBase {
   public function denormalize($data, $class, $format = NULL, array $context = array()) {
     // TODO: Implement denormalize() method.
   }
+
 }

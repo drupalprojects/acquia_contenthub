@@ -141,7 +141,7 @@ function drush_content_hub_connector_content_hub_local($entity_type, $entity_id)
   $entity_type_manager = \Drupal::entityTypeManager();
 
   /** @var \Symfony\Component\Serializer\Serializer $serializer */
-  $serializer =  \Drupal::service('serializer');
+  $serializer = \Drupal::service('serializer');
 
   /** @var \Drupal\Core\Entity\EntityRepository $entity_repository */
   $entity_repository = \Drupal::service('entity.repository');
@@ -228,7 +228,7 @@ function drush_content_hub_connector_content_hub_compare($entity_type, $uuid) {
   }
 
   /** @var \Symfony\Component\Serializer\Serializer $serializer */
-  $serializer =  \Drupal::service('serializer');
+  $serializer = \Drupal::service('serializer');
 
   /** @var \Drupal\Core\Entity\EntityRepository $entity_repository */
   $entity_repository = \Drupal::service('entity.repository');
@@ -237,14 +237,14 @@ function drush_content_hub_connector_content_hub_compare($entity_type, $uuid) {
   $client_manager = \Drupal::service('content_hub_connector.client_manager');
   $client = $client_manager->getClient();
 
-  // Get our local CDF version
+  // Get our local CDF version.
   $local_entity = $entity_repository->loadEntityByUuid($entity_type, $uuid);
   $local_cdf = $serializer->normalize($local_entity, 'content_hub_cdf');
   if (!$local_cdf) {
     $local_cdf = array();
   }
 
-  // Get the Remote CDF version
+  // Get the Remote CDF version.
   $remote_cdf = $client->readEntity($uuid);
   if (!$remote_cdf) {
     $remote_cdf = array();

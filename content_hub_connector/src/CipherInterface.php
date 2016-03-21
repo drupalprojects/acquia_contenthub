@@ -3,6 +3,7 @@
  * @file
  * Contains \Drupal\content_hub_connector\CipherInterface.
  */
+
 namespace Drupal\content_hub_connector;
 
 /**
@@ -39,4 +40,5 @@ interface CipherInterface {
    *   Decrypted data, if it can be decrypted, FALSE otherwise.
    */
   public function decrypt($data);
+
 }
