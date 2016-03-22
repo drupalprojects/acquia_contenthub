@@ -115,8 +115,12 @@ class ContentEntityNormalizer extends NormalizerBase {
       ->setCreated($created)
       ->setModified($modified);
 
+    global $base_root;
     if ($view_modes = $this->contentEntityViewModesNormalizer->getRenderedViewModes($entity)) {
-      $content_hub_entity->setMetadata(array('view_modes' => $view_modes));
+      $content_hub_entity->setMetadata(array(
+        'base_root' => $base_root,
+        'view_modes' => $view_modes,
+      ));
     }
 
     // We have to iterate over the entity translations and add all the
