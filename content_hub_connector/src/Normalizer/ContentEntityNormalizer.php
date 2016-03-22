@@ -21,6 +21,13 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 class ContentEntityNormalizer extends NormalizerBase {
 
   /**
+   * Base root
+   *
+   * @var string
+   */
+  protected $baseRoot;
+
+  /**
    * The interface or class that this Normalizer supports.
    *
    * @var string
@@ -48,7 +55,6 @@ class ContentEntityNormalizer extends NormalizerBase {
    */
   protected $moduleHandler;
 
-
   /**
    * Config Factory.
    *
@@ -67,6 +73,8 @@ class ContentEntityNormalizer extends NormalizerBase {
    *   The module handler to create alter hooks.
    */
   public function __construct(ConfigFactory $config_factory, ContentEntityViewModesExtractor $content_entity_view_modes_normalizer, ModuleHandlerInterface $module_hander) {
+    global $base_root;
+    $this->baseRoot = $base_root;
     $this->configFactory = $config_factory;
     $this->contentHubAdminConfig = $this->configFactory->get('content_hub_connector.admin_settings');
     $this->contentEntityViewModesNormalizer = $content_entity_view_modes_normalizer;
@@ -113,10 +121,9 @@ class ContentEntityNormalizer extends NormalizerBase {
       ->setCreated($created)
       ->setModified($modified);
 
-    global $base_root;
     if ($view_modes = $this->contentEntityViewModesNormalizer->getRenderedViewModes($entity)) {
       $content_hub_entity->setMetadata(array(
-        'base_root' => $base_root,
+        'base_root' => $this->baseRoot,
         'view_modes' => $view_modes,
       ));
     }
