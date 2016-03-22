@@ -16,8 +16,7 @@ use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 
 /**
- * Converts the Drupal entity object structure to a Acquia Content Hub CDF array
- * structure.
+ * Converts the Drupal entity object to a Acquia Content Hub CDF array.
  */
 class ContentEntityNormalizer extends NormalizerBase {
 
@@ -60,10 +59,10 @@ class ContentEntityNormalizer extends NormalizerBase {
   /**
    * Constructs an ContentEntityNormalizer object.
    *
-   * @param \Drupal\content_hub_connector\Normalizer\ContentEntityViewModesExtractor $content_entity_view_modes_normalizer
-   *   The content entity view modes normalizer.
    * @param \Drupal\Core\Config\ConfigFactory $config_factory
    *   The config factory.
+   * @param \Drupal\content_hub_connector\Normalizer\ContentEntityViewModesExtractor $content_entity_view_modes_normalizer
+   *   The content entity view modes normalizer.
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_hander
    *   The module handler to create alter hooks.
    */
@@ -77,16 +76,16 @@ class ContentEntityNormalizer extends NormalizerBase {
   /**
    * Normalizes an object into a set of arrays/scalars.
    *
-   * @param \Drupal\Core\Entity\ContentEntityInterface $entity
+   * @param object $entity
    *   Object to normalize. Due to the constraints of the class, we know that
    *   the object will be of the ContentEntityInterface type.
    * @param string $format
-   *   format the normalization result will be encoded as
-   * @param array $contextContext
-   *   options for the normalizer
-   *   Context options for the normalizer
+   *   The format that the normalization result will be encoded as.
+   * @param array $context
+   *   Context options for the normalizer.
    *
    * @return array|string|bool|int|float|null
+   *   Return normalized data.
    */
   public function normalize($entity, $format = NULL, array $context = array()) {
     $context += array(
@@ -141,7 +140,6 @@ class ContentEntityNormalizer extends NormalizerBase {
     return $normalized;
   }
 
-
   /**
    * Get fields from given entity.
    *
@@ -150,13 +148,10 @@ class ContentEntityNormalizer extends NormalizerBase {
    *
    * @param \Acquia\ContentHubClient\Entity $content_hub_entity
    *   The Content Hub Entity that will contain all the Drupal entity fields.
-   *
    * @param \Drupal\Core\Entity\ContentEntityInterface $entity
-   *   The Drupal Entity
-   *
+   *   The Drupal Entity.
    * @param string $langcode
-   *   The language that we are parsing
-   *
+   *   The language that we are parsing.
    * @param array $context
    *   Additional Context such as the account.
    *
@@ -286,7 +281,9 @@ class ContentEntityNormalizer extends NormalizerBase {
    * Append to existing values of Content Hub Attribute.
    *
    * @param \Acquia\ContentHubClient\Attribute $attribute
+   *   The attribute.
    * @param array $values
+   *   The attribute's values.
    */
   public function appendToAttribute(Attribute $attribute, $values) {
     $old_values = $attribute->getValues();
@@ -376,6 +373,7 @@ class ContentEntityNormalizer extends NormalizerBase {
    * (We will need to verify this claim!)
    *
    * @param \Drupal\Core\Entity\ContentEntityInterface $entity
+   *   The content entity.
    *
    * @return array
    *   An array of excluded properties.
@@ -441,8 +439,6 @@ class ContentEntityNormalizer extends NormalizerBase {
    *   Format the given data was extracted from.
    * @param array $context
    *   Options available to the denormalizer.
-   *
-   * @return object
    */
   public function denormalize($data, $class, $format = NULL, array $context = array()) {
     // TODO: Implement denormalize() method.
