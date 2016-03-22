@@ -37,7 +37,7 @@ abstract class WebTestBase extends SimpletestWebTestBase {
    */
   protected $adminUserPermissions = array(
     'administer content hub',
-    'access administration pages'
+    'access administration pages',
   );
 
   /**
