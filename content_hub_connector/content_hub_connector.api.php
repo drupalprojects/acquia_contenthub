@@ -37,8 +37,7 @@ function hook_content_hub_connector_exclude_field_alter(array &$excluded_fields,
 }
 
 /**
- * Alter the field type mapping that maps Drupal field types to Acquia Content
- * Hub types.
+ * Alter the field type mapping that maps field types to Content Hub types.
  *
  * Modules may implement this hook to alter the field type mapping. This is used
  * to tell Acquia Content Hub which Drupal field type maps to which data type
@@ -47,20 +46,16 @@ function hook_content_hub_connector_exclude_field_alter(array &$excluded_fields,
  *
  * Be careful with altering existing field types as it could severely damage the
  * content in your Acquia Content Hub account.
- *g
+ *
  * @param array $mapping
- *   The mapping of field types to their Content Hub Types
- *
- *    Example:
- *
- *    $mapping = array(
- *      'entity_reference => 'array<reference>',
- *      'integer' => 'array<integer>',
- *      'timespan' => 'array<integer>',
- *      'timestamp' => 'array<integer>',
- *      ...
- *    );
- *
+ *   The mapping of field types to their Content Hub Types. Example:
+ *   $mapping = array(
+ *     'entity_reference => 'array<reference>',
+ *     'integer' => 'array<integer>',
+ *     'timespan' => 'array<integer>',
+ *     'timestamp' => 'array<integer>',
+ *     ...
+ *   );
  *   Available Content Hub Types, all are also available as multiple.
  *   - integer
  *   - string
@@ -68,12 +63,12 @@ function hook_content_hub_connector_exclude_field_alter(array &$excluded_fields,
  *   - reference
  *   - number.
  *
- *
  * @see \Drupal\content_hub_connector\Normalizer\ContentEntityNormalizer
  */
 function hook_content_hub_connector_field_type_mapping_alter(array &$mapping) {
   $mapping['my_custom_field'] = 'array<string>';
 }
+
 
 /**
  * Alter the excluded field types and names that get converted into a CDF.
@@ -82,7 +77,6 @@ function hook_content_hub_connector_field_type_mapping_alter(array &$mapping) {
  *
  * @param \Acquia\ContentHubClient\Entity $content_hub_entity
  *   The Acquia Content Hub entity.
- *
  * @param array $context
  *   Array consists out of at least 3 keys:
  *
