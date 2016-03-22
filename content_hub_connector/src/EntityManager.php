@@ -20,6 +20,13 @@ use Drupal\Core\Config\ConfigFactory;
 class EntityManager {
 
   /**
+   * Base root
+   *
+   * @var string
+   */
+  protected $baseRoot;
+
+  /**
    * Logger.
    *
    * @var \Drupal\Core\Logger\LoggerChannelFactory
@@ -52,6 +59,8 @@ class EntityManager {
    *    The client manager.
    */
   public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager) {
+    global $base_root;
+    $this->baseRoot = $base_root;
     $this->loggerFactory = $logger_factory;
     $this->configFactory = $config_factory;
     $this->clientManager = $client_manager;
@@ -194,8 +203,7 @@ class EntityManager {
       $url = Url::fromUri($rewrite_localdomain . '/' . $path);
     }
     else {
-      global $base_root;
-      $url = Url::fromUri($base_root . '/' . $path);
+      $url = Url::fromUri($this->baseRoot . '/' . $path);
     }
     return $url->toUriString();
   }
