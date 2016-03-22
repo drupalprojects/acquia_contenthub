@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\content_hub_connector\ContentEntityViewModesExtractor.
+ * Contains \Drupal\content_hub_connector\Normalizer\ContentEntityViewModesExtractor.
  */
 
-namespace Drupal\content_hub_connector;
+namespace Drupal\content_hub_connector\Normalizer;
 
 use Drupal\Core\Asset\AssetCollectionRendererInterface;
 use Drupal\Core\Asset\AssetResolverInterface;
@@ -179,4 +179,5 @@ class ContentEntityViewModesExtractor {
     $all_assets['scripts_bottom'] = $this->jsCollectionRenderer->render($js_assets_footer);
     return $all_assets;
   }
+
 }

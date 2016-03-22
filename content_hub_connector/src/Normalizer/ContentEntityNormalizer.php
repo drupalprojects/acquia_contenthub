@@ -9,7 +9,6 @@ namespace Drupal\content_hub_connector\Normalizer;
 
 use Acquia\ContentHubClient\Attribute;
 use Drupal\Component\Render\FormattableMarkup;
-use Drupal\content_hub_connector\ContentEntityViewModesExtractor;
 use Drupal\content_hub_connector\ContentHubConnectorException;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Acquia\ContentHubClient\Entity as ChubEntity;
@@ -39,7 +38,7 @@ class ContentEntityNormalizer extends NormalizerBase {
   /**
    * The content entity view modes normalizer.
    *
-   * @var \Drupal\content_hub_connector\ContentEntityViewModesExtractor
+   * @var \Drupal\content_hub_connector\Normalizer\ContentEntityViewModesExtractor
    */
   protected $contentEntityViewModesNormalizer;
 
@@ -61,7 +60,7 @@ class ContentEntityNormalizer extends NormalizerBase {
   /**
    * Constructs an ContentEntityNormalizer object.
    *
-   * @param \Drupal\content_hub_connector\ContentEntityViewModesExtractor $content_entity_view_modes_normalizer
+   * @param \Drupal\content_hub_connector\Normalizer\ContentEntityViewModesExtractor $content_entity_view_modes_normalizer
    *   The content entity view modes normalizer.
    * @param \Drupal\Core\Config\ConfigFactory $config_factory
    *   The config factory.
