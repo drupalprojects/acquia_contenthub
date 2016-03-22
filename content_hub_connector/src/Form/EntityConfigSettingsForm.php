@@ -53,8 +53,10 @@ class EntityConfigSettingsForm extends ConfigFormBase {
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity manager.
-   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
-   *   The entity manager.
+   * @param \Drupal\Core\Entity\EntityTypeBundleInfoInterface $entity_type_bundle_info_manager
+   *   The entity bundle info interface.
+   * @param \Drupal\Core\Entity\EntityDisplayRepository $entity_display_repository
+   *   The entity display repository.
    */
   public function __construct(EntityTypeManagerInterface $entity_type_manager, EntityTypeBundleInfoInterface $entity_type_bundle_info_manager, EntityDisplayRepository $entity_display_repository) {
     $this->entityTypeManager = $entity_type_manager;
@@ -128,9 +130,9 @@ class EntityConfigSettingsForm extends ConfigFormBase {
    * Build entities bundle form.
    *
    * @param array $type
-   *   Type
+   *   Type.
    * @param array $bundle
-   *   Bundle
+   *   Bundle.
    *
    * @return array
    *   Entities bundle form.
