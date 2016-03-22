@@ -45,6 +45,7 @@ class ContentHubConnectorSettingsForm extends ConfigFormBase {
    * ContentHubConnectorSettingsForm constructor.
    *
    * @param \Drupal\content_hub_connector\Client\ClientManager $client_manager
+   *   The client manager.
    */
   public function __construct(ClientManager $client_manager) {
     $this->clientManager = $client_manager;
@@ -59,7 +60,7 @@ class ContentHubConnectorSettingsForm extends ConfigFormBase {
   }
 
   /**
-   *
+   * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = \Drupal::config('content_hub_connector.admin_settings');
