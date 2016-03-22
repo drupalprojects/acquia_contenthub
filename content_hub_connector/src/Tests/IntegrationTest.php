@@ -52,7 +52,7 @@ class IntegrationTest extends WebTestBase {
   }
 
   /**
-   * Create some basic sample content so that we can later verify if the CDF
+   * Create some basic sample content so that we can later verify if the CDF.
    */
   public function createSampleContent() {
     // Add two articles and a page.
@@ -109,4 +109,5 @@ class IntegrationTest extends WebTestBase {
     $this->drupalGet('admin/config/services/content-hub/configuration');
     $this->assertResponse(200);
   }
+
 }

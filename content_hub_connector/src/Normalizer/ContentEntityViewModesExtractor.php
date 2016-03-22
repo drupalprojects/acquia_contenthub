@@ -15,6 +15,8 @@ use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityDisplayRepository;
 use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Render\Renderer;
+use Drupal\Core\Session\AccountProxyInterface;
+use Drupal\Core\Session\UserSession;
 
 /**
  * Extracts the rendered view modes from a given ContentEntity Object.
@@ -26,6 +28,13 @@ class ContentEntityViewModesExtractor {
    * @var string
    */
   protected $supportedInterfaceOrClass = 'Drupal\Core\Entity\ContentEntityInterface';
+
+  /**
+   * The current_user service used by this plugin.
+   *
+   * @var \Drupal\Core\Session\AccountProxyInterface
+   */
+  protected $currentUser;
 
   /**
    * The entity manager.
@@ -51,6 +60,8 @@ class ContentEntityViewModesExtractor {
   /**
    * Constructs a ContentEntityViewModesExtractor object.
    *
+   * @param \Drupal\Core\Session\AccountProxyInterface $current_user
+   *   The current session user.
    * @param \Drupal\Core\Config\ConfigFactory $config_factory
    *   The config factory.
    * @param \Drupal\Core\Entity\EntityDisplayRepository $entity_display_repository
@@ -60,7 +71,8 @@ class ContentEntityViewModesExtractor {
    * @param \Drupal\Core\Render\Renderer $renderer
    *   The renderer.
    */
-  public function __construct(ConfigFactory $config_factory, EntityDisplayRepository $entity_display_repository, EntityTypeManager $entity_type_manager, Renderer $renderer, AssetResolverInterface $asset_resolver, AssetCollectionRendererInterface $css_collection_renderer, AssetCollectionRendererInterface $js_collection_renderer) {
+  public function __construct(AccountProxyInterface $current_user, ConfigFactory $config_factory, EntityDisplayRepository $entity_display_repository, EntityTypeManager $entity_type_manager, Renderer $renderer, AssetResolverInterface $asset_resolver, AssetCollectionRendererInterface $css_collection_renderer, AssetCollectionRendererInterface $js_collection_renderer) {
+    $this->currentUser = $current_user;
     $this->entityConfig = $config_factory->get('content_hub_connector.entity_config');
     $this->entityDisplayRepository = $entity_display_repository;
     $this->entityTypeManager = $entity_type_manager;
@@ -125,6 +137,12 @@ class ContentEntityViewModesExtractor {
     // Normalize.
     $view_modes = $this->entityDisplayRepository->getViewModes($entity_type_id);
     $view_builder = $this->entityTypeManager->getViewBuilder($entity_type_id);
+
+    // Switch to temporary user for rendering as configured role.
+    $original_account = $this->currentUser->getAccount();
+    $user_role = $this->entityConfig->get('user_role');
+    $this->currentUser->setAccount(new UserSession(array('roles' => array($user_role))));
+
     foreach ($view_modes as $view_mode_id => $view_mode) {
       if (!in_array($view_mode_id, $object_config['rendering'])) {
         continue;
@@ -135,6 +153,7 @@ class ContentEntityViewModesExtractor {
       // cache.
       $this->renderer->addCacheableDependency($render_array, $this->entityConfig);
 
+      $html = [];
       $html['body'] = $this->renderer->renderRoot($render_array);
       $all_assets = $this->gatherAssetMarkup($render_array);
       $html += $this->renderAssets($all_assets);
@@ -144,6 +163,10 @@ class ContentEntityViewModesExtractor {
         'html' => $html,
       );
     }
+
+    // Switch back to original user.
+    $this->currentUser->setAccount($original_account);
+
     return $normalized;
   }
 

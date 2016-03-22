@@ -12,7 +12,7 @@ services:
       - { name: normalizer, priority: 10 }
   content_hub_connector.normalizer.content_entity_view_modes_extractor:
     class: Drupal\content_hub_connector\Normalizer\ContentEntityViewModesExtractor
-    arguments: ['@config.factory', '@entity_display.repository', '@entity_type.manager', '@renderer', '@asset.resolver', '@asset.css.collection_renderer', '@asset.js.collection_renderer']
+    arguments: ['@current_user', '@config.factory', '@entity_display.repository', '@entity_type.manager', '@renderer', '@asset.resolver', '@asset.css.collection_renderer', '@asset.js.collection_renderer']
   content_hub_connector.encoder.content_hub_cdf:
     class: Drupal\content_hub_connector\Encoder\JsonEncoder
     tags:
