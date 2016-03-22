@@ -64,14 +64,14 @@ class ContentHubConnectorSettingsForm extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = \Drupal::config('content_hub_connector.admin_settings');
-    $form['conn_settings'] = array(
+    $form['settings'] = array(
       '#type' => 'fieldset',
       '#title' => t('Connection Settings'),
       '#collapsible' => TRUE,
       '#description' => t('Settings for connection to Content Hub'),
     );
 
-    $form['conn_settings']['hostname'] = array(
+    $form['settings']['hostname'] = array(
       '#type' => 'textfield',
       '#title' => t('Content Hub Connector Hostname'),
       '#description' => t('The hostname of the content hub connector api, e.g. http://localhost:5000'),
@@ -79,20 +79,20 @@ class ContentHubConnectorSettingsForm extends ConfigFormBase {
       '#required' => TRUE,
     );
 
-    $form['conn_settings']['api_key'] = array(
+    $form['settings']['api_key'] = array(
       '#type' => 'textfield',
       '#title' => t('API Key'),
       '#default_value' => $config->get('api_key'),
       '#required' => TRUE,
     );
 
-    $form['conn_settings']['secret_key'] = array(
+    $form['settings']['secret_key'] = array(
       '#type' => 'password',
       '#title' => t('Secret Key'),
       '#default_value' => $config->get('secret_key'),
     );
 
-    $form['conn_settings']['rewrite_domain'] = array(
+    $form['settings']['rewrite_domain'] = array(
       '#type' => 'url',
       '#title' => t('Rewrite domain before sending to Content Hub.'),
       '#description' => t('Useful when working with a site behind a proxy such as ngrok. Will transform the URL to what you add in here so that Acquia Content Hub knows where to fetch the resource. Eg.: localhost:80/node/1 becomes myexternalsite.someproxy.com/node/1'),
@@ -103,7 +103,7 @@ class ContentHubConnectorSettingsForm extends ConfigFormBase {
     $client_name = $config->get('client_name');
     $readonly = empty($client_name) ? [] : ['readonly' => TRUE];
 
-    $form['conn_settings']['client_name'] = array(
+    $form['settings']['client_name'] = array(
       '#type' => 'textfield',
       '#title' => t('Client Name'),
       '#default_value' => $client_name,
@@ -112,7 +112,7 @@ class ContentHubConnectorSettingsForm extends ConfigFormBase {
       '#attributes' => $readonly,
     );
 
-    $form['conn_settings']['origin'] = array(
+    $form['settings']['origin'] = array(
       '#type' => 'item',
       '#title' => t("Site's Origin UUID"),
       '#markup' => $config->get('origin'),
@@ -194,10 +194,7 @@ class ContentHubConnectorSettingsForm extends ConfigFormBase {
     $origin = $config->get('origin');
     $client = new ContentHubClient\ContentHub($api, $decrypted_secret, $origin, ['base_url' => $hostname]);
 
-    // We are always able to change these variables.
-    $config->set('hostname', $hostname);
-    $config->set('api_key', $api);
-    $config->set('secret_key', $encrypted_secret);
+    // Store what's we have set so far before registering.
     $config->save();
 
     // Content Hub does not support a new registration when we already have a

@@ -1,0 +1,102 @@
+<?php
+
+/**
+ * @file
+ * Contains \Drupal\search_api\Tests\IntegrationTest.
+ */
+
+namespace Drupal\content_hub_connector\Tests;
+
+/**
+ * Tests the overall functionality of the Content Hub Connector module.
+ *
+ * @group content_hub_connector
+ */
+class IntegrationTest extends WebTestBase {
+
+  /**
+   * @var \Drupal\node\NodeInterface $article
+   *
+   * The sample article we generate
+   */
+  protected $article;
+
+  /**
+   * @var \Drupal\node\NodeInterface $article
+   *
+   * The sample page we generate
+   */
+  protected $page;
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setUp() {
+    parent::setUp();
+  }
+
+  /**
+   * Tests various operations via the Content Hub's Connector admin UI.
+   */
+  public function testFramework() {
+    $this->drupalLogin($this->adminUser);
+
+    $this->createSampleContent();
+
+    $this->configureContentHubContentTypes('node', array('article'));
+    $this->checkCdfOutput('node', 'article');
+
+    $this->enableViewModeFor('node', 'article', 'teaser');
+    $this->checkCdfOutput('node', 'article', 'teaser');
+  }
+
+  /**
+   * Create some basic sample content so that we can later verify if the CDF
+   */
+  public function createSampleContent() {
+    // Add two articles and a page.
+    $this->article = $this->drupalCreateNode(array('type' => 'article'));
+    $this->page = $this->drupalCreateNode(array('type' => 'page'));
+  }
+
+  /**
+   * @param string $entity_type
+   * @param array $bundles
+   */
+  public function configureContentHubContentTypes($entity_type, array $bundles) {
+    $this->drupalGet('admin/config/services/content-hub/configuration');
+    $this->assertResponse(200);
+
+    $edit = array(
+      'entities[node][article][enabled]' => TRUE,
+      'entities[node][page][enabled]' => TRUE,
+    );
+    $this->drupalPostForm(NULL, $edit, $this->t('Save configuration'));
+    $this->assertResponse(200);
+
+    $this->drupalGet('admin/config/services/content-hub/configuration');
+    $this->assertResponse(200);
+
+  }
+
+  /**
+   * @param string $entity_type
+   * @param string $bundle
+   * @param string|null $view_mode
+   */
+  public function checkCdfOutput($entity_type, $bundle, $view_mode = NULL) {
+
+  }
+
+  /**
+   * @param string $entity_type
+   * @param string $bundle
+   * @param string $view_mode
+   */
+  public function enableViewModeFor($entity_type, $bundle, $view_mode) {
+
+  }
+
+
+
+}
