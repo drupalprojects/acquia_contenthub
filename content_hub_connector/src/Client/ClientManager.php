@@ -36,7 +36,9 @@ class ClientManager implements ClientManagerInterface {
    * ClientManager constructor.
    *
    * @param \Drupal\Core\Logger\LoggerChannelFactory $logger_factory
+   *   The logger factory.
    * @param \Drupal\Core\Config\ConfigFactory $config_factory
+   *   The config factory.
    */
   public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory) {
     $this->loggerFactory = $logger_factory;

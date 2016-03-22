@@ -8,6 +8,6 @@
 namespace Drupal\content_hub_connector;
 
 /**
- * Represents an exception that occurred in some part of the Content Hub Connector.
+ * An exception that occurred in some part of the Content Hub Connector.
  */
 class ContentHubConnectorException extends \Exception {}

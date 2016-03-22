@@ -20,6 +20,6 @@ interface ClientManagerInterface {
    * @return \Acquia\ContentHubClient\ContentHub
    *   Returns the Content Hub Client
    */
-  public function getClient();
+  public function getClient($config);
 
 }
