@@ -14,6 +14,7 @@ use Drupal\Core\Form\ConfigFormBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Entity\EntityDisplayRepository;
+use Drupal\Core\Cache\CacheTagsInvalidator;
 
 /**
  * Defines the form to configure the entity types and bundles to be exported.
@@ -57,11 +58,14 @@ class EntityConfigSettingsForm extends ConfigFormBase {
    *   The entity bundle info interface.
    * @param \Drupal\Core\Entity\EntityDisplayRepository $entity_display_repository
    *   The entity display repository.
+   * @param \Drupal\Core\Cache\CacheTagsInvalidator $cache_tags_invalidator
+   *   A cache tag invalidator
    */
-  public function __construct(EntityTypeManagerInterface $entity_type_manager, EntityTypeBundleInfoInterface $entity_type_bundle_info_manager, EntityDisplayRepository $entity_display_repository) {
+  public function __construct(EntityTypeManagerInterface $entity_type_manager, EntityTypeBundleInfoInterface $entity_type_bundle_info_manager, EntityDisplayRepository $entity_display_repository, CacheTagsInvalidator $cache_tags_invalidator) {
     $this->entityTypeManager = $entity_type_manager;
     $this->entityTypeBundleInfoManager = $entity_type_bundle_info_manager;
     $this->entityDisplayRepository = $entity_display_repository;
+    $this->cacheTagsInvalidator = $cache_tags_invalidator;
   }
 
   /**
@@ -71,7 +75,8 @@ class EntityConfigSettingsForm extends ConfigFormBase {
     $entity_type_bundle_info_manager = $container->get('entity_type.bundle.info');
     $entity_type_manager = $container->get('entity_type.manager');
     $entity_display_repository = $container->get('entity_display.repository');
-    return new static($entity_type_manager, $entity_type_bundle_info_manager, $entity_display_repository);
+    $cache_tags_invalidator = $container->get('cache_tags.invalidator');
+    return new static($entity_type_manager, $entity_type_bundle_info_manager, $entity_display_repository, $cache_tags_invalidator);
   }
 
   /**

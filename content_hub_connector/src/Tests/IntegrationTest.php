@@ -6,6 +6,7 @@
  */
 
 namespace Drupal\content_hub_connector\Tests;
+use Drupal\node\NodeInterface;
 
 /**
  * Tests the overall functionality of the Content Hub Connector module.
@@ -44,10 +45,10 @@ class IntegrationTest extends WebTestBase {
     $this->createSampleContent();
 
     $this->configureContentHubContentTypes('node', array('article'));
-    $this->checkCdfOutput('node', 'article');
+    $this->checkCdfOutput($this->article);
 
     $this->enableViewModeFor('node', 'article', 'teaser');
-    $this->checkCdfOutput('node', 'article', 'teaser');
+    $this->checkCdfOutput($this->article, 'teaser');
   }
 
   /**
@@ -67,10 +68,11 @@ class IntegrationTest extends WebTestBase {
     $this->drupalGet('admin/config/services/content-hub/configuration');
     $this->assertResponse(200);
 
-    $edit = array(
-      'entities[node][article][enabled]' => TRUE,
-      'entities[node][page][enabled]' => TRUE,
-    );
+    $edit = array();
+    foreach ($bundles as $bundle) {
+      $edit['entities[' . $entity_type . '][' . $bundle . '][enabled]'] = TRUE;
+    }
+
     $this->drupalPostForm(NULL, $edit, $this->t('Save configuration'));
     $this->assertResponse(200);
 
@@ -80,12 +82,13 @@ class IntegrationTest extends WebTestBase {
   }
 
   /**
-   * @param string $entity_type
+   * @param \Drupal\node\NodeInterface $entity
    * @param string $bundle
    * @param string|null $view_mode
    */
-  public function checkCdfOutput($entity_type, $bundle, $view_mode = NULL) {
-
+  public function checkCdfOutput(NodeInterface $entity, $view_mode = NULL) {
+    $this->drupalGet($entity->getEntityTypeId() . '/' . $this->article->id(), array('query' => array('_format' => 'content_hub_cdf')));
+    $this->assertResponse(200);
   }
 
   /**
@@ -94,9 +97,16 @@ class IntegrationTest extends WebTestBase {
    * @param string $view_mode
    */
   public function enableViewModeFor($entity_type, $bundle, $view_mode) {
+    $this->drupalGet('admin/config/services/content-hub/configuration');
+    $this->assertResponse(200);
 
+    $edit = array(
+      'entities[' . $entity_type . '][' . $bundle . '][rendering][]' => array($view_mode),
+    );
+    $this->drupalPostForm(NULL, $edit, $this->t('Save configuration'));
+    $this->assertResponse(200);
+
+    $this->drupalGet('admin/config/services/content-hub/configuration');
+    $this->assertResponse(200);
   }
-
-
-
 }

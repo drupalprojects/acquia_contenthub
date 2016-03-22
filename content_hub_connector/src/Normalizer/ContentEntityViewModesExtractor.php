@@ -115,7 +115,9 @@ class ContentEntityViewModesExtractor {
     // Exit if the object is configured not to be rendered.
     $entity_type_id = $object->getEntityTypeId();
     $entity_bundle_id = $object->bundle();
+
     $object_config = $this->entityConfig->get('entities.' . $entity_type_id . '.' . $entity_bundle_id);
+
     if (empty($object_config) || empty($object_config['enabled']) || empty($object_config['rendering'])) {
       return NULL;
     }
@@ -128,6 +130,11 @@ class ContentEntityViewModesExtractor {
         continue;
       }
       $render_array = $view_builder->view($object, $view_mode_id);
+
+      // Add our cacheableDependency. If this config changes, clear the render
+      // cache.
+      $this->renderer->addCacheableDependency($render_array, $this->entityConfig);
+
       $html['body'] = $this->renderer->renderRoot($render_array);
       $all_assets = $this->gatherAssetMarkup($render_array);
       $html += $this->renderAssets($all_assets);
