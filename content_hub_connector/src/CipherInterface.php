@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Contains \Drupal\content_hub_connector\CipherInterface.

@@ -8,7 +8,7 @@
 namespace Drupal\content_hub_connector;
 
 use Drupal\Component\Render\FormattableMarkup;
-use Drupal\content_hub_connector\Client\ClientManager;
+use Drupal\content_hub_connector\Client\ClientManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\Core\Url;
@@ -43,8 +43,15 @@ class EntityManager {
 
   /**
    * Constructs an ContentEntityNormalizer object.
+   *
+   * @param \Drupal\Core\Logger\LoggerChannelFactory $logger_factory
+   *   The logger factory.
+   * @param \Drupal\Core\Config\ConfigFactory $config_factory
+   *    The config factory.
+   * @param \Drupal\content_hub_connector\Client\ClientManagerInterface $client_manager
+   *    The client manager.
    */
-  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManager $client_manager) {
+  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager) {
     $this->loggerFactory = $logger_factory;
     $this->configFactory = $config_factory;
     $this->clientManager = $client_manager;
@@ -55,8 +62,6 @@ class EntityManager {
    *
    * @param object $entity
    *   The Drupal Entity object.
-   * @param string $type
-   *   The entity type.
    * @param string $action
    *   The action to perform on that entity: 'INSERT', 'UPDATE', 'DELETE'.
    */
@@ -82,10 +87,10 @@ class EntityManager {
   /**
    * Sends the request to the Content Hub for a single entity.
    *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The Content Hub Entity.
    * @param string $action
    *   The action to execute for bulk upload: 'INSERT' or 'UPDATE'.
-   * @param EntityInterface $entity
-   *   The Content Hub Entity.
    */
   public function entityActionSend(EntityInterface $entity, $action) {
     /** @var \Drupal\content_hub_connector\Client\ClientManagerInterface $client_manager */
@@ -198,16 +203,14 @@ class EntityManager {
   /**
    * Checks whether the current entity should be transferred to Content Hub.
    *
-   * @param object $entity
+   * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The Drupal entity.
-   * @param string $type
-   *   The Drupal entity type.
    *
    * @return bool
    *   True if it can be parsed, False if it not a suitable entity for sending
    *   to content hub.
    */
-  function isEligibleEntity(EntityInterface $entity) {
+  protected function isEligibleEntity(EntityInterface $entity) {
     $entity_type_config = $this->configFactory->get('content_hub_connector.entity_config')->get('entities.' . $entity->getEntityTypeId());
     $bundle_id = $entity->bundle();
     if (empty($entity_type_config) || empty($entity_type_config[$bundle_id]) || empty($entity_type_config[$bundle_id]['enabled'])) {
