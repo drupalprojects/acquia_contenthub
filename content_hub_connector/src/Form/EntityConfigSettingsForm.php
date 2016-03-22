@@ -44,7 +44,7 @@ class EntityConfigSettingsForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormID() {
+  public function getFormId() {
     return 'content_hub_connector.entity_config';
   }
 

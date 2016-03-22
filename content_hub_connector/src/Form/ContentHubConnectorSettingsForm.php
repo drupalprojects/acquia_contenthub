@@ -29,7 +29,7 @@ class ContentHubConnectorSettingsForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormID() {
+  public function getFormId() {
     return 'content_hub_connector.admin_settings';
   }
 
