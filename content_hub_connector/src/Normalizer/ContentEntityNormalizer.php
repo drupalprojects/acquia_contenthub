@@ -127,7 +127,7 @@ class ContentEntityNormalizer extends NormalizerBase {
 
     if ($view_modes = $this->contentEntityViewModesNormalizer->getRenderedViewModes($entity)) {
       $content_hub_entity->setMetadata(array(
-        'base_root' => 'localhost',
+        'base_root' => $base_root,
         'view_modes' => $view_modes,
       ));
     }
