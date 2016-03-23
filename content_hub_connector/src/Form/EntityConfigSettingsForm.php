@@ -206,14 +206,13 @@ class EntityConfigSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $values = $form_state->getValues();
+    parent::submitForm($form, $form_state);
 
+    $values = $form_state->getValues();
     $config = $this->config('content_hub_connector.entity_config');
     $config->set('entities', $values['entities']);
     $config->set('user_role', $values['user_role']);
     $config->save();
-
-    parent::submitForm($form, $form_state);
   }
 
   /**

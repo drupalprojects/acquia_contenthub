@@ -1,5 +1,4 @@
 # Schema for the configuration files of the Content Hub Connector module.
-
 content_hub_connector.admin_settings:
   type: config_object
   label: 'Content Hub Connector admin settings'

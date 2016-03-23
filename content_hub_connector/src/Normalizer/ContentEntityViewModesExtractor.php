@@ -127,10 +127,9 @@ class ContentEntityViewModesExtractor {
     // Exit if the object is configured not to be rendered.
     $entity_type_id = $object->getEntityTypeId();
     $entity_bundle_id = $object->bundle();
+    $config = $this->entityConfig->get('entities.' . $entity_type_id . '.' . $entity_bundle_id);
 
-    $object_config = $this->entityConfig->get('entities.' . $entity_type_id . '.' . $entity_bundle_id);
-
-    if (empty($object_config) || empty($object_config['enabled']) || empty($object_config['rendering'])) {
+    if (!isset($config['enabled']) && !isset($config['rendering'])) {
       return NULL;
     }
 
@@ -144,7 +143,7 @@ class ContentEntityViewModesExtractor {
     $this->currentUser->setAccount(new UserSession(array('roles' => array($user_role))));
 
     foreach ($view_modes as $view_mode_id => $view_mode) {
-      if (!in_array($view_mode_id, $object_config['rendering'])) {
+      if (!in_array($view_mode_id, $config['rendering'])) {
         continue;
       }
       $render_array = $view_builder->view($object, $view_mode_id);

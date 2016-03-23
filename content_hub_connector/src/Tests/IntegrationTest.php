@@ -40,6 +40,8 @@ class IntegrationTest extends WebTestBase {
    * Tests various operations via the Content Hub's Connector admin UI.
    */
   public function testFramework() {
+    // Enable dumpHeaders when you are having caching issues.
+    //$this->dumpHeaders = TRUE;
     $this->drupalLogin($this->adminUser);
 
     $this->createSampleContent();
@@ -87,8 +89,14 @@ class IntegrationTest extends WebTestBase {
    * @param string|null $view_mode
    */
   public function checkCdfOutput(NodeInterface $entity, $view_mode = NULL) {
-    $this->drupalGet($entity->getEntityTypeId() . '/' . $this->article->id(), array('query' => array('_format' => 'content_hub_cdf')));
+    $output = $this->drupalGetJSON($entity->getEntityTypeId() . '/' . $this->article->id(), array('query' => array('_format' => 'content_hub_cdf')));
     $this->assertResponse(200);
+    if (!empty($view_mode)) {
+      $this->assertTrue(isset($output['entities']['0']['metadata']), 'Metadata is present');
+      $this->assertTrue(isset($output['entities']['0']['metadata']['view_modes'][$view_mode]), 'View mode ' . $view_mode . 'is present');
+    }
+
+
   }
 
   /**

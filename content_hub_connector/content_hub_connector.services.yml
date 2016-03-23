@@ -17,7 +17,12 @@ services:
     class: Drupal\content_hub_connector\Encoder\JsonEncoder
     tags:
       - { name: encoder, priority: 10, format: content_hub_cdf }
-  content_hub_connector.exception.default_json:
+  content_hub_connector.exception.content_hub_cdf:
     class: Drupal\content_hub_connector\EventSubscriber\ExceptionCdfJsonSubscriber
+    tags:
+      - { name: event_subscriber }
+  content_hub_connector.config_cache_tag:
+    class: Drupal\content_hub_connector\EventSubscriber\ConfigCacheTag
+    arguments: ['@cache_tags.invalidator']
     tags:
       - { name: event_subscriber }
