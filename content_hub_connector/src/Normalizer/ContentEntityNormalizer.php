@@ -12,20 +12,13 @@ use Drupal\Component\Render\FormattableMarkup;
 use Drupal\content_hub_connector\ContentHubConnectorException;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Acquia\ContentHubClient\Entity as ChubEntity;
-use Drupal\Core\Config\ConfigFactory;
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 
 /**
  * Converts the Drupal entity object to a Acquia Content Hub CDF array.
  */
 class ContentEntityNormalizer extends NormalizerBase {
-
-  /**
-   * Base root
-   *
-   * @var string
-   */
-  protected $baseRoot;
 
   /**
    * The interface or class that this Normalizer supports.
@@ -56,35 +49,45 @@ class ContentEntityNormalizer extends NormalizerBase {
   protected $moduleHandler;
 
   /**
-   * Config Factory.
+   * Base root path of the application
    *
-   * @var \Drupal\Core\Config\ConfigFactory
+   * @var string
    */
-  protected $configFactory;
+  protected $baseRoot;
 
   /**
    * Constructs an ContentEntityNormalizer object.
    *
-   * @param \Drupal\Core\Config\ConfigFactory $config_factory
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The config factory.
-   * @param \Drupal\content_hub_connector\Normalizer\ContentEntityViewModesExtractor $content_entity_view_modes_normalizer
+   * @param \Drupal\content_hub_connector\Normalizer\ContentEntityViewModesExtractorInterface $content_entity_view_modes_normalizer
    *   The content entity view modes normalizer.
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_hander
    *   The module handler to create alter hooks.
    */
-  public function __construct(ConfigFactory $config_factory, ContentEntityViewModesExtractor $content_entity_view_modes_normalizer, ModuleHandlerInterface $module_hander) {
-    global $base_root;
-    $this->baseRoot = $base_root;
-    $this->configFactory = $config_factory;
-    $this->contentHubAdminConfig = $this->configFactory->get('content_hub_connector.admin_settings');
+  public function __construct(ConfigFactoryInterface $config_factory, ContentEntityViewModesExtractorInterface $content_entity_view_modes_normalizer, ModuleHandlerInterface $module_handler) {
+    $this->contentHubAdminConfig = $config_factory->get('content_hub_connector.admin_settings');
     $this->contentEntityViewModesNormalizer = $content_entity_view_modes_normalizer;
-    $this->moduleHandler = $module_hander;
+    $this->moduleHandler = $module_handler;
+  }
+
+  /**
+   * Return the global base_root variable that is defined by Drupal.
+   *
+   * We set this to a function so it can be overridden in a PHPUnit test.
+   *
+   * @return string
+   */
+  public function getBaseRoot() {
+    if (isset($GLOBALS['base_root'])) {
+      return $GLOBALS['base_root'];
+    }
   }
 
   /**
    * Normalizes an object into a set of arrays/scalars.
    *
-   * @param object $entity
+   * @param \Drupal\Core\Entity\ContentEntityInterface $entity
    *   Object to normalize. Due to the constraints of the class, we know that
    *   the object will be of the ContentEntityInterface type.
    * @param string $format
@@ -111,6 +114,7 @@ class ContentEntityNormalizer extends NormalizerBase {
     $origin = $this->contentHubAdminConfig->get('origin');
     $created = date('c', $entity->get('created')->getValue()[0]['value']);
     $modified = date('c', $entity->get('created')->getValue()[0]['value']);
+    $base_root = $this->getBaseRoot();
 
     // Initialize Content Hub entity.
     $content_hub_entity = new ChubEntity();
@@ -123,7 +127,7 @@ class ContentEntityNormalizer extends NormalizerBase {
 
     if ($view_modes = $this->contentEntityViewModesNormalizer->getRenderedViewModes($entity)) {
       $content_hub_entity->setMetadata(array(
-        'base_root' => $this->baseRoot,
+        'base_root' => 'localhost',
         'view_modes' => $view_modes,
       ));
     }
@@ -389,8 +393,8 @@ class ContentEntityNormalizer extends NormalizerBase {
     $excluded = array(
       // The following properties are always included in constructor, so we do
       // not need to check them again.
-      $entity->getEntityType()->getKey('id'),
-      $entity->getEntityType()->getKey('revision'),
+      'id',
+      'revision',
       'uuid',
       'type',
       'created',

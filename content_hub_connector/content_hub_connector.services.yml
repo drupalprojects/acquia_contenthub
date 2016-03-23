@@ -14,7 +14,7 @@ services:
     class: Drupal\content_hub_connector\Normalizer\ContentEntityViewModesExtractor
     arguments: ['@current_user', '@config.factory', '@entity_display.repository', '@entity_type.manager', '@renderer', '@asset.resolver', '@asset.css.collection_renderer', '@asset.js.collection_renderer']
   content_hub_connector.encoder.content_hub_cdf:
-    class: Drupal\content_hub_connector\Encoder\JsonEncoder
+    class: Drupal\content_hub_connector\Encoder\ContentHubCdfEncoder
     tags:
       - { name: encoder, priority: 10, format: content_hub_cdf }
   content_hub_connector.exception.content_hub_cdf:

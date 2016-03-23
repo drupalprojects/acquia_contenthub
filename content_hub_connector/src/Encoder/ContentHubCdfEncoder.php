@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\content_hub_connector\Encoder\JsonEncoder.
+ * Contains \Drupal\content_hub_connector\Encoder\ContentHubCdfEncoder.
  */
 
 namespace Drupal\content_hub_connector\Encoder;
@@ -14,7 +14,7 @@ use Symfony\Component\Serializer\Encoder\JsonEncoder as SymfonyJsonEncoder;
  *
  * Simply respond to content_hub_cdf format requests using the JSON encoder.
  */
-class JsonEncoder extends SymfonyJsonEncoder {
+class ContentHubCdfEncoder extends SymfonyJsonEncoder {
 
   /**
    * The formats that this Encoder supports.

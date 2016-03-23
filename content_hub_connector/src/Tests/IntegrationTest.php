@@ -41,7 +41,7 @@ class IntegrationTest extends WebTestBase {
    */
   public function testFramework() {
     // Enable dumpHeaders when you are having caching issues.
-    //$this->dumpHeaders = TRUE;
+    $this->dumpHeaders = TRUE;
     $this->drupalLogin($this->adminUser);
 
     $this->createSampleContent();
