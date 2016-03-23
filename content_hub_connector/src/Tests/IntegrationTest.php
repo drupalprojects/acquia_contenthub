@@ -93,10 +93,11 @@ class IntegrationTest extends WebTestBase {
     $this->assertResponse(200);
     if (!empty($view_mode)) {
       $this->assertTrue(isset($output['entities']['0']['metadata']), 'Metadata is present');
-      $this->assertTrue(isset($output['entities']['0']['metadata']['view_modes'][$view_mode]), 'View mode ' . $view_mode . 'is present');
+      $this->assertTrue(isset($output['entities']['0']['metadata']['view_modes'][$view_mode]), t('View mode %view_mode is present', array('%view_mode' => $view_mode)));
     }
-
-
+    else {
+      $this->assertFalse(isset($output['entities']['0']['metadata']), 'Metadata is not present');
+    }
   }
 
   /**
