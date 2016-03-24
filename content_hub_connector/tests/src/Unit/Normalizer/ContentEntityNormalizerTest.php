@@ -789,6 +789,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
       $mock->method('getId')->willReturn($language);
       $language_objects[$language] = $mock;
     }
+
     return $language_objects;
   }
 
