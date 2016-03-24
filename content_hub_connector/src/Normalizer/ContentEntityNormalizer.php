@@ -62,7 +62,7 @@ class ContentEntityNormalizer extends NormalizerBase {
    *   The config factory.
    * @param \Drupal\content_hub_connector\Normalizer\ContentEntityViewModesExtractorInterface $content_entity_view_modes_normalizer
    *   The content entity view modes normalizer.
-   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_hander
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
    *   The module handler to create alter hooks.
    */
   public function __construct(ConfigFactoryInterface $config_factory, ContentEntityViewModesExtractorInterface $content_entity_view_modes_normalizer, ModuleHandlerInterface $module_handler) {
@@ -77,6 +77,7 @@ class ContentEntityNormalizer extends NormalizerBase {
    * We set this to a function so it can be overridden in a PHPUnit test.
    *
    * @return string
+   *   Return global base_root variable.
    */
   public function getBaseRoot() {
     if (isset($GLOBALS['base_root'])) {
@@ -99,7 +100,7 @@ class ContentEntityNormalizer extends NormalizerBase {
    * @return array|string|bool|int|float|null
    *   Return normalized data.
    */
-  public function normalize($entity, $format = NULL, array $context = array()) {
+  public function normalize(ContentEntityInterface $entity, $format = NULL, array $context = array()) {
     $context += array(
       'account' => NULL,
     );

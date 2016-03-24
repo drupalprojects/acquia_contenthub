@@ -16,16 +16,16 @@ use Drupal\node\NodeInterface;
 class IntegrationTest extends WebTestBase {
 
   /**
-   * @var \Drupal\node\NodeInterface $article
+   * The sample article we generate.
    *
-   * The sample article we generate
+   * @var \Drupal\node\NodeInterface $article
    */
   protected $article;
 
   /**
-   * @var \Drupal\node\NodeInterface $article
+   * The sample page we generate.
    *
-   * The sample page we generate
+   * @var \Drupal\node\NodeInterface $article
    */
   protected $page;
 
@@ -63,8 +63,12 @@ class IntegrationTest extends WebTestBase {
   }
 
   /**
+   * Configures Content types to be exported to Content Hub.
+   *
    * @param string $entity_type
+   *   The entity type the bundles belong to.
    * @param array $bundles
+   *   The bundles to enable.
    */
   public function configureContentHubContentTypes($entity_type, array $bundles) {
     $this->drupalGet('admin/config/services/content-hub/configuration');
@@ -84,9 +88,12 @@ class IntegrationTest extends WebTestBase {
   }
 
   /**
+   * Ensures the CDF output is what we expect it to be.
+   *
    * @param \Drupal\node\NodeInterface $entity
-   * @param string $bundle
+   *   The entity to be used.
    * @param string|null $view_mode
+   *   The view mode to check in the CDF.
    */
   public function checkCdfOutput(NodeInterface $entity, $view_mode = NULL) {
     $output = $this->drupalGetJSON($entity->getEntityTypeId() . '/' . $this->article->id(), array('query' => array('_format' => 'content_hub_cdf')));
@@ -101,9 +108,14 @@ class IntegrationTest extends WebTestBase {
   }
 
   /**
+   * Enables a view mode to be rendered in CDF.
+   *
    * @param string $entity_type
+   *   The entity type.
    * @param string $bundle
+   *   The bundle.
    * @param string $view_mode
+   *   The view mode to enable.
    */
   public function enableViewModeFor($entity_type, $bundle, $view_mode) {
     $this->drupalGet('admin/config/services/content-hub/configuration');

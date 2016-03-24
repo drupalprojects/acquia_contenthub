@@ -59,7 +59,7 @@ class EntityConfigSettingsForm extends ConfigFormBase {
    * @param \Drupal\Core\Entity\EntityDisplayRepository $entity_display_repository
    *   The entity display repository.
    * @param \Drupal\Core\Cache\CacheTagsInvalidator $cache_tags_invalidator
-   *   A cache tag invalidator
+   *   A cache tag invalidator.
    */
   public function __construct(EntityTypeManagerInterface $entity_type_manager, EntityTypeBundleInfoInterface $entity_type_bundle_info_manager, EntityDisplayRepository $entity_display_repository, CacheTagsInvalidator $cache_tags_invalidator) {
     $this->entityTypeManager = $entity_type_manager;
