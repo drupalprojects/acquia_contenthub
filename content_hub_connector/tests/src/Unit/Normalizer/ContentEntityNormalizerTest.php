@@ -729,10 +729,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $entity2->method('uuid')->willReturn('test-uuid-reference-2');
     $referenced_entities[] = $entity2;
 
-
     $mock->method('getFieldDefinition')->willReturn($field_def);
-
-
     $mock->method('referencedEntities')->willReturn($referenced_entities);
 
     return $mock;
