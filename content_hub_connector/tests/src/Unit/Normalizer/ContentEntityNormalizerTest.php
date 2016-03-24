@@ -122,42 +122,28 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $serializer = $this->getFieldsSerializer($definitions);
     $this->contentEntityNormalizer->setSerializer($serializer);
 
-    // Define which languages we have set on the site.
-    $languages = array('en');
-
     // Create our Content Entity.
-    $content_entity_mock = $this->createMockForContentEntity($definitions, $languages);
+    $content_entity_mock = $this->createMockForContentEntity($definitions, array('en'));
 
     // Normalize the Content Entity with the class that we are testing.
     $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'content_hub_cdf');
 
-    // Start testing our result set.
-    $this->assertArrayHasKey('entities', $normalized);
-    // We want 1 result in there.
-    $this->assertCount(1, $normalized['entities']);
-
-    // Since there is only 1 entity, we are fairly certain the first one is
-    // ours.
-    /** @var \Acquia\ContentHubClient\Entity $normalized_entity */
-    $normalized_entity = array_pop($normalized['entities']);
-    // Check if it is of the expected class.
-    $this->assertTrue($normalized_entity instanceof \Acquia\ContentHubClient\Entity);
+    // Check if valid result.
+    $this->doTestValidResultForOneEntity($normalized);
+    // Get our Content Hub Entity out of the result.
+    $normalized_entity = $this->getContentHubEntityFromResult($normalized);
 
     // Check the UUID property.
     $this->assertEquals('custom-uuid', $normalized_entity->getUuid());
-
     // Check if there was a created date set.
     $this->assertNotEmpty($normalized_entity->getCreated());
-
     // Check if there was a modified date set.
     $this->assertNotEmpty($normalized_entity->getModified());
-
     // Check if there was an origin property set.
     $this->assertEquals('test-origin', $normalized_entity->getOrigin());
-
     // Check if there was a type property set to the entity type.
     $this->assertEquals('node', $normalized_entity->getType());
-
+    // Check if the field has the given value.
     $this->assertEquals($normalized_entity->getAttribute('field_1')->getValues(), array('en' => array('test')));
   }
 
@@ -178,33 +164,20 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $serializer = $this->getFieldsSerializer($definitions);
     $this->contentEntityNormalizer->setSerializer($serializer);
 
-    // Define which languages we have set on the site.
-    $languages = array('en');
-
     // Create our Content Entity.
-    $content_entity_mock = $this->createMockForContentEntity($definitions, $languages);
+    $content_entity_mock = $this->createMockForContentEntity($definitions, array('en'));
 
     // Normalize the Content Entity with the class that we are testing.
     $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'content_hub_cdf');
 
-    // Start testing our result set.
-    $this->assertArrayHasKey('entities', $normalized);
-    // We want 1 result in there.
-    $this->assertCount(1, $normalized['entities']);
-
-    // Since there is only 1 entity, we are fairly certain the first one is
-    // ours.
-    /** @var \Acquia\ContentHubClient\Entity $normalized_entity */
-    $normalized_entity = array_pop($normalized['entities']);
-    // Check if it is of the expected class.
-    $this->assertTrue($normalized_entity instanceof \Acquia\ContentHubClient\Entity);
-
+    // Check if valid result.
+    $this->doTestValidResultForOneEntity($normalized);
+    // Get our Content Hub Entity out of the result.
+    $normalized_entity = $this->getContentHubEntityFromResult($normalized);
     // Check if there was a created date set.
     $this->assertEquals($normalized_entity->getCreated(), date('c', 1458811508));
-
     // Check if there was a modified date set.
     $this->assertEquals($normalized_entity->getModified(), date('c', 1458811509));
-
     // Check if field_1 has the correct values
     $this->assertEquals($normalized_entity->getAttribute('field_1')->getValues(), array('en' => array('test')));
   }
@@ -225,30 +198,18 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $serializer = $this->getFieldsSerializer($definitions);
     $this->contentEntityNormalizer->setSerializer($serializer);
 
-    // Define which languages we have set on the site.
-    $languages = array('en');
-
     // Create our Content Entity.
-    $content_entity_mock = $this->createMockForContentEntity($definitions, $languages);
+    $content_entity_mock = $this->createMockForContentEntity($definitions, array('en'));
 
     // Normalize the Content Entity with the class that we are testing.
     $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'content_hub_cdf');
 
-    // Start testing our result set.
-    $this->assertArrayHasKey('entities', $normalized);
-    // We want 1 result in there.
-    $this->assertCount(1, $normalized['entities']);
-
-    // Since there is only 1 entity, we are fairly certain the first one is
-    // ours.
-    /** @var \Acquia\ContentHubClient\Entity $normalized_entity */
-    $normalized_entity = array_pop($normalized['entities']);
-    // Check if it is of the expected class.
-    $this->assertTrue($normalized_entity instanceof \Acquia\ContentHubClient\Entity);
-
+    // Check if valid result.
+    $this->doTestValidResultForOneEntity($normalized);
+    // Get our Content Hub Entity out of the result.
+    $normalized_entity = $this->getContentHubEntityFromResult($normalized);
     // Check if field_1 has the correct values
     $this->assertEquals($normalized_entity->getAttribute('field_1')->getValues(), array('en' => array('test')));
-
     // Field 2 should not be part of the normalizer.
     $this->assertFalse($normalized_entity->getAttribute('field_2'));
   }
@@ -258,12 +219,9 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    *
    * @covers ::normalize
    */
-  public function _testNormalizeWithAccountContext() {
+  public function testNormalizeWithAccountContext() {
     $mock_account = $this->getMock('Drupal\Core\Session\AccountInterface');
-
-    $context = [
-      'account' => $mock_account,
-    ];
+    $context = ['account' => $mock_account];
 
     // The mock account should get passed directly into the access() method on
     // field items from $context['account'].
@@ -274,36 +232,51 @@ class ContentEntityNormalizerTest extends UnitTestCase {
 
     // Set our Serializer and expected serialized return value for the given
     // fields.
-    $serializer = $this->getFieldsSerializer($definitions);
+    $serializer = $this->getFieldsSerializer($definitions, $mock_account);
     $this->contentEntityNormalizer->setSerializer($serializer);
 
-    // Define which languages we have set on the site.
-    $languages = array('en');
-
-    // Create our Content Entity.
-    $content_entity_mock = $this->createMockForContentEntity($definitions, $languages);
+    // Create our Content Entity with English support.
+    $content_entity_mock = $this->createMockForContentEntity($definitions, array('en'));
 
     // Normalize the Content Entity with the class that we are testing.
-    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'content_hub_cdf');
+    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'content_hub_cdf', $context);
 
+    // Check if valid result.
+    $this->doTestValidResultForOneEntity($normalized);
+    // Get our Content Hub Entity out of the result.
+    $normalized_entity = $this->getContentHubEntityFromResult($normalized);
+    // Check if field_1 has the correct values
+    $this->assertEquals($normalized_entity->getAttribute('field_1')->getValues(), array('en' => array('test')));
+    // Field 2 should not be part of the resultset.
+    $this->assertFalse($normalized_entity->getAttribute('field_2'));
+  }
+
+  /**
+   * Check if the base result set is correctly set to 1 entity.
+   *
+   * @param $normalized
+   */
+  private function doTestValidResultForOneEntity($normalized) {
     // Start testing our result set.
     $this->assertArrayHasKey('entities', $normalized);
     // We want 1 result in there.
     $this->assertCount(1, $normalized['entities']);
+  }
 
+  /**
+   * Get the Content Hub Entity from our normalized array.
+   *
+   * @param array $normalized
+   * @return \Acquia\ContentHubClient\Entity
+   */
+  private function getContentHubEntityFromResult(array $normalized) {
     // Since there is only 1 entity, we are fairly certain the first one is
     // ours.
     /** @var \Acquia\ContentHubClient\Entity $normalized_entity */
     $normalized_entity = array_pop($normalized['entities']);
     // Check if it is of the expected class.
     $this->assertTrue($normalized_entity instanceof \Acquia\ContentHubClient\Entity);
-
-    // Check if field_1 has the correct values
-    $this->assertEquals($normalized_entity->getAttribute('field_1')->getValues(), array('en' => array('test')));
-
-    // Field 2 should not be part of the normalizer.
-    $this->assertFalse($normalized_entity->getAttribute('field_2'));
-
+    return $normalized_entity;
   }
 
   /**
@@ -315,7 +288,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    *
    * @param array $definitions
    */
-  protected function getFieldsSerializer(array $definitions) {
+  protected function getFieldsSerializer(array $definitions, $user_context = NULL) {
     $serializer = $this->getMockBuilder('Symfony\Component\Serializer\Serializer')
       ->disableOriginalConstructor()
       ->setMethods(array('normalize'))
@@ -323,7 +296,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
 
     $serializer->expects($this->any())
       ->method('normalize')
-      ->with($this->containsOnlyInstancesOf('Drupal\Core\Field\FieldItemListInterface'), 'json', ['account' => NULL, 'entity_type' => 'node'])
+      ->with($this->containsOnlyInstancesOf('Drupal\Core\Field\FieldItemListInterface'), 'json', ['account' => $user_context, 'entity_type' => 'node'])
       ->willReturnCallback(function($field, $format, $context) {
         if ($field) {
           return $field->getValue();
