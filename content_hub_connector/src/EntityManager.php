@@ -20,7 +20,7 @@ use Drupal\Core\Config\ConfigFactory;
 class EntityManager {
 
   /**
-   * Base root
+   * Base root.
    *
    * @var string
    */

@@ -49,7 +49,7 @@ class ContentEntityNormalizer extends NormalizerBase {
   protected $moduleHandler;
 
   /**
-   * Base root path of the application
+   * Base root path of the application.
    *
    * @var string
    */
@@ -406,7 +406,7 @@ class ContentEntityNormalizer extends NormalizerBase {
       'id',
       'revision',
       'uuid',
-      //'type',
+      // 'type',.
       'created',
       'changed',
 

@@ -87,7 +87,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
 
     $this->contentEntityNormalizer = new ContentEntityNormalizer($this->configFactory, $this->contentEntityViewModesExtractor, $this->moduleHandler);
 
-    // Fake Content Hub Connector Config
+    // Fake Content Hub Connector Config.
     $this->contentHubEntityConfig = array(
       'test',
     );
@@ -112,7 +112,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    */
   public function testGetBaseRoot() {
     // With the global set.
-    $GLOBALS['base_root'] =  'test';
+    $GLOBALS['base_root'] = 'test';
     $this->assertEquals('test', $this->contentEntityNormalizer->getBaseRoot());
     unset($GLOBALS['base_root']);
 
@@ -121,9 +121,9 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   }
 
   /**
-   * Tests the normalize() method
+   * Tests the normalize() method.
    *
-   * Tests to see if it errors on the wrong object
+   * Tests to see if it errors on the wrong object.
    *
    * @covers ::normalize
    */
@@ -137,7 +137,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   }
 
   /**
-   * Tests the normalize() method
+   * Tests the normalize() method.
    *
    * Tests 1 field and checks if it appears in the normalized result.
    *
@@ -180,7 +180,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   }
 
   /**
-   * Tests the normalize() method
+   * Tests the normalize() method.
    *
    * Tests 1 field with multiple values and checks if it appears in the
    * normalized result. Also adds multiple languages to see if it properly
@@ -226,7 +226,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   }
 
   /**
-   * Tests the normalize() method
+   * Tests the normalize() method.
    *
    * Tests 1 field and the created and changed fields. Make sure there is
    * no changed or created field in the final attributes as those are
@@ -262,7 +262,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $this->assertEquals($normalized_entity->getCreated(), date('c', 1458811508));
     // Check if there was a modified date set.
     $this->assertEquals($normalized_entity->getModified(), date('c', 1458811509));
-    // Check if field_1 has the correct values
+    // Check if field_1 has the correct values.
     $this->assertEquals($normalized_entity->getAttribute('field_1')->getValues(), array('en' => array('test')));
     // Field created should not be part of the normalizer.
     $this->assertFalse($normalized_entity->getAttribute('created'));
@@ -271,7 +271,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   }
 
   /**
-   * Tests the normalize() method
+   * Tests the normalize() method.
    *
    * Tests 1 field but with any content in it. The field should not be present
    * and should be ignored.
@@ -304,7 +304,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   }
 
   /**
-   * Tests the normalize() method
+   * Tests the normalize() method.
    *
    * Test that we can also map field names. The field type String maps to the
    * content hub type array<string> while the field name title field is
@@ -340,7 +340,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   }
 
   /**
-   * Tests the normalize() method
+   * Tests the normalize() method.
    *
    * Tests that we support other field types such as boolean, etc..
    *
@@ -373,7 +373,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   }
 
   /**
-   * Tests the normalize() method
+   * Tests the normalize() method.
    *
    * Tests that we support complex fields with more than just a value key.
    *
@@ -400,12 +400,12 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $this->doTestValidResultForOneEntity($normalized);
     // Get our Content Hub Entity out of the result.
     $normalized_entity = $this->getContentHubEntityFromResult($normalized);
-    // Check if field_1 has the correct values
+    // Check if field_1 has the correct values.
     $this->assertEquals($normalized_entity->getAttribute('field_1')->getValues(), array('en' => array('{"value":"test","random_key":"random_data"}')));
   }
 
   /**
-   * Tests the normalize() method
+   * Tests the normalize() method.
    *
    * Tests 2 fields. The user has access to 1 field but not the other.
    *
@@ -433,14 +433,14 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $this->doTestValidResultForOneEntity($normalized);
     // Get our Content Hub Entity out of the result.
     $normalized_entity = $this->getContentHubEntityFromResult($normalized);
-    // Check if field_1 has the correct values
+    // Check if field_1 has the correct values.
     $this->assertEquals($normalized_entity->getAttribute('field_1')->getValues(), array('en' => array('test')));
     // Field 2 should not be part of the normalizer.
     $this->assertFalse($normalized_entity->getAttribute('field_2'));
   }
 
   /**
-   * Tests the normalize() method
+   * Tests the normalize() method.
    *
    * Tests 2 fields given a passed user context. Field 1 is accessible, but
    * field 2 is not.
@@ -474,14 +474,14 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $this->doTestValidResultForOneEntity($normalized);
     // Get our Content Hub Entity out of the result.
     $normalized_entity = $this->getContentHubEntityFromResult($normalized);
-    // Check if field_1 has the correct values
+    // Check if field_1 has the correct values.
     $this->assertEquals($normalized_entity->getAttribute('field_1')->getValues(), array('en' => array('test')));
     // Field 2 should not be part of the resultset.
     $this->assertFalse($normalized_entity->getAttribute('field_2'));
   }
 
   /**
-   * Tests the normalize() method
+   * Tests the normalize() method.
    *
    * Tests 1 entity reference field and checks if it appears in the normalized
    * result. It should return the UUID of the referenced item.
@@ -515,7 +515,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   }
 
   /**
-   * Tests the normalize() method
+   * Tests the normalize() method.
    *
    * Tests 1 entity reference field and checks if it appears in the normalized
    * result. It should return the id of the referenced item.
@@ -589,6 +589,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * Get the Content Hub Entity from our normalized array.
    *
    * @param array $normalized
+   *
    * @return \Acquia\ContentHubClient\Entity
    */
   private function getContentHubEntityFromResult(array $normalized) {
@@ -644,7 +645,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
 
     $content_entity_mock->method('getFields')->willReturn($definitions);
 
-    // return the given content.
+    // Return the given content.
     $content_entity_mock->method('get')->willReturnCallback(function($name) use ($definitions) {
       if (isset($definitions[$name])) {
         return $definitions[$name];
@@ -664,6 +665,9 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     return $content_entity_mock;
   }
 
+  /**
+   *
+   */
   public function createMockForContentHubAdminConfig() {
     $content_hub_admin_config = $this->getMockBuilder('Drupal\Core\Config\ImmutableConfig')
       ->disableOriginalConstructor()
