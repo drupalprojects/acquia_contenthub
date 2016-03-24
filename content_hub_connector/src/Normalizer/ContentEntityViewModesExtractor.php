@@ -70,6 +70,12 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
    *   The entity type manager.
    * @param \Drupal\Core\Render\Renderer $renderer
    *   The renderer.
+   * @param \Drupal\Core\Asset\AssetResolverInterface $asset_resolver
+   *   The asset resolver.
+   * @param \Drupal\Core\Asset\AssetCollectionRendererInterface $css_collection_renderer
+   *   The CSS collection renderer.
+   * @param \Drupal\Core\Asset\AssetCollectionRendererInterface $js_collection_renderer
+   *   The JS collection renderer.
    */
   public function __construct(AccountProxyInterface $current_user, ConfigFactory $config_factory, EntityDisplayRepository $entity_display_repository, EntityTypeManager $entity_type_manager, Renderer $renderer, AssetResolverInterface $asset_resolver, AssetCollectionRendererInterface $css_collection_renderer, AssetCollectionRendererInterface $js_collection_renderer) {
     $this->currentUser = $current_user;
@@ -106,7 +112,7 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
   }
 
   /**
-   * @inheritdoc
+   * Renders all the view modes that are configured to be rendered.
    */
   public function getRenderedViewModes(ContentEntityInterface $object) {
     $normalized = array();
