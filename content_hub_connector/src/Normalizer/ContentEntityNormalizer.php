@@ -463,6 +463,7 @@ class ContentEntityNormalizer extends NormalizerBase {
    */
   public function denormalize($data, $class, $format = NULL, array $context = array()) {
     // TODO: Implement denormalize() method.
+    g
   }
 
 }
