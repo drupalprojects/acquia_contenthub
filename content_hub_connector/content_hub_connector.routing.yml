@@ -31,3 +31,11 @@ content_hub_connector.content_hub_cdf.node:
     parameters:
       node:
         type: 'entity:node'
+content_hub_connector.content_entity_display.node:
+  path: '/content-hub-connector/display/{node}/{view_mode_name}'
+  defaults:
+    _controller: '\Drupal\content_hub_connector\Controller\ContentEntityDisplayController::viewNode'
+  requirements:
+    _access: 'TRUE'
+    node: \d+
+    view_mode_name: \w+
