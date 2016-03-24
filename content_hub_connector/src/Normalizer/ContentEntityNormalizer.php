@@ -82,6 +82,7 @@ class ContentEntityNormalizer extends NormalizerBase {
     if (isset($GLOBALS['base_root'])) {
       return $GLOBALS['base_root'];
     }
+    return '';
   }
 
   /**
@@ -227,15 +228,9 @@ class ContentEntityNormalizer extends NormalizerBase {
       }
 
       $values = array();
-      if ($field instanceof \Drupal\Core\Field\EntityReferenceFieldItemList) {
+      if ($field instanceof \Drupal\Core\Field\EntityReferenceFieldItemListInterface) {
 
-        // Make sure it's a EntityReferenceFieldItemList. Maybe this check
-        // is not necessary but to be sure we execute it anyway.
-        if (FALSE === $field instanceof \Drupal\Core\Field\EntityReferenceFieldItemList) {
-          return FALSE;
-        }
-
-        /** @var \Drupal\Core\Field\EntityReferenceFieldItemList $referenced_entities */
+        /** @var \Drupal\Core\Entity\EntityInterface[] $referenced_entities */
         $referenced_entities = $field->referencedEntities();
         /*
          * @todo Should we check the class type here?
@@ -267,7 +262,6 @@ class ContentEntityNormalizer extends NormalizerBase {
           $values[$langcode][] = $value;
         }
       }
-
       try {
         $attribute = new \Acquia\ContentHubClient\Attribute($type);
       }
@@ -412,7 +406,7 @@ class ContentEntityNormalizer extends NormalizerBase {
       'id',
       'revision',
       'uuid',
-      'type',
+      //'type',
       'created',
       'changed',
 

@@ -108,11 +108,41 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   }
 
   /**
+   * @covers ::getBaseRoot
+   */
+  public function testGetBaseRoot() {
+    // With the global set.
+    $GLOBALS['base_root'] =  'test';
+    $this->assertEquals('test', $this->contentEntityNormalizer->getBaseRoot());
+    unset($GLOBALS['base_root']);
+
+    // Without the global set.
+    $this->assertEquals('', $this->contentEntityNormalizer->getBaseRoot());
+  }
+
+  /**
+   * Tests the normalize() method
+   *
+   * Tests to see if it errors on the wrong object
+   *
+   * @covers ::normalize
+   */
+  public function testNormalizeIncompatibleClass() {
+    // Create a config entity class.
+    $config_mock = $this->getMock('Drupal\Core\Entity\ConfigEntityInterface');
+    // Normalize the Config Entity with the class that we are testing.
+    $normalized = $this->contentEntityNormalizer->normalize($config_mock, 'content_hub_cdf');
+    // Make sure it didn't do anything.
+    $this->assertNull($normalized);
+  }
+
+  /**
    * Tests the normalize() method
    *
    * Tests 1 field and checks if it appears in the normalized result.
    *
    * @covers ::normalize
+   * @covers ::addFieldsToContentHubEntity
    */
   public function testNormalizeOneField() {
     $definitions = array(
@@ -152,11 +182,59 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   /**
    * Tests the normalize() method
    *
+   * Tests 1 field with multiple values and checks if it appears in the
+   * normalized result. Also adds multiple languages to see if it properly
+   * combines them.
+   *
+   * @covers ::normalize
+   * @covers ::addFieldsToContentHubEntity
+   * @covers ::appendToAttribute
+   */
+  public function testNormalizeOneFieldMultiValued() {
+    $definitions = array(
+      'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, NULL, array(array('value' => 'test'), array('value' => 'test2'))),
+    );
+
+    // Set our Serializer and expected serialized return value for the given
+    // fields.
+    $serializer = $this->getFieldsSerializer($definitions);
+    $this->contentEntityNormalizer->setSerializer($serializer);
+
+    // Create our Content Entity.
+    $content_entity_mock = $this->createMockForContentEntity($definitions, array('en', 'nl'));
+
+    // Normalize the Content Entity with the class that we are testing.
+    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'content_hub_cdf');
+
+    // Check if valid result.
+    $this->doTestValidResultForOneEntity($normalized);
+    // Get our Content Hub Entity out of the result.
+    $normalized_entity = $this->getContentHubEntityFromResult($normalized);
+
+    // Check the UUID property.
+    $this->assertEquals('custom-uuid', $normalized_entity->getUuid());
+    // Check if there was a created date set.
+    $this->assertNotEmpty($normalized_entity->getCreated());
+    // Check if there was a modified date set.
+    $this->assertNotEmpty($normalized_entity->getModified());
+    // Check if there was an origin property set.
+    $this->assertEquals('test-origin', $normalized_entity->getOrigin());
+    // Check if there was a type property set to the entity type.
+    $this->assertEquals('node', $normalized_entity->getType());
+    // Check if the field has the given value.
+    $this->assertEquals($normalized_entity->getAttribute('field_1')->getValues(), array('en' => array('test', 'test2'), 'nl' => array('test', 'test2')));
+  }
+
+  /**
+   * Tests the normalize() method
+   *
    * Tests 1 field and the created and changed fields. Make sure there is
    * no changed or created field in the final attributes as those are
    * excluded.
    *
    * @covers ::normalize
+   * @covers ::addFieldsToContentHubEntity
+   * @covers ::excludedProperties
    */
   public function testNormalizeWithCreatedAndChanged() {
     $definitions = array(
@@ -195,9 +273,144 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   /**
    * Tests the normalize() method
    *
+   * Tests 1 field but with any content in it. The field should not be present
+   * and should be ignored.
+   *
+   * @covers ::normalize
+   * @covers ::addFieldsToContentHubEntity
+   */
+  public function testNormalizeWithNoFieldValue() {
+    $definitions = array(
+      'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, NULL, array()),
+    );
+
+    // Set our Serializer and expected serialized return value for the given
+    // fields.
+    $serializer = $this->getFieldsSerializer($definitions);
+    $this->contentEntityNormalizer->setSerializer($serializer);
+
+    // Create our Content Entity.
+    $content_entity_mock = $this->createMockForContentEntity($definitions, array('en'));
+
+    // Normalize the Content Entity with the class that we are testing.
+    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'content_hub_cdf');
+
+    // Check if valid result.
+    $this->doTestValidResultForOneEntity($normalized);
+    // Get our Content Hub Entity out of the result.
+    $normalized_entity = $this->getContentHubEntityFromResult($normalized);
+    // Field created should not be part of the normalizer.
+    $this->assertFalse($normalized_entity->getAttribute('field_1'));
+  }
+
+  /**
+   * Tests the normalize() method
+   *
+   * Test that we can also map field names. The field type String maps to the
+   * content hub type array<string> while the field name title field is
+   * explicitely mapped to the singular version "string" for the content hub
+   * types. Test that this is actually the case.
+   *
+   * @covers ::normalize
+   * @covers ::addFieldsToContentHubEntity
+   */
+  public function testNormalizeWithFieldNameAsType() {
+    $definitions = array(
+      'title' => $this->createMockFieldListItem('title', 'string', TRUE, NULL, array('0' => array('value' => 'test'))),
+    );
+
+    // Set our Serializer and expected serialized return value for the given
+    // fields.
+    $serializer = $this->getFieldsSerializer($definitions);
+    $this->contentEntityNormalizer->setSerializer($serializer);
+
+    // Create our Content Entity.
+    $content_entity_mock = $this->createMockForContentEntity($definitions, array('en'));
+
+    // Normalize the Content Entity with the class that we are testing.
+    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'content_hub_cdf');
+
+    // Check if valid result.
+    $this->doTestValidResultForOneEntity($normalized);
+    // Get our Content Hub Entity out of the result.
+    $normalized_entity = $this->getContentHubEntityFromResult($normalized);
+    // Check if field_1 has the correct values
+    // Different expected value. Title is never plural.
+    $this->assertEquals($normalized_entity->getAttribute('title')->getValues(), array('en' => 'test'));
+  }
+
+  /**
+   * Tests the normalize() method
+   *
+   * Tests that we support other field types such as boolean, etc..
+   *
+   * @covers ::normalize
+   * @covers ::addFieldsToContentHubEntity
+   */
+  public function testNormalizeWithNonStringFieldType() {
+    $definitions = array(
+      'voted' => $this->createMockFieldListItem('voted', 'boolean', TRUE, NULL, array('0' => array('value' => TRUE))),
+    );
+
+    // Set our Serializer and expected serialized return value for the given
+    // fields.
+    $serializer = $this->getFieldsSerializer($definitions);
+    $this->contentEntityNormalizer->setSerializer($serializer);
+
+    // Create our Content Entity.
+    $content_entity_mock = $this->createMockForContentEntity($definitions, array('en'));
+
+    // Normalize the Content Entity with the class that we are testing.
+    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'content_hub_cdf');
+
+    // Check if valid result.
+    $this->doTestValidResultForOneEntity($normalized);
+    // Get our Content Hub Entity out of the result.
+    $normalized_entity = $this->getContentHubEntityFromResult($normalized);
+    // Check if field_1 has the correct values
+    // Different expected value. Title is never plural.
+    $this->assertEquals($normalized_entity->getAttribute('voted')->getValues(), array('en' => array(TRUE)));
+  }
+
+  /**
+   * Tests the normalize() method
+   *
+   * Tests that we support complex fields with more than just a value key.
+   *
+   * @covers ::normalize
+   * @covers ::addFieldsToContentHubEntity
+   */
+  public function testNormalizeWithComplexFieldValues() {
+    $definitions = array(
+      'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, NULL, array('0' => array('value' => 'test', 'random_key' => 'random_data'))),
+    );
+
+    // Set our Serializer and expected serialized return value for the given
+    // fields.
+    $serializer = $this->getFieldsSerializer($definitions);
+    $this->contentEntityNormalizer->setSerializer($serializer);
+
+    // Create our Content Entity.
+    $content_entity_mock = $this->createMockForContentEntity($definitions, array('en'));
+
+    // Normalize the Content Entity with the class that we are testing.
+    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'content_hub_cdf');
+
+    // Check if valid result.
+    $this->doTestValidResultForOneEntity($normalized);
+    // Get our Content Hub Entity out of the result.
+    $normalized_entity = $this->getContentHubEntityFromResult($normalized);
+    // Check if field_1 has the correct values
+    $this->assertEquals($normalized_entity->getAttribute('field_1')->getValues(), array('en' => array('{"value":"test","random_key":"random_data"}')));
+  }
+
+  /**
+   * Tests the normalize() method
+   *
    * Tests 2 fields. The user has access to 1 field but not the other.
    *
    * @covers ::normalize
+   * @covers ::addFieldsToContentHubEntity
    */
   public function testNormalizeWithFieldWithoutAccess() {
     $definitions = array(
@@ -233,6 +446,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * field 2 is not.
    *
    * @covers ::normalize
+   * @covers ::addFieldsToContentHubEntity
    */
   public function testNormalizeWithAccountContext() {
     $mock_account = $this->getMock('Drupal\Core\Session\AccountInterface');
@@ -267,9 +481,102 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   }
 
   /**
-   * Check if the base result set is correctly set to 1 entity.
+   * Tests the normalize() method
    *
-   * @param $normalized
+   * Tests 1 entity reference field and checks if it appears in the normalized
+   * result. It should return the UUID of the referenced item.
+   *
+   * @covers ::normalize
+   * @covers ::addFieldsToContentHubEntity
+   */
+  public function testNormalizeReferenceField() {
+    $definitions = array(
+      'field_ref' => $this->createMockEntityReferenceFieldItemList('field_ref', TRUE, NULL),
+    );
+
+    // Set our Serializer and expected serialized return value for the given
+    // fields.
+    $serializer = $this->getFieldsSerializer($definitions);
+    $this->contentEntityNormalizer->setSerializer($serializer);
+
+    // Create our Content Entity.
+    $content_entity_mock = $this->createMockForContentEntity($definitions, array('en'));
+
+    // Normalize the Content Entity with the class that we are testing.
+    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'content_hub_cdf');
+
+    // Check if valid result.
+    $this->doTestValidResultForOneEntity($normalized);
+    // Get our Content Hub Entity out of the result.
+    $normalized_entity = $this->getContentHubEntityFromResult($normalized);
+
+    // Check if the field has the given value.
+    $this->assertEquals($normalized_entity->getAttribute('field_ref')->getValues(), array('en' => array('test-uuid-reference-1', 'test-uuid-reference-2')));
+  }
+
+  /**
+   * Tests the normalize() method
+   *
+   * Tests 1 entity reference field and checks if it appears in the normalized
+   * result. It should return the id of the referenced item.
+   *
+   * @covers ::normalize
+   * @covers ::addFieldsToContentHubEntity
+   */
+  public function testNormalizeTypeReferenceField() {
+    $definitions = array(
+      'type' => $this->createMockEntityReferenceFieldItemList('type', TRUE, NULL),
+    );
+
+    // Set our Serializer and expected serialized return value for the given
+    // fields.
+    $serializer = $this->getFieldsSerializer($definitions);
+    $this->contentEntityNormalizer->setSerializer($serializer);
+
+    // Create our Content Entity.
+    $content_entity_mock = $this->createMockForContentEntity($definitions, array('en'));
+
+    // Normalize the Content Entity with the class that we are testing.
+    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'content_hub_cdf');
+
+    // Check if valid result.
+    $this->doTestValidResultForOneEntity($normalized);
+    // Get our Content Hub Entity out of the result.
+    $normalized_entity = $this->getContentHubEntityFromResult($normalized);
+
+    // Check if the field has the given value.
+    $this->assertEquals($normalized_entity->getAttribute('type')->getValues(), array('en' => array('test-id-reference-1', 'test-id-reference-2')));
+  }
+
+  /**
+   * Test the getFieldTypeMapping method.
+   *
+   * @covers ::getFieldTypeMapping
+   */
+  public function testGetFieldTypeMapping() {
+    $mapping = $this->contentEntityNormalizer->getFieldTypeMapping();
+    $this->assertNotEmpty($mapping);
+    $this->assertEquals('array<boolean>', $mapping['boolean']);
+    $this->assertEquals(NULL, $mapping['password']);
+    $this->assertEquals('array<number>', $mapping['decimal']);
+    $this->assertEquals('array<reference>', $mapping['entity_reference']);
+    $this->assertEquals('array<string>', $mapping['fallback']);
+    $this->assertEquals('string', $mapping['title']);
+    $this->assertEquals('string', $mapping['langcode']);
+  }
+
+  /**
+   * Test the denormalize method.
+   *
+   * @covers ::denormalize
+   */
+  public function testDenormalize() {
+    $denormalized = $this->contentEntityNormalizer->denormalize();
+    $this->assertNull($denormalized);
+  }
+
+  /**
+   * Check if the base result set is correctly set to 1 entity.
    */
   private function doTestValidResultForOneEntity($normalized) {
     // Start testing our result set.
@@ -388,6 +695,45 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $mock->method('getValue')->willReturn($return_value);
 
     $mock->method('getFieldDefinition')->willReturn($field_def);
+
+    return $mock;
+  }
+
+  /**
+   * Creates a mock field entity reference field item list.
+   *
+   * @param bool $access
+   *
+   * @return \Drupal\Core\Field\FieldItemListInterface|\PHPUnit_Framework_MockObject_MockObject
+   */
+  protected function createMockEntityReferenceFieldItemList($name, $access = TRUE, $user_context = NULL) {
+    $mock = $this->getMock('Drupal\Core\Field\EntityReferenceFieldItemListInterface');
+    $mock->method('access')
+      ->with('view', $user_context)
+      ->will($this->returnValue($access));
+
+    $field_def = $this->getMock('\Drupal\Core\Field\FieldDefinitionInterface');
+    $field_def->method('getName')->willReturn($name);
+    $field_def->method('getType')->willReturn('entity_reference');
+
+    $mock->method('getValue')->willReturn('bla');
+
+    $referenced_entities = [];
+    $entity1 = $this->getMock('\Drupal\Core\Entity\EntityInterface');
+    $entity1->method('id')->willReturn('test-id-reference-1');
+    $entity1->method('uuid')->willReturn('test-uuid-reference-1');
+    $referenced_entities[] = $entity1;
+
+    $entity2 = $this->getMock('\Drupal\Core\Entity\EntityInterface');
+    $entity2->method('id')->willReturn('test-id-reference-2');
+    $entity2->method('uuid')->willReturn('test-uuid-reference-2');
+    $referenced_entities[] = $entity2;
+
+
+    $mock->method('getFieldDefinition')->willReturn($field_def);
+
+
+    $mock->method('referencedEntities')->willReturn($referenced_entities);
 
     return $mock;
   }
