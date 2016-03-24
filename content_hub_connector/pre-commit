@@ -1,8 +1,19 @@
 #!/bin/bash
 # PHP CodeSniffer pre-commit hook for git
 
-if [ ! -x content_hub_connector/vendor/bin/phpcs ]; then
-    echo "PHP CodeSniffer bin not found or executable -> $PHPCS_BIN. Please be sure to composer install all dev-dependencies."
+# We assume the module is installed in modules/content_hub
+if [ ! -x "$(command -v phpcs)" ]; then
+    echo "PHP CodeSniffer bin not found or executable -> $PHPCS_BIN."
+    echo "Please install phpcs using 'composer global require \"squizlabs/php_codesniffer=*\"'"
+    exit 1
+fi
+
+phpcs -i | grep 'Drupal' > /dev/null
+status=$?
+
+if [ $status -ne 0 ]; then
+    echo "Please install the Drupal code standards using 'composer global require drupal/coder'"
+    echo "More instructions can be found at https://www.drupal.org/node/1419988"
     exit 1
 fi
 
@@ -12,8 +23,7 @@ if [ "$FILES" == "" ]; then
     exit 0
 fi
 
-cd content_hub_connector;
-OUTPUT=$(vendor/bin/phpcs)
+OUTPUT=$(phpcs --standard=Drupal --extensions='php,module,inc,install,test,profile,theme,js,css,info,txt' content_hub_connector )
 
 if [ "$OUTPUT" != "" ]; then
   echo "$OUTPUT"

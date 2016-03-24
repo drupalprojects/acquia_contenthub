@@ -12,10 +12,6 @@
   "require": {
     "acquia/content-hub-php": "dev-CHMS-158-shay"
   },
-  "require-dev": {
-    "squizlabs/php_codesniffer": "~2.0",
-    "drupal/coder": "^8.2"
-  },
   "scripts": {
     "post-install-cmd": [
         "@install-pre-commit"

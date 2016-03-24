@@ -1,7 +1,7 @@
 <?php
-
 /**
  * @file
+ * Contains content_hub_connector.module.
  */
 
 use Drupal\Core\Entity\EntityInterface;

@@ -89,7 +89,7 @@ class ContentEntityNormalizer extends NormalizerBase {
   /**
    * Normalizes an object into a set of arrays/scalars.
    *
-   * @param \Drupal\Core\Entity\ContentEntityInterface $entity
+   * @param object $entity
    *   Object to normalize. Due to the constraints of the class, we know that
    *   the object will be of the ContentEntityInterface type.
    * @param string $format
@@ -100,7 +100,7 @@ class ContentEntityNormalizer extends NormalizerBase {
    * @return array|string|bool|int|float|null
    *   Return normalized data.
    */
-  public function normalize(ContentEntityInterface $entity, $format = NULL, array $context = array()) {
+  public function normalize($entity, $format = NULL, array $context = array()) {
     $context += array(
       'account' => NULL,
     );
