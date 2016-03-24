@@ -13,7 +13,10 @@ use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Tests\UnitTestCase;
 
 /**
+ * PHPUnit test for the ContentEntityNormalizer class.
+ *
  * @coversDefaultClass \Drupal\content_hub_connector\Normalizer\ContentEntityNormalizer
+ *
  * @group content_hub_connector
  */
 class ContentEntityNormalizerTest extends UnitTestCase {
@@ -98,6 +101,8 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   }
 
   /**
+   * Test the supportsNormalization method.
+   *
    * @covers ::supportsNormalization
    */
   public function testSupportsNormalization() {
@@ -108,6 +113,8 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   }
 
   /**
+   * Test the getBaseRoot function.
+   *
    * @covers ::getBaseRoot
    */
   public function testGetBaseRoot() {
@@ -222,7 +229,11 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     // Check if there was a type property set to the entity type.
     $this->assertEquals('node', $normalized_entity->getType());
     // Check if the field has the given value.
-    $this->assertEquals($normalized_entity->getAttribute('field_1')->getValues(), array('en' => array('test', 'test2'), 'nl' => array('test', 'test2')));
+    $expected_output = array(
+      'en' => array('test', 'test2'),
+      'nl' => array('test', 'test2'),
+    );
+    $this->assertEquals($normalized_entity->getAttribute('field_1')->getValues(), $expected_output);
   }
 
   /**
@@ -589,8 +600,11 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * Get the Content Hub Entity from our normalized array.
    *
    * @param array $normalized
+   *   The normalized array structure containing the content hub entity
+   *   objects.
    *
    * @return \Acquia\ContentHubClient\Entity
+   *   The first ContentHub Entity from the resultset.
    */
   private function getContentHubEntityFromResult(array $normalized) {
     // Since there is only 1 entity, we are fairly certain the first one is
@@ -610,6 +624,9 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * results.
    *
    * @param array $definitions
+   *   The field definitions.
+   * @param array $user_context
+   *   The user context such as the account.
    */
   protected function getFieldsSerializer(array $definitions, $user_context = NULL) {
     $serializer = $this->getMockBuilder('Symfony\Component\Serializer\Serializer')
@@ -633,14 +650,27 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   /**
    * Creates a mock content entity.
    *
-   * @param $definitions
+   * @param array $definitions
+   *   The field definitions.
+   * @param array $languages
+   *   The languages that this fake entity should have.
    *
    * @return \PHPUnit_Framework_MockObject_MockObject
+   *   The fake ContentEntity.
    */
   public function createMockForContentEntity($definitions, $languages) {
+    $enabled_methods = array(
+      'getFields',
+      'getEntityTypeId',
+      'uuid',
+      'get',
+      'getTranslationLanguages',
+      'getTranslation',
+    );
+
     $content_entity_mock = $this->getMockBuilder('Drupal\Core\Entity\ContentEntityBase')
       ->disableOriginalConstructor()
-      ->setMethods(array('getFields', 'getEntityTypeId', 'uuid', 'get', 'getTranslationLanguages', 'getTranslation'))
+      ->setMethods($enabled_methods)
       ->getMockForAbstractClass();
 
     $content_entity_mock->method('getFields')->willReturn($definitions);
@@ -666,7 +696,10 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   }
 
   /**
+   * Returns a fake ContentHubAdminConfig object.
    *
+   * @return \Drupal\Core\Config\ImmutableConfig
+   *   The fake config.
    */
   public function createMockForContentHubAdminConfig() {
     $content_hub_admin_config = $this->getMockBuilder('Drupal\Core\Config\ImmutableConfig')
@@ -683,8 +716,10 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * Creates a mock field list item.
    *
    * @param bool $access
+   *   Defines wether anyone has access to this field or not.
    *
    * @return \Drupal\Core\Field\FieldItemListInterface|\PHPUnit_Framework_MockObject_MockObject
+   *   The mocked field items.
    */
   protected function createMockFieldListItem($name, $type = 'string', $access = TRUE, $user_context = NULL, $return_value = array()) {
     $mock = $this->getMock('Drupal\Core\Field\FieldItemListInterface');
@@ -707,8 +742,10 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * Creates a mock field entity reference field item list.
    *
    * @param bool $access
+   *   Defines wether anyone has access to this field or not.
    *
    * @return \Drupal\Core\Field\FieldItemListInterface|\PHPUnit_Framework_MockObject_MockObject
+   *   The mocked field items.
    */
   protected function createMockEntityReferenceFieldItemList($name, $access = TRUE, $user_context = NULL) {
     $mock = $this->getMock('Drupal\Core\Field\EntityReferenceFieldItemListInterface');
@@ -743,6 +780,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * Creates a mock language list.
    *
    * @return \Drupal\Core\Language\LanguageInterface[]|\PHPUnit_Framework_MockObject_MockObject
+   *   The mocked Languages.
    */
   protected function createMockLanguageList($languages = array('en')) {
     $language_objects = array();
