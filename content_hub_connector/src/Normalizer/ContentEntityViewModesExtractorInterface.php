@@ -26,6 +26,4 @@ interface ContentEntityViewModesExtractorInterface {
    */
   public function getRenderedViewModes(ContentEntityInterface $object);
 
-
-
 }

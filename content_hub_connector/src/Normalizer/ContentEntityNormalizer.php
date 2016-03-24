@@ -112,8 +112,24 @@ class ContentEntityNormalizer extends NormalizerBase {
     $entity_type_id = $context['entity_type'] = $entity->getEntityTypeId();
     $entity_uuid = $entity->uuid();
     $origin = $this->contentHubAdminConfig->get('origin');
-    $created = date('c', $entity->get('created')->getValue()[0]['value']);
-    $modified = date('c', $entity->get('created')->getValue()[0]['value']);
+
+    // Required Created field.
+    if ($entity->get('created')) {
+      $created = date('c', $entity->get('created')->getValue()[0]['value']);
+    }
+    else {
+      $created = date('c');
+    }
+
+    // Required Modified field.
+    if ($entity->get('changed')) {
+      $modified = date('c', $entity->get('changed')->getValue()[0]['value']);
+    }
+    else {
+      $modified = date('c');
+    }
+
+    // Base Root Path.
     $base_root = $this->getBaseRoot();
 
     // Initialize Content Hub entity.
