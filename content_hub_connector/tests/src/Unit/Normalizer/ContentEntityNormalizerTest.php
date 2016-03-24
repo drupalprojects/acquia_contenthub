@@ -108,7 +108,9 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   }
 
   /**
-   * Tests the normalize() method without a mandatory created and changed field.
+   * Tests the normalize() method
+   *
+   * Tests 1 field and checks if it appears in the normalized result.
    *
    * @covers ::normalize
    */
@@ -148,7 +150,11 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   }
 
   /**
-   * Tests the normalize() method with a regular entity and no view modes.
+   * Tests the normalize() method
+   *
+   * Tests 1 field and the created and changed fields. Make sure there is
+   * no changed or created field in the final attributes as those are
+   * excluded.
    *
    * @covers ::normalize
    */
@@ -180,10 +186,16 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $this->assertEquals($normalized_entity->getModified(), date('c', 1458811509));
     // Check if field_1 has the correct values
     $this->assertEquals($normalized_entity->getAttribute('field_1')->getValues(), array('en' => array('test')));
+    // Field created should not be part of the normalizer.
+    $this->assertFalse($normalized_entity->getAttribute('created'));
+    // Field changed should not be part of the normalizer.
+    $this->assertFalse($normalized_entity->getAttribute('changed'));
   }
 
   /**
-   * Tests the normalize() method with a regular entity and no view modes.
+   * Tests the normalize() method
+   *
+   * Tests 2 fields. The user has access to 1 field but not the other.
    *
    * @covers ::normalize
    */
@@ -215,7 +227,10 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   }
 
   /**
-   * Tests the normalize() method with account context passed.
+   * Tests the normalize() method
+   *
+   * Tests 2 fields given a passed user context. Field 1 is accessible, but
+   * field 2 is not.
    *
    * @covers ::normalize
    */
