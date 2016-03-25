@@ -49,13 +49,13 @@ function hook_content_hub_connector_exclude_field_alter(array &$excluded_fields,
  *
  * @param array $mapping
  *   The mapping of field types to their Content Hub Types. Example:
- *   $mapping = array(
+ *   $mapping = [
  *     'entity_reference => 'array<reference>',
  *     'integer' => 'array<integer>',
  *     'timespan' => 'array<integer>',
  *     'timestamp' => 'array<integer>',
  *     ...
- *   );
+ *   ];
  *   Available Content Hub Types, all are also available as multiple.
  *   - integer
  *   - string

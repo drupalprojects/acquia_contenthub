@@ -57,14 +57,12 @@ class ClientManager implements ClientManagerInterface {
    * @throws \Drupal\content_hub_connector\ContentHubConnectorException
    *   Throws exception when cannot connect to Content Hub.
    */
-  public function getClient($config = array()) {
+  public function getClient($config = []) {
     // @todo Make sure this injects using proper service injection methods.
     $config_drupal = $this->configFactory->get('content_hub_connector.admin_settings');
 
     // Override configuration.
-    $config = array_merge(array(
-      'base_url' => $config_drupal->get('hostname'),
-    ), $config);
+    $config = array_merge(['base_url' => $config_drupal->get('hostname')], $config);
 
     // Get API information.
     $api = $config_drupal->get('api_key');

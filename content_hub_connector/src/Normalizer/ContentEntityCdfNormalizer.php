@@ -107,10 +107,8 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    * @return array|string|bool|int|float|null
    *   Return normalized data.
    */
-  public function normalize($entity, $format = NULL, array $context = array()) {
-    $context += array(
-      'account' => NULL,
-    );
+  public function normalize($entity, $format = NULL, array $context = []) {
+    $context += ['account' => NULL];
 
     // Exit if the class does not support normalizing to the given format.
     if (!$this->supportsNormalization($entity, $format)) {
@@ -151,10 +149,10 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       ->setModified($modified);
 
     if ($view_modes = $this->contentEntityViewModesNormalizer->getRenderedViewModes($entity)) {
-      $content_hub_entity->setMetadata(array(
+      $content_hub_entity->setMetadata([
         'base_root' => $base_root,
         'view_modes' => $view_modes,
-      ));
+      ]);
     }
 
     // We have to iterate over the entity translations and add all the
@@ -167,11 +165,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     }
 
     // Create the array of normalized fields, starting with the URI.
-    $normalized = array(
-      'entities' => array(
-        $content_hub_entity,
-      ),
-    );
+    $normalized = ['entities' => [$content_hub_entity]];
 
     return $normalized;
   }
@@ -235,7 +229,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         $type = $type_mapping[$field_type];
       }
 
-      $values = array();
+      $values = [];
       if ($field instanceof \Drupal\Core\Field\EntityReferenceFieldItemListInterface) {
 
         /** @var \Drupal\Core\Entity\EntityInterface[] $referenced_entities */
@@ -342,7 +336,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    * @see hook_content_hub_connector_field_type_mapping_alter()
    */
   public function getFieldTypeMapping() {
-    $mapping = array();
+    $mapping = [];
     // It's easier to write and understand this array in the form of
     // $default_mapping => array($data_types) and flip it below.
     $default_mapping = array(

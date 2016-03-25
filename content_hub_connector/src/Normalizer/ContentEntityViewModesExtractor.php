@@ -133,7 +133,7 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
    *   The normalized array.
    */
   public function getRenderedViewModes(ContentEntityInterface $object) {
-    $normalized = array();
+    $normalized = [];
 
     // Exit if the class does not support normalizing to the given format.
     if (!$this->isChildOfSupportedClass($object)) {
@@ -160,15 +160,16 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
       // and the content shown to any user is 100% the same.
       $url = Url::fromRoute('content_hub_connector.content_entity_display.node', ['node' => $object->id(), 'view_mode_name' => $view_mode_id])->toString();
       $request = Request::create($url);
+
       /** @var \Drupal\Core\Render\HtmlResponse $response */
       $response = $this->kernel->handle($request, HttpKernelInterface::SUB_REQUEST);
 
-      $normalized[$view_mode_id] = array(
+      $normalized[$view_mode_id] = [
         'id' => $view_mode_id,
         'label' => $view_mode['label'],
         'url' => $url,
         'html' => $response->getContent(),
-      );
+      ];
     }
 
     return $normalized;

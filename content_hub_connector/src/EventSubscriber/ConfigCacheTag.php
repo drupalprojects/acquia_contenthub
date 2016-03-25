@@ -49,7 +49,7 @@ class ConfigCacheTag implements EventSubscriberInterface {
     // sub-optimal but a config change does not happen that frequently and is
     // therefor an acceptable solution.
     if ($event->getConfig()->getName() === 'content_hub_connector.entity_config') {
-      $this->cacheTagsInvalidator->invalidateTags(array('config:rest.settings'));
+      $this->cacheTagsInvalidator->invalidateTags(['config:rest.settings']);
     }
   }
 
