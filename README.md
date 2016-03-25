@@ -9,5 +9,5 @@ cd modules/content_hub
 If you want automatic code standards checking, please run composer install in the content_hub_connector module or do:
 
 ```
-if [ -x .git/hooks ]; then cp content_hub_connector/pre-commit .git/hooks/pre-commit; fi
+if [ -x .git/hooks ]; then cp content_hub_connector/pre-commit.dist .git/hooks/pre-commit; fi
 ```
