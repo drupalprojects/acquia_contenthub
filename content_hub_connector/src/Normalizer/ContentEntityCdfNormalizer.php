@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\content_hub_connector\Normalizer\ContentEntityNormalizer.
+ * Contains \Drupal\content_hub_connector\Normalizer\ContentEntityCdfNormalizer.
  */
 
 namespace Drupal\content_hub_connector\Normalizer;
@@ -18,7 +18,14 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 /**
  * Converts the Drupal entity object to a Acquia Content Hub CDF array.
  */
-class ContentEntityNormalizer extends NormalizerBase {
+class ContentEntityCdfNormalizer extends NormalizerBase {
+
+  /**
+   * The format that the Normalizer can handle.
+   *
+   * @var string
+   */
+  protected $format = 'content_hub_cdf';
 
   /**
    * The interface or class that this Normalizer supports.

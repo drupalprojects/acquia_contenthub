@@ -16,13 +16,6 @@ use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 abstract class NormalizerBase extends SerializationNormalizerBase implements DenormalizerInterface {
 
   /**
-   * The format that the Normalizer can handle.
-   *
-   * @var string
-   */
-  protected $format = 'content_hub_cdf';
-
-  /**
    * {@inheritdoc}
    */
   public function supportsDenormalization($data, $type, $format = NULL) {

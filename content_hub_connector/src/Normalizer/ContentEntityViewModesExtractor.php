@@ -7,16 +7,17 @@
 
 namespace Drupal\content_hub_connector\Normalizer;
 
-use Drupal\Core\Asset\AssetCollectionRendererInterface;
-use Drupal\Core\Asset\AssetResolverInterface;
-use Drupal\Core\Asset\AttachedAssets;
+use Drupal\Component\Utility\Crypt;
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityDisplayRepository;
 use Drupal\Core\Entity\EntityTypeManager;
+use Drupal\Core\Render\Markup;
 use Drupal\Core\Render\Renderer;
 use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\Core\Session\UserSession;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\HttpKernelInterface;
 
 /**
  * Extracts the rendered view modes from a given ContentEntity Object.
@@ -58,6 +59,13 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
   protected $entityConfig;
 
   /**
+   * The entity config.
+   *
+   * @var \Symfony\Component\HttpKernel\HttpKernelInterface
+   */
+  protected $kernel;
+
+  /**
    * Constructs a ContentEntityViewModesExtractor object.
    *
    * @param \Drupal\Core\Session\AccountProxyInterface $current_user
@@ -70,22 +78,16 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
    *   The entity type manager.
    * @param \Drupal\Core\Render\Renderer $renderer
    *   The renderer.
-   * @param \Drupal\Core\Asset\AssetResolverInterface $asset_resolver
-   *   The asset resolver.
-   * @param \Drupal\Core\Asset\AssetCollectionRendererInterface $css_collection_renderer
-   *   The CSS collection renderer.
-   * @param \Drupal\Core\Asset\AssetCollectionRendererInterface $js_collection_renderer
-   *   The JS collection renderer.
+   * @param \Symfony\Component\HttpKernel\HttpKernelInterface $kernel
+   *   The renderer.
    */
-  public function __construct(AccountProxyInterface $current_user, ConfigFactory $config_factory, EntityDisplayRepository $entity_display_repository, EntityTypeManager $entity_type_manager, Renderer $renderer, AssetResolverInterface $asset_resolver, AssetCollectionRendererInterface $css_collection_renderer, AssetCollectionRendererInterface $js_collection_renderer) {
+  public function __construct(AccountProxyInterface $current_user, ConfigFactory $config_factory, EntityDisplayRepository $entity_display_repository, EntityTypeManager $entity_type_manager, Renderer $renderer, HttpKernelInterface $kernel) {
     $this->currentUser = $current_user;
     $this->entityConfig = $config_factory->get('content_hub_connector.entity_config');
     $this->entityDisplayRepository = $entity_display_repository;
     $this->entityTypeManager = $entity_type_manager;
     $this->renderer = $renderer;
-    $this->assetResolver = $asset_resolver;
-    $this->cssCollectionRenderer = $css_collection_renderer;
-    $this->jsCollectionRenderer = $js_collection_renderer;
+    $this->kernel = $kernel;
   }
 
   /**
@@ -103,7 +105,6 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
     if (!is_object($data)) {
       return FALSE;
     }
-
     $supported = (array) $this->supportedInterfaceOrClass;
 
     return (bool) array_filter($supported, function($name) use ($data) {
@@ -113,6 +114,12 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
 
   /**
    * Renders all the view modes that are configured to be rendered.
+   *
+   * @param ContentEntityInterface $object
+   *   The Content Entity object.
+   *
+   * @return array|null
+   *   The normalized array.
    */
   public function getRenderedViewModes(ContentEntityInterface $object) {
     $normalized = array();
@@ -132,78 +139,129 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
 
     // Normalize.
     $view_modes = $this->entityDisplayRepository->getViewModes($entity_type_id);
-    $view_builder = $this->entityTypeManager->getViewBuilder($entity_type_id);
+
+    foreach ($view_modes as $view_mode_id => $view_mode) {
+      if (!in_array($view_mode_id, $config['rendering'])) {
+        continue;
+      }
+
+      // @todo: Figure out if this is a security risk?
+      $request = Request::create('/content-hub-connector/display/' . $entity_type_id . '/' . $object->id() . '/' . $view_mode_id);
+      /** @var \Drupal\Core\Render\HtmlResponse $response */
+      $response = $this->kernel->handle($request, HttpKernelInterface::SUB_REQUEST);
+
+      $normalized[$view_mode_id] = array(
+        'id' => $view_mode_id,
+        'label' => $view_mode['label'],
+        'html' => $response->getContent(),
+      );
+    }
+
+    return $normalized;
+  }
+
+  /**
+   * Renders all the view modes that are configured to be rendered.
+   *
+   * @param ContentEntityInterface $object
+   *   The Content Entity Object.
+   * @param string $view_mode
+   *   The request view mode identifier.
+   *
+   * @return array
+   *   The render array for the complete page, as minimal as possible.
+   */
+  public function getViewModeMinimalHtml(ContentEntityInterface $object, $view_mode) {
+    // Exit if the object is configured not to be rendered.
+    $entity_type_id = $object->getEntityTypeId();
 
     // Switch to temporary user for rendering as configured role.
     $original_account = $this->currentUser->getAccount();
     $user_role = $this->entityConfig->get('user_role');
     $this->currentUser->setAccount(new UserSession(array('roles' => array($user_role))));
 
-    foreach ($view_modes as $view_mode_id => $view_mode) {
-      if (!in_array($view_mode_id, $config['rendering'])) {
-        continue;
-      }
-      $render_array = $view_builder->view($object, $view_mode_id);
+    $build = $this->entityTypeManager->getViewBuilder($entity_type_id)
+      ->view($object, $view_mode);
 
-      // Add our cacheableDependency. If this config changes, clear the render
-      // cache.
-      $this->renderer->addCacheableDependency($render_array, $this->entityConfig);
+    // Add our cacheableDependency. If this config changes, clear the render
+    // cache.
+    $this->renderer->addCacheableDependency($build, $this->entityConfig);
 
-      $html = [];
-      $html['body'] = $this->renderer->renderRoot($render_array);
-      $all_assets = $this->gatherAssetMarkup($render_array);
-      $html += $this->renderAssets($all_assets);
-      $normalized[$view_mode_id] = array(
-        'id' => $view_mode_id,
-        'label' => $view_mode['label'],
-        'html' => $html,
-      );
-    }
+    $html = $this->getMinimalHtml($build);
 
     // Switch back to original user.
     $this->currentUser->setAccount($original_account);
 
-    return $normalized;
+    return $html;
   }
 
   /**
-   * Renders an array of assets.
+   * Renders a given render array in minimal HTML.
    *
-   * @param array $all_assets
-   *   An array of all unrendered assets keyed by type.
+   * Minimal HTML is in this case defined as:
+   * - valid HTML
+   * - <head> only containing CSS and JS
+   * - <body> only containing the passed in content plus footer JS
+   * - i.e. no meta tags, no title, no theme CSS …
+   *
+   *
+   * Renders a HTML response with a hardcoded HTML template (i.e. no theme
+   * involved), optimized for the purposes of Content Hub, with only the
+   * absolutely minimal HTML required.
+   *
+   * Only $body still goes through the theme system, because it is rendered
+   * using Render API, which itself calls the theme system, and hence uses the
+   * active theme.
+   *
+   * @param array $body
+   *   A render array.
    *
    * @return array
-   *   An array of all rendered assets keyed by type.
+   *   The render array for the complete page, as minimal as possible.
    */
-  private function renderAssets(array $all_assets) {
-    $renderer_assets = [];
-    foreach ($all_assets as $asset_type => $assets) {
-      $renderer_assets[$asset_type] = [];
-      foreach ($assets as $asset) {
-        $renderer_assets[$asset_type][] = $this->renderer->renderRoot($asset);
-      }
+  protected function getMinimalHtml(array $body) {
+    // Attachments to render the CSS, header JS and footer JS.
+    // @see \Drupal\Core\Render\HtmlResponseSubscriber
+    $html_attachments = [];
+    $types = [
+      'styles' => 'css',
+      'scripts' => 'js',
+      'scripts_bottom' => 'js-bottom',
+    ];
+    $placeholder_token = Crypt::randomBytesBase64(55);
+    foreach ($types as $type => $placeholder_name) {
+      $placeholder = '<' . $placeholder_name . '-placeholder token="' . $placeholder_token . '">';
+      $html_attachments['html_response_attachment_placeholders'][$type] = $placeholder;
     }
-    return $renderer_assets;
-  }
 
-  /**
-   * Gathers the markup for each type of asset.
-   *
-   * @param array $render_array
-   *   The render array for the entity.
-   *
-   * @return array
-   *   An array of rendered assets. See self::getRenderedEntity() for the keys.
-   */
-  private function gatherAssetMarkup(array $render_array) {
-    $assets = AttachedAssets::createFromRenderArray($render_array);
-    // Render the asset collections.
-    $css_assets = $this->assetResolver->getCssAssets($assets, FALSE);
-    $all_assets['styles'] = $this->cssCollectionRenderer->render($css_assets);
-    list($js_assets_header, $js_assets_footer) = $this->assetResolver->getJsAssets($assets, FALSE);
-    $all_assets['scripts'] = $this->jsCollectionRenderer->render($js_assets_header);
-    $all_assets['scripts_bottom'] = $this->jsCollectionRenderer->render($js_assets_footer);
-    return $all_assets;
+    // Hardcoded equivalent of core/modules/system/templates/html.html.twig.
+    $html_top = <<<HTML
+<!DOCTYPE html>
+<html>
+  <head>
+    <css-placeholder token="$placeholder_token">
+    <js-placeholder token="$placeholder_token">
+  </head>
+  <body>
+HTML;
+    $html_bottom = <<<HTML
+    <js-bottom-placeholder token="$placeholder_token">
+  </body>
+</html>
+HTML;
+
+    // Render array representing the entire HTML to be rendered.
+    $html = [
+      '#prefix' => Markup::create($html_top),
+      'body' => $body,
+      '#suffix' => Markup::create($html_bottom),
+      '#attached' => $html_attachments,
+    ];
+
+    // Render the render array.
+    $this->renderer->renderRoot($html);
+
+    return $html;
   }
 
 }
