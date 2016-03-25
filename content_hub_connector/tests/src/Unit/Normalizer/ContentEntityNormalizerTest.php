@@ -7,7 +7,7 @@
 
 namespace Drupal\Tests\content_hub_connector\Unit\Normalizer;
 
-use Drupal\content_hub_connector\Normalizer\ContentEntityNormalizer;
+use Drupal\content_hub_connector\Normalizer\ContentEntityCdfNormalizer;
 use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Tests\UnitTestCase;
@@ -15,7 +15,7 @@ use Drupal\Tests\UnitTestCase;
 /**
  * PHPUnit test for the ContentEntityNormalizer class.
  *
- * @coversDefaultClass \Drupal\content_hub_connector\Normalizer\ContentEntityNormalizer
+ * @coversDefaultClass \Drupal\content_hub_connector\Normalizer\ContentEntityCdfNormalizer
  *
  * @group content_hub_connector
  */
@@ -38,7 +38,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   /**
    * The normalizer under test.
    *
-   * @var \Drupal\content_hub_connector\Normalizer\ContentEntityNormalizer
+   * @var \Drupal\content_hub_connector\Normalizer\ContentEntityCdfNormalizer
    */
   protected $contentEntityNormalizer;
 
@@ -88,7 +88,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $this->contentEntityViewModesExtractor = $this->getMock('\Drupal\content_hub_connector\Normalizer\ContentEntityViewModesExtractorInterface');
     $this->moduleHandler = $this->getMock('\Drupal\Core\Extension\ModuleHandlerInterface');
 
-    $this->contentEntityNormalizer = new ContentEntityNormalizer($this->configFactory, $this->contentEntityViewModesExtractor, $this->moduleHandler);
+    $this->contentEntityNormalizer = new ContentEntityCdfNormalizer($this->configFactory, $this->contentEntityViewModesExtractor, $this->moduleHandler);
 
     // Fake Content Hub Connector Config.
     $this->contentHubEntityConfig = array(
@@ -582,7 +582,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * @covers ::denormalize
    */
   public function testDenormalize() {
-    $denormalized = $this->contentEntityNormalizer->denormalize();
+    $denormalized = $this->contentEntityNormalizer->denormalize(NULL, NULL);
     $this->assertNull($denormalized);
   }
 

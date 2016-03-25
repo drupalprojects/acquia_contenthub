@@ -15,7 +15,7 @@ services:
 
   content_hub_connector.normalizer.content_entity_view_modes_extractor:
     class: Drupal\content_hub_connector\Normalizer\ContentEntityViewModesExtractor
-    arguments: ['@current_user', '@config.factory', '@entity_display.repository', '@entity_type.manager', '@renderer', '@http_kernel.basic']
+    arguments: ['@current_user', '@config.factory', '@entity_display.repository', '@entity_type.manager', '@renderer', '@http_kernel.basic', '@account_switcher']
 
   content_hub_connector.encoder.content_hub_cdf:
     class: Drupal\content_hub_connector\Encoder\ContentHubCdfEncoder

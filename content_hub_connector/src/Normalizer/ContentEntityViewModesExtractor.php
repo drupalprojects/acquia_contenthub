@@ -15,7 +15,7 @@ use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Render\Markup;
 use Drupal\Core\Render\Renderer;
 use Drupal\Core\Session\AccountProxyInterface;
-use Drupal\Core\Session\UserSession;
+use Drupal\Core\Session\AccountSwitcher;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 
@@ -59,11 +59,18 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
   protected $entityConfig;
 
   /**
-   * The entity config.
+   * The Basic HTTP Kernel to make requests.
    *
    * @var \Symfony\Component\HttpKernel\HttpKernelInterface
    */
   protected $kernel;
+
+  /**
+   * The account switcher service.
+   *
+   * @var \Drupal\Core\Session\AccountSwitcher
+   */
+  protected $accountSwitcher;
 
   /**
    * Constructs a ContentEntityViewModesExtractor object.
@@ -80,14 +87,17 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
    *   The renderer.
    * @param \Symfony\Component\HttpKernel\HttpKernelInterface $kernel
    *   The renderer.
+   * @param \Drupal\Core\Session\AccountSwitcher $account_switcher
+   *   The Account Switcher Service.
    */
-  public function __construct(AccountProxyInterface $current_user, ConfigFactory $config_factory, EntityDisplayRepository $entity_display_repository, EntityTypeManager $entity_type_manager, Renderer $renderer, HttpKernelInterface $kernel) {
+  public function __construct(AccountProxyInterface $current_user, ConfigFactory $config_factory, EntityDisplayRepository $entity_display_repository, EntityTypeManager $entity_type_manager, Renderer $renderer, HttpKernelInterface $kernel, AccountSwitcher $account_switcher) {
     $this->currentUser = $current_user;
     $this->entityConfig = $config_factory->get('content_hub_connector.entity_config');
     $this->entityDisplayRepository = $entity_display_repository;
     $this->entityTypeManager = $entity_type_manager;
     $this->renderer = $renderer;
     $this->kernel = $kernel;
+    $this->accountSwitcher = $account_switcher;
   }
 
   /**
@@ -115,7 +125,7 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
   /**
    * Renders all the view modes that are configured to be rendered.
    *
-   * @param ContentEntityInterface $object
+   * @param \Drupal\Core\Entity\ContentEntityInterface $object
    *   The Content Entity object.
    *
    * @return array|null
@@ -165,35 +175,31 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
   /**
    * Renders all the view modes that are configured to be rendered.
    *
-   * @param ContentEntityInterface $object
+   * In this method we also switch to an anonymous user nbecause we only want
+   * to see what the Anonymous user's see.
+   *
+   * @param \Drupal\Core\Entity\ContentEntityInterface $object
    *   The Content Entity Object.
    * @param string $view_mode
    *   The request view mode identifier.
+   *
+   * @see https://www.drupal.org/node/218104
    *
    * @return array
    *   The render array for the complete page, as minimal as possible.
    */
   public function getViewModeMinimalHtml(ContentEntityInterface $object, $view_mode) {
-    // Exit if the object is configured not to be rendered.
-    $entity_type_id = $object->getEntityTypeId();
-
-    // Switch to temporary user for rendering as configured role.
-    $original_account = $this->currentUser->getAccount();
-    $user_role = $this->entityConfig->get('user_role');
-    $this->currentUser->setAccount(new UserSession(array('roles' => array($user_role))));
-
-    $build = $this->entityTypeManager->getViewBuilder($entity_type_id)
+    // Switch to anonymous user for rendering as configured role.
+    $this->accountSwitcher->switchTo(new \Drupal\Core\Session\AnonymousUserSession());
+    $build = $this->entityTypeManager->getViewBuilder($object->getEntityTypeId())
       ->view($object, $view_mode);
-
     // Add our cacheableDependency. If this config changes, clear the render
     // cache.
     $this->renderer->addCacheableDependency($build, $this->entityConfig);
-
+    // Wrap our view mode in the most minimal HTML possible.
     $html = $this->getMinimalHtml($build);
-
-    // Switch back to original user.
-    $this->currentUser->setAccount($original_account);
-
+    // Restore user account.
+    $this->accountSwitcher->switchBack();
     return $html;
   }
 

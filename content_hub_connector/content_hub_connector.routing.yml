@@ -26,6 +26,7 @@ content_hub_connector.content_hub_cdf.node:
     _format: content_hub_cdf
     # This is fine as the rest module will check if the account has permissions
     # to view the node.
+    # @see EntityResource::get()
     _access: 'TRUE'
   options:
     parameters:
