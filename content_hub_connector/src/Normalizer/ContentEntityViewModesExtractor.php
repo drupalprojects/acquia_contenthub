@@ -16,6 +16,7 @@ use Drupal\Core\Render\Markup;
 use Drupal\Core\Render\Renderer;
 use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\Core\Session\AccountSwitcher;
+use Drupal\Core\Url;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 
@@ -154,9 +155,10 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
       if (!in_array($view_mode_id, $config['rendering'])) {
         continue;
       }
-
-      // @todo: Figure out if this is a security risk?
-      $url = '/content-hub-connector/display/' . $entity_type_id . '/' . $object->id() . '/' . $view_mode_id;
+      // Generate our URL where the isolated rendered view mode lives.
+      // This is the best way to really make sure the content in Content Hub
+      // and the content shown to any user is 100% the same.
+      $url = Url::fromRoute('content_hub_connector.content_entity_display.node', ['node' => $object->id(), 'view_mode_name' => $view_mode_id])->toString();
       $request = Request::create($url);
       /** @var \Drupal\Core\Render\HtmlResponse $response */
       $response = $this->kernel->handle($request, HttpKernelInterface::SUB_REQUEST);

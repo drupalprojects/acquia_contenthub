@@ -16,6 +16,13 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * Class ContentEntityDisplayController.
  *
+ * Serves the route to show a rendered view mode of a given Node and a given
+ * view mode.
+ *
+ * @todo Ideally this takes inspiration from the _wrapper_format usage in Core.
+ *
+ * @see \Drupal\Core\EventSubscriber\MainContentViewSubscriber::WRAPPER_FORMAT
+ *
  * @package Drupal\content_hub_connector\Controller
  */
 class ContentEntityDisplayController extends ControllerBase {
