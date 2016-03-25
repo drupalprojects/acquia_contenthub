@@ -146,13 +146,15 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
       }
 
       // @todo: Figure out if this is a security risk?
-      $request = Request::create('/content-hub-connector/display/' . $entity_type_id . '/' . $object->id() . '/' . $view_mode_id);
+      $url = '/content-hub-connector/display/' . $entity_type_id . '/' . $object->id() . '/' . $view_mode_id;
+      $request = Request::create($url);
       /** @var \Drupal\Core\Render\HtmlResponse $response */
       $response = $this->kernel->handle($request, HttpKernelInterface::SUB_REQUEST);
 
       $normalized[$view_mode_id] = array(
         'id' => $view_mode_id,
         'label' => $view_mode['label'],
+        'url' => $url,
         'html' => $response->getContent(),
       );
     }
