@@ -229,6 +229,10 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         $type = $type_mapping[$field_type];
       }
 
+      if ($type == NULL) {
+        continue;
+      }
+
       $values = [];
       if ($field instanceof \Drupal\Core\Field\EntityReferenceFieldItemListInterface) {
 
@@ -408,7 +412,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       'id',
       'revision',
       'uuid',
-      // 'type',.
+      'type',
       'created',
       'changed',
 
