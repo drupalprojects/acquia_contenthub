@@ -108,7 +108,7 @@ class ContentHubConnectorSettingsForm extends ConfigFormBase {
       '#title' => t('Client Name'),
       '#default_value' => $client_name,
       '#required' => TRUE,
-      '#description' => t('The name of this client site cannot be changed once set.'),
+      '#description' => t('A unique client name by which the Content Hub will identify this site. The name of this client site cannot be changed once set.'),
       '#attributes' => $readonly,
     );
 
