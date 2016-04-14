@@ -236,7 +236,7 @@ class EntityConfigSettingsForm extends ConfigFormBase {
         else {
           // In cases where there are no bundles, but the entity can be
           // selected.
-          $entity_types[$type][$type] = $entity['label'];
+          $entity_types[$type][$type] = $entity->getLabel();
         }
       }
     }
