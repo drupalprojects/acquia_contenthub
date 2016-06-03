@@ -1,0 +1,14 @@
+content_hub_subscriber.content_hub_subscriber_discovery:
+  path: '/content-hub'
+  defaults:
+    _controller: '\Drupal\content_hub_subscriber\Controller\ContentHubSubscriberController::content_hub_subscriber_discovery'
+  requirements:
+    _permission: 'access content'
+
+content_hub_subscriber.post:
+  path: 'content-hub-api/post.json'
+  defaults:
+    _controller: '\Drupal\content_hub_subscriber\Controller\ContentHubSubscriberController::post_example'
+  methods:  [POST]
+  requirements:
+    _access: 'TRUE'
