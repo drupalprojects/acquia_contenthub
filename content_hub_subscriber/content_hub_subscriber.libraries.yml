@@ -1,0 +1,7 @@
+content_hub_subscriber:
+  version: 1.x
+  js:
+    js/content_hub_subscriber.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupalSettings
