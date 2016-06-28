@@ -61,8 +61,13 @@ class ClientManager implements ClientManagerInterface {
     // @todo Make sure this injects using proper service injection methods.
     $config_drupal = $this->configFactory->get('content_hub_connector.admin_settings');
 
+    // ADD CODE HERE!
+    // Find out the module version in use
+    $module_info = system_get_info('module', 'content_hub_connector');
+    $module_version = (isset($module_info['version'])) ? $module_info['version'] : '0.0.0';
+
     // Override configuration.
-    $config = array_merge(['base_url' => $config_drupal->get('hostname')], $config);
+    $config = array_merge(['base_url' => $config_drupal->get('hostname'), 'client-user-agent' => 'AcquiaContentHubConnector/' . $module_version], $config);
 
     // Get API information.
     $api = $config_drupal->get('api_key');
