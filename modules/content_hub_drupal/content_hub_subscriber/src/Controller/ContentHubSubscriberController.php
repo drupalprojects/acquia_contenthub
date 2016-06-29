@@ -49,6 +49,7 @@ class ContentHubSubscriberController extends ControllerBase {
     $form['#attached']['drupalSettings']['content_hub_subscriber']['client'] = $config->get('origin');
     $form['#attached']['drupalSettings']['content_hub_subscriber']['ember_app'] = $ember_endpoint;
     $form['#attached']['drupalSettings']['content_hub_subscriber']['source'] = $config->get('drupal8');
+    $form["#attached"]['drupalSettings']['content_hub_subscriber']['client_user_agent'] = $config->get('client-user-agent');
 
     $form['iframe'] = array(
       '#type' => 'markup',
