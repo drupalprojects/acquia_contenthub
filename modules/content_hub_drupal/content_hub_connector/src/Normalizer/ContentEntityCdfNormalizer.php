@@ -304,6 +304,49 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     return $content_hub_entity;
   }
 
+  protected function addFieldsToDrupalEntity(\Drupal\Core\Entity\ContentEntityInterface $entity, ChubEntity $content_hub_entity, $langcode = 'und', array $context = array()) {
+    /** @var \Drupal\Core\Field\FieldItemListInterface[] $fields */
+    $fields = $entity->getFields();
+
+    // Get our field mapping. This maps drupal field types to Content Hub
+    // attribute types.
+    $type_mapping = $this->getFieldTypeMapping();
+
+    // Ignore the entity ID and revision ID.
+    // Excluded comes here.
+    $excluded_fields = $this->excludedProperties($entity);
+    $excluded_fields[] = 'langcode';
+    $excluded_fields[] = 'type';
+
+
+    // Iterate over all attributes.
+    foreach ($content_hub_entity->getAttributes() as $name => $attribute) {
+
+      // If it is an excluded property, then skip it.
+      if (in_array($name, $excluded_fields)) {
+        continue;
+      }
+
+      $field = $fields[$name];
+      // Try to map it to a known field type.
+      $field_type = $field->getFieldDefinition()->getType();
+
+      $value = $attribute['value'][$langcode];
+      $output = [];
+
+      if (strpos($type_mapping[$field_type], 'array') !== FALSE) {
+        foreach ($value as $item) {
+          $output = json_decode($item, TRUE);
+        }
+        $value = $output;
+      }
+
+      $entity->$name = $value;
+    }
+
+    return $entity;
+  }
+
   /**
    * Append to existing values of Content Hub Attribute.
    *
@@ -348,10 +391,12 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         // These are special field names that we do not want to parse as
         // arrays.
         'title',
+        'type',
         'langcode',
       ),
       'array<string>' => array(
         'fallback',
+        'text_with_summary',
       ),
       'array<reference>' => array(
         'entity_reference',
@@ -412,7 +457,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       'id',
       'revision',
       'uuid',
-      'type',
+      // 'type',
       'created',
       'changed',
 
@@ -469,6 +514,50 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    */
   public function denormalize($data, $class, $format = NULL, array $context = array()) {
     // TODO: Implement denormalize() method.
+    $context += ['account' => NULL];
+
+    // Exit if the class does not support denormalization of the given data,
+    // class and format.
+    if (!$this->supportsDenormalization($data, $class, $format)) {
+      return NULL;
+    }
+
+    $ch_entity = new ChubEntity($data);
+    $entity_type = $ch_entity->getType();
+    $bundle = reset($ch_entity->getAttribute('type')['value']);
+    $langcodes = $ch_entity->getAttribute('langcode')['value'];
+
+    $entity_manager = \Drupal::entityTypeManager();
+
+    // Transforming Content Hub Entity into a Drupal Entity
+    $values = [
+      'uuid' => $ch_entity->getUuid(),
+      'type' => $bundle,
+    ];
+
+    // Status is by default unpublished if it is a node.
+    if ($entity_type == 'node') {
+      $values['status'] = 0;
+    }
+
+    $entity = $entity_manager->getStorage($entity_type)->create($values);
+
+    // Assigning langcodes.
+
+    $entity->langcode = array_values($langcodes);
+
+    // We have to iterate over the entity translations and add all the
+    // translations versions.
+    $languages = $entity->getTranslationLanguages();
+    foreach ($languages as $language => $languagedata) {
+      // Make sure the entity language is one of the language contained in the
+      // Content Hub Entity.
+      if (in_array($language, $langcodes)) {
+        $localized_entity = $entity->getTranslation($language);
+        $entity = $this->addFieldsToDrupalEntity($localized_entity, $ch_entity, $language, $context);
+      }
+    }
+    return $entity;
   }
 
 }

@@ -227,4 +227,26 @@ class EntityManager {
     return TRUE;
   }
 
+  /**
+   * Loads the Remote Content Hub Entity.
+   *
+   * @param string $uuid
+   *   The Remote Entity UUID.
+   *
+   * @return \Acquia\ContentHubClient\Entity
+   *   The Content Hub Entity.
+   */
+  public function loadRemoteEntity($uuid) {
+    /** @var \Drupal\content_hub_connector\Client\ClientManagerInterface $client_manager */
+    try {
+      $client = $this->clientManager->getClient();
+      $ch_entity = $client->readEntity($uuid);
+    }
+    catch (ContentHubConnectorException $e) {
+      $this->loggerFactory->get('content_hub_connector')->error($e->getMessage());
+      return FALSE;
+    }
+
+    return $ch_entity;
+  }
 }
