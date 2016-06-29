@@ -65,9 +65,10 @@ class ClientManager implements ClientManagerInterface {
     // Find out the module version in use
     $module_info = system_get_info('module', 'content_hub_connector');
     $module_version = (isset($module_info['version'])) ? $module_info['version'] : '0.0.0';
+    $drupal_version = (isset($module_info['version'])) ? $module_info['core'] : '0.0.0';
 
     // Override configuration.
-    $config = array_merge(['base_url' => $config_drupal->get('hostname'), 'client-user-agent' => 'AcquiaContentHubConnectorD8/' . $module_version], $config);
+    $config = array_merge(['base_url' => $config_drupal->get('hostname'), 'client-user-agent' => 'AcquiaContentHubConnector/' $drupal_version . '-' . $module_version], $config);
 
     // Get API information.
     $api = $config_drupal->get('api_key');
