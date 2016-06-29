@@ -163,10 +163,10 @@ class ContentHubConnectorSettingsForm extends ConfigFormBase {
       $config->set('origin', $form_state->getValue('origin'));
     }
 
+    // Set Client User Agent.
     $module_info = system_get_info('module', 'content_hub_connector');
     $module_version = (isset($module_info['version'])) ? $module_info['version'] : '0.0.0';
     $config->set('client-user-agent', 'AcquiaContentHubConnectorD8/' . $module_version);
-    //$config->set('client-user-agent', 'AcquiaContentHubPHPLib/' . $module_version);
 
     // Only reset the secret if it is passed. If encryption is activated,
     // then encrypt it too.
