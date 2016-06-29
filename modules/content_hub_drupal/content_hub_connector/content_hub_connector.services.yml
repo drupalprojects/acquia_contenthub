@@ -36,3 +36,8 @@ services:
     arguments: ['@cache_tags.invalidator']
     tags:
       - { name: event_subscriber }
+
+  content_hub_connector.content_hub_connector_event:
+    class: Drupal\content_hub_connector\EventSubscriber\ContentHubConnectorEvent
+    tags:
+      - { name: event_subscriber }
