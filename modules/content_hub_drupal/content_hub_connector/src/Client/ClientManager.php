@@ -64,7 +64,7 @@ class ClientManager implements ClientManagerInterface {
     // ADD CODE HERE!
     // Find out the module version in use
     $module_info = system_get_info('module', 'content_hub_connector');
-    $module_version = (isset($module_info['version'])) ? $module_info['version'] : '0.0.0';
+    $module_version = (isset($module_info['version'])) ? $module_info['core'] : '0.0.0';
     $drupal_version = (isset($module_info['version'])) ? $module_info['core'] : '0.0.0';
 
     // Override configuration.

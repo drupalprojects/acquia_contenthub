@@ -165,7 +165,7 @@ class ContentHubConnectorSettingsForm extends ConfigFormBase {
 
     // Set Client User Agent.
     $module_info = system_get_info('module', 'content_hub_connector');
-    $module_version = (isset($module_info['version'])) ? $module_info['version'] : '0.0.0';
+    $module_version = (isset($module_info['version'])) ? $module_info['core'] : '0.0.0';
     $drupal_version = (isset($module_info['version'])) ? $drupal_info['core'] : '0.0.0';
     $config->set('client-user-agent', 'AcquiaContentHubConnector/' . $drupal_version . '-' . $module_version);
 
