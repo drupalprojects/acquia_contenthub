@@ -6,6 +6,7 @@
 
 namespace Drupal\content_hub_connector\Controller;
 
+use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Database\Connection;
 use Symfony\Component\HttpFoundation\Response;
