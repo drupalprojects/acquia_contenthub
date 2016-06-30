@@ -315,6 +315,21 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     return $content_hub_entity;
   }
 
+  /**
+   * Adds Content Hub Data to Drupal Entity Fields.
+   *
+   * @param \Drupal\Core\Entity\ContentEntityInterface $entity
+   *   The Drupal Entity.
+   * @param \Acquia\ContentHubClient\Entity $content_hub_entity
+   *   The Content Hub Entity.
+   * @param string $langcode
+   *   The language code.
+   * @param array $context
+   *   Context.
+   *
+   * @return \Drupal\Core\Entity\ContentEntityInterface
+   *   The Drupal Entity after integrating data from Content Hub.
+   */
   protected function addFieldsToDrupalEntity(\Drupal\Core\Entity\ContentEntityInterface $entity, ChubEntity $content_hub_entity, $langcode = 'und', array $context = array()) {
     /** @var \Drupal\Core\Field\FieldItemListInterface[] $fields */
     $fields = $entity->getFields();
@@ -328,7 +343,6 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     $excluded_fields = $this->excludedProperties($entity);
     $excluded_fields[] = 'langcode';
     $excluded_fields[] = 'type';
-
 
     // Iterate over all attributes.
     foreach ($content_hub_entity->getAttributes() as $name => $attribute) {
@@ -468,7 +482,6 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       'id',
       'revision',
       'uuid',
-      // 'type',
       'created',
       'changed',
 
@@ -544,7 +557,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     $entity = $this->entityRepository->loadEntityByUuid($entity_type, $ch_entity->getUuid());
     if ($entity == NULL) {
 
-      // Transforming Content Hub Entity into a Drupal Entity
+      // Transforming Content Hub Entity into a Drupal Entity.
       $values = [
         'uuid' => $ch_entity->getUuid(),
         'type' => $bundle,

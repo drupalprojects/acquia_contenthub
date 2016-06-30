@@ -10,6 +10,9 @@ use Drupal\Core\Database\Connection;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 
+/**
+ * Tracks in a table the list of all entities imported from Content Hub.
+ */
 class ContentHubImportedEntities {
 
   const TABLE                    = 'content_hub_imported_entities';
@@ -33,7 +36,12 @@ class ContentHubImportedEntities {
    */
   protected $contentHubAdminConfig;
 
-  protected $imported_entity;
+  /**
+   * The Imported Entity Record.
+   *
+   * @var object
+   */
+  protected $importedEntity;
 
   /**
    * {@inheritdoc}
@@ -65,7 +73,7 @@ class ContentHubImportedEntities {
    * Resets the Imported Entity Information.
    */
   protected function reset() {
-    $this->imported_entity = NULL;
+    $this->importedEntity = NULL;
   }
 
   /**
@@ -99,7 +107,7 @@ class ContentHubImportedEntities {
    *   This same object.
    */
   public function setImportedEntity($entity_type, $entity_id, $entity_uuid, $auto_update, $origin) {
-    $this->imported_entity = (object) [
+    $this->importedEntity = (object) [
       'entity_type' => $entity_type,
       'entity_id' => $entity_id,
       'uuid' => $entity_uuid,
@@ -116,7 +124,7 @@ class ContentHubImportedEntities {
    *   The Imported Entity object.
    */
   public function getImportedEntity() {
-    return $this->imported_entity;
+    return $this->importedEntity;
   }
 
   /**
@@ -197,6 +205,7 @@ class ContentHubImportedEntities {
    * Return this site's origin.
    *
    * @return array|mixed|null
+   *   The UUID of this site's origin.
    */
   public function getSiteOrigin() {
     return $this->contentHubAdminConfig->get('origin');
@@ -213,10 +222,10 @@ class ContentHubImportedEntities {
     $success = FALSE;
     $valid_input = self::isUuid($this->getUuid()) && self::isUuid($this->getOrigin()) && !empty($this->getEntityType()) && !empty($this->getEntityId());
     $valid_input = $valid_input &&  in_array($this->getAutoUpdate(), array(
-        self::AUTO_UPDATE_ENABLED,
-        self::AUTO_UPDATE_DISABLED,
-        self::AUTO_UPDATE_LOCAL_CHANGE,
-      ));
+      self::AUTO_UPDATE_ENABLED,
+      self::AUTO_UPDATE_DISABLED,
+      self::AUTO_UPDATE_LOCAL_CHANGE,
+    ));
     if ($valid_input && $this->getOrigin() !== $site_origin) {
       $result = $this->database->merge(self::TABLE)
         ->key(array(

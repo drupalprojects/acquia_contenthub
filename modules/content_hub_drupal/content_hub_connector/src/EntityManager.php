@@ -260,4 +260,5 @@ class EntityManager {
 
     return $ch_entity;
   }
+
 }

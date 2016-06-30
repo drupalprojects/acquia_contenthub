@@ -15,9 +15,12 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\content_hub_connector\EntityManager as EntityManager;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Drupal\Core\Logger\LoggerChannelFactory;
-use Acquia\ContentHubClient\Entity as ChEntity;
 use Drupal\content_hub_connector\ContentHubImportedEntities;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
+/**
+ * Controller for Content Hub Imported Entities.
+ */
 class ContentHubEntityImportController extends ControllerBase {
 
   const VALID_UUID = '[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}';
@@ -38,7 +41,7 @@ class ContentHubEntityImportController extends ControllerBase {
    */
   protected $loggerFactory;
 
-  protected $entity_manager;
+  protected $entityManager;
 
   protected $serializer;
 
@@ -47,14 +50,28 @@ class ContentHubEntityImportController extends ControllerBase {
    *
    * @var \Drupal\content_hub_connector\ContentHubImportedEntities
    */
-  protected $contentHubimportedEntities;
+  protected $contentHubImportedEntities;
 
+  /**
+   * Public Constructor.
+   *
+   * @param \Drupal\Core\Database\Connection $database
+   *   Database connection.
+   * @param \Drupal\Core\Logger\LoggerChannelFactory $logger_factory
+   *   The Logger Factory.
+   * @param \Drupal\content_hub_connector\EntityManager $entity_manager
+   *   The Content Hub Connector Entity Manager.
+   * @param \Symfony\Component\Serializer\SerializerInterface $serializer
+   *   The Serializer.
+   * @param \Drupal\content_hub_connector\ContentHubImportedEntities $ch_imported_entities
+   *   The Content Hub Imported Entities Service.
+   */
   public function __construct(Connection $database, LoggerChannelFactory $logger_factory, EntityManager $entity_manager, SerializerInterface $serializer, ContentHubImportedEntities $ch_imported_entities) {
     $this->database = $database;
     $this->loggerFactory = $logger_factory;
-    $this->entity_manager = $entity_manager;
+    $this->entityManager = $entity_manager;
     $this->serializer = $serializer;
-    $this->contentHubimportedEntities = $ch_imported_entities;
+    $this->contentHubImportedEntities = $ch_imported_entities;
   }
 
   /**
@@ -83,6 +100,20 @@ class ContentHubEntityImportController extends ControllerBase {
     return (bool) preg_match('/^' . self::VALID_UUID . '$/', $uuid);
   }
 
+  /**
+   * Saves a Content Hub Entity into a Drupal Entity, given its UUID.
+   *
+   * @param string $uuid
+   *   The Entity's UUID.
+   *
+   * @return \Symfony\Component\HttpFoundation\JsonResponse
+   *   A JSON Response.
+   *
+   * @throws \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException
+   *   When the UUID of the entity does not exist in Content Hub.
+   * @throws \Exception
+   *   When the entity cannot be saved.
+   */
   public function saveDrupalEntity($uuid) {
 
     // Checking that the parameter given is a UUID.
@@ -91,9 +122,9 @@ class ContentHubEntityImportController extends ControllerBase {
       throw new AccessDeniedHttpException();
     }
 
-    $ch_entity = $this->entity_manager->loadRemoteEntity($uuid);
+    $ch_entity = $this->entityManager->loadRemoteEntity($uuid);
     $origin = $ch_entity->getOrigin();
-    $site_origin = $this->contentHubimportedEntities->getSiteOrigin();
+    $site_origin = $this->contentHubImportedEntities->getSiteOrigin();
 
     // Checking that the entity origin is different than this site origin.
     if ($origin == $site_origin) {
@@ -104,7 +135,7 @@ class ContentHubEntityImportController extends ControllerBase {
       );
       $message = new FormattableMarkup('Cannot save %type entity with uuid=%uuid. It has the same origin as this site: %origin', $args);
       $this->loggerFactory->get('content_hub_connector')->debug($message);
-      $result = false;
+      $result = FALSE;
       return new JsonResponse($result);
     }
 
@@ -134,7 +165,7 @@ class ContentHubEntityImportController extends ControllerBase {
       $auto_update = \Drupal\content_hub_connector\ContentHubImportedEntities::AUTO_UPDATE_ENABLED;
 
       // Save this entity in the tracking for importing entities.
-      $this->contentHubimportedEntities->setImportedEntity($entity->getEntityTypeId(), $entity->id(), $entity->uuid(), $auto_update, $origin);
+      $this->contentHubImportedEntities->setImportedEntity($entity->getEntityTypeId(), $entity->id(), $entity->uuid(), $auto_update, $origin);
 
       $args = array(
         '%type' => $entity->getEntityTypeId(),
@@ -142,7 +173,7 @@ class ContentHubEntityImportController extends ControllerBase {
         '%auto_update' => $auto_update,
       );
 
-      if ($this->contentHubimportedEntities->save()) {
+      if ($this->contentHubImportedEntities->save()) {
         $message = new FormattableMarkup('Saving %type entity with uuid=%uuid. Tracking imported entity with auto_update = %auto_update', $args);
         $this->loggerFactory->get('content_hub_connector')->debug($message);
       }
