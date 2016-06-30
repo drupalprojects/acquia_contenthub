@@ -163,12 +163,6 @@ class ContentHubConnectorSettingsForm extends ConfigFormBase {
       $config->set('origin', $form_state->getValue('origin'));
     }
 
-    // Set Client User Agent.
-    $module_info = system_get_info('module', 'content_hub_connector');
-    $module_version = (isset($module_info['version'])) ? $module_info['core'] : '0.0.0';
-    $drupal_version = (isset($module_info['version'])) ? $drupal_info['core'] : '0.0.0';
-    $config->set('client-user-agent', 'AcquiaContentHubConnector/' . $drupal_version . '-' . $module_version);
-
     // Only reset the secret if it is passed. If encryption is activated,
     // then encrypt it too.
     $encryption = $config->get('encryption_key_file');
