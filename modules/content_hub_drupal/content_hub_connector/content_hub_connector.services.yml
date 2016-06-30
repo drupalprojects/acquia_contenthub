@@ -5,7 +5,11 @@ services:
 
   content_hub_connector.content_hub_cdf.import_entity:
     class: Drupal\content_hub_connector\Controller\ContentHubEntityImportController
-    arguments: ['@content_hub_connector.entity_manager', '@serializer']
+    arguments: ['@content_hub_connector.entity_manager', '@serializer', '@content_hub_connector.content_hub_imported_entities']
+
+  content_hub_connector.content_hub_imported_entities:
+    class: Drupal\content_hub_connector\ContentHubImportedEntities
+    arguments: ['@database', '@config.factory']
 
   content_hub_connector.client_manager:
     class: Drupal\content_hub_connector\Client\ClientManager

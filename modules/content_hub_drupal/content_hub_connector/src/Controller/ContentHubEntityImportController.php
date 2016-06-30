@@ -16,6 +16,7 @@ use Acquia\ContentHubClient\Entity as ChEntity;
 
 class ContentHubEntityImportController extends ControllerBase {
 
+  const VALID_UUID = '[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}';
 
   protected $format = 'content_hub_cdf';
 
@@ -23,12 +24,17 @@ class ContentHubEntityImportController extends ControllerBase {
 
   protected $serializer;
 
-  const VALID_UUID = '[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}';
+  /**
+   * The Content Hub Imported Entities.
+   *
+   * @var \Drupal\content_hub_connector\ContentHubImportedEntities
+   */
+  protected $ch_imported_entities;
 
-
-  public function __construct(EntityManager $entity_manager, SerializerInterface $serializer) {
+  public function __construct(EntityManager $entity_manager, SerializerInterface $serializer, ContentHubImportedEntities $ch_imported_entities) {
     $this->entity_manager = $entity_manager;
     $this->serializer = $serializer;
+    $this->$ch_imported_entities = $ch_imported_entities;
   }
 
   /**
@@ -37,7 +43,8 @@ class ContentHubEntityImportController extends ControllerBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('content_hub_connector.entity_manager'),
-      $container->get('serializer')
+      $container->get('serializer'),
+      $container->get('content_hub_connector.content_hub_imported_entities')
     );
   }
 
