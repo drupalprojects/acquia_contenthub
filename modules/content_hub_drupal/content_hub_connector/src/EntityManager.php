@@ -231,8 +231,7 @@ class EntityManager {
 
     // If the entity has been imported before, then it didn't originate from
     // this site and shouldn't be exported.
-    $uuid = $this->contentHubImportedEntities->loadByDrupalEntity($entity->getEntityTypeId(), $entity->id())->getUuid();
-    if (empty($uuid)) {
+    if ($this->contentHubImportedEntities->loadByDrupalEntity($entity->getEntityTypeId(), $entity->id()) !== FALSE) {
       return FALSE;
     }
 
