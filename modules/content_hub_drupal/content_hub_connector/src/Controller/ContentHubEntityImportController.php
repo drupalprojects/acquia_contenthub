@@ -13,6 +13,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\content_hub_connector\EntityManager as EntityManager;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Drupal\Core\Logger\LoggerChannelFactory;
 use Acquia\ContentHubClient\Entity as ChEntity;
 use Drupal\content_hub_connector\ContentHubImportedEntities;
 
@@ -45,14 +46,14 @@ class ContentHubEntityImportController extends ControllerBase {
    *
    * @var \Drupal\content_hub_connector\ContentHubImportedEntities
    */
-  protected $ch_imported_entities;
+  protected $contentHubimportedEntities;
 
   public function __construct(Connection $database, LoggerChannelFactory $logger_factory, EntityManager $entity_manager, SerializerInterface $serializer, ContentHubImportedEntities $ch_imported_entities) {
     $this->database = $database;
     $this->loggerFactory = $logger_factory;
     $this->entity_manager = $entity_manager;
     $this->serializer = $serializer;
-    $this->$ch_imported_entities = $ch_imported_entities;
+    $this->contentHubimportedEntities = $ch_imported_entities;
   }
 
   /**
@@ -91,7 +92,7 @@ class ContentHubEntityImportController extends ControllerBase {
 
     $ch_entity = $this->entity_manager->loadRemoteEntity($uuid);
     $origin = $ch_entity->getOrigin();
-    $site_origin = $this->ch_imported_entities->getSiteOrigin();
+    $site_origin = $this->contentHubimportedEntities->getSiteOrigin();
 
     // Checking that the entity origin is different than this site origin.
     if ($origin == $site_origin) {
@@ -132,7 +133,7 @@ class ContentHubEntityImportController extends ControllerBase {
       $auto_update = \Drupal\content_hub_connector\ContentHubImportedEntities::AUTO_UPDATE_ENABLED;
 
       // Save this entity in the tracking for importing entities.
-      $this->ch_imported_entities->setImportedEntity($entity->getEntityTypeId(), $entity->id(), $entity->uuid(), $auto_update, $origin);
+      $this->contentHubimportedEntities->setImportedEntity($entity->getEntityTypeId(), $entity->id(), $entity->uuid(), $auto_update, $origin);
 
       $args = array(
         '%type' => $entity->getEntityTypeId(),
@@ -140,7 +141,7 @@ class ContentHubEntityImportController extends ControllerBase {
         '%auto_update' => $auto_update,
       );
 
-      if ($this->ch_imported_entities->save()) {
+      if ($this->contentHubimportedEntities->save()) {
         $message = new FormattableMarkup('Saving %type entity with uuid=%uuid. Tracking imported entity with auto_update = %auto_update', $args);
         $this->loggerFactory->get('content_hub_connector')->debug($message);
       }
