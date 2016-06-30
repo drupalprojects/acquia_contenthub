@@ -81,7 +81,24 @@ class ContentHubImportedEntities {
     return (bool) preg_match('/^' . self::VALID_UUID . '$/', $uuid);
   }
 
-  protected function setImportedEntity($entity_type, $entity_id, $entity_uuid, $auto_update, $origin) {
+  /**
+   * Explicitly sets the Imported Entity.
+   *
+   * @param string $entity_type
+   *   The Entity Type.
+   * @param int $entity_id
+   *   The Entity ID.
+   * @param string $entity_uuid
+   *   The Entity UUID.
+   * @param string $auto_update
+   *   The auto_update flag.
+   * @param string $origin
+   *   The origin UUID.
+   *
+   * @return \Drupal\content_hub_connector\ContentHubImportedEntities
+   *   This same object.
+   */
+  public function setImportedEntity($entity_type, $entity_id, $entity_uuid, $auto_update, $origin) {
     $this->imported_entity = (object) [
       'entity_type' => $entity_type,
       'entity_id' => $entity_id,
@@ -89,6 +106,7 @@ class ContentHubImportedEntities {
       'auto_update' => $auto_update,
       'origin' => $origin,
     ];
+    return $this;
   }
 
   /**
@@ -173,6 +191,15 @@ class ContentHubImportedEntities {
    */
   public function getOrigin() {
     return isset($this->getImportedEntity()->origin) ? $this->getImportedEntity()->origin : NULL;
+  }
+
+  /**
+   * Return this site's origin.
+   *
+   * @return array|mixed|null
+   */
+  public function getSiteOrigin() {
+    return $this->contentHubAdminConfig->get('origin');
   }
 
   /**

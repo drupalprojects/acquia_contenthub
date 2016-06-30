@@ -13,6 +13,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\Core\Url;
 use Drupal\Core\Config\ConfigFactory;
+use Drupal\content_hub_connector\ContentHubImportedEntities;
 
 /**
  * Provides a service for managing entity actions for Content Hub.
@@ -47,6 +48,8 @@ class EntityManager {
    */
   protected $clientManager;
 
+  protected $contentHubImportedEntities;
+
 
   /**
    * Constructs an ContentEntityNormalizer object.
@@ -58,12 +61,13 @@ class EntityManager {
    * @param \Drupal\content_hub_connector\Client\ClientManagerInterface $client_manager
    *    The client manager.
    */
-  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager) {
+  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager, ContentHubImportedEntities $ch_imported_entities) {
     global $base_root;
     $this->baseRoot = $base_root;
     $this->loggerFactory = $logger_factory;
     $this->configFactory = $config_factory;
     $this->clientManager = $client_manager;
+    $this->contentHubImportedEntities = $ch_imported_entities;
   }
 
   /**
@@ -224,6 +228,14 @@ class EntityManager {
     if (empty($entity_type_config) || empty($entity_type_config[$bundle_id]) || empty($entity_type_config[$bundle_id]['enabled'])) {
       return FALSE;
     }
+
+    // If the entity has been imported before, then it didn't originate from
+    // this site and shouldn't be exported.
+    $uuid = $this->contentHubImportedEntities->loadByDrupalEntity($entity->getEntityTypeId(), $entity->id())->getUuid();
+    if (empty($uuid)) {
+      return FALSE;
+    }
+
     return TRUE;
   }
 

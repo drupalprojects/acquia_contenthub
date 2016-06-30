@@ -14,6 +14,7 @@ use Drupal\Core\Entity\ContentEntityInterface;
 use Acquia\ContentHubClient\Entity as ChubEntity;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
+use Drupal\Core\Entity\EntityRepository;
 
 /**
  * Converts the Drupal entity object to a Acquia Content Hub CDF array.
@@ -56,6 +57,13 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
   protected $moduleHandler;
 
   /**
+   * The Entity Repository.
+   *
+   * @var \Drupal\Core\Entity\EntityRepository
+   */
+  protected  $entityRepository;
+
+  /**
    * Base root path of the application.
    *
    * @var string
@@ -71,11 +79,14 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    *   The content entity view modes normalizer.
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
    *   The module handler to create alter hooks.
+   * @param \Drupal\Core\Entity\EntityRepository $entity_repository
+   *   The entity repository.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, ContentEntityViewModesExtractorInterface $content_entity_view_modes_normalizer, ModuleHandlerInterface $module_handler) {
+  public function __construct(ConfigFactoryInterface $config_factory, ContentEntityViewModesExtractorInterface $content_entity_view_modes_normalizer, ModuleHandlerInterface $module_handler, EntityRepository $entity_repository) {
     $this->contentHubAdminConfig = $config_factory->get('content_hub_connector.admin_settings');
     $this->contentEntityViewModesNormalizer = $content_entity_view_modes_normalizer;
     $this->moduleHandler = $module_handler;
+    $this->entityRepository = $entity_repository;
   }
 
   /**
@@ -513,7 +524,6 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    *   Options available to the denormalizer.
    */
   public function denormalize($data, $class, $format = NULL, array $context = array()) {
-    // TODO: Implement denormalize() method.
     $context += ['account' => NULL];
 
     // Exit if the class does not support denormalization of the given data,
@@ -527,23 +537,28 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     $bundle = reset($ch_entity->getAttribute('type')['value']);
     $langcodes = $ch_entity->getAttribute('langcode')['value'];
 
+    // @TODO: Fix this. It should be using dependency injection.
     $entity_manager = \Drupal::entityTypeManager();
 
-    // Transforming Content Hub Entity into a Drupal Entity
-    $values = [
-      'uuid' => $ch_entity->getUuid(),
-      'type' => $bundle,
-    ];
+    // Does this entity exist in this site already?
+    $entity = $this->entityRepository->loadEntityByUuid($entity_type, $ch_entity->getUuid());
+    if ($entity == NULL) {
 
-    // Status is by default unpublished if it is a node.
-    if ($entity_type == 'node') {
-      $values['status'] = 0;
+      // Transforming Content Hub Entity into a Drupal Entity
+      $values = [
+        'uuid' => $ch_entity->getUuid(),
+        'type' => $bundle,
+      ];
+
+      // Status is by default unpublished if it is a node.
+      if ($entity_type == 'node') {
+        $values['status'] = 0;
+      }
+
+      $entity = $entity_manager->getStorage($entity_type)->create($values);
     }
 
-    $entity = $entity_manager->getStorage($entity_type)->create($values);
-
     // Assigning langcodes.
-
     $entity->langcode = array_values($langcodes);
 
     // We have to iterate over the entity translations and add all the

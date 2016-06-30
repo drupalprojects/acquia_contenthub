@@ -1,11 +1,11 @@
 services:
   content_hub_connector.entity_manager:
     class: Drupal\content_hub_connector\EntityManager
-    arguments: ['@logger.factory', '@config.factory', '@content_hub_connector.client_manager']
+    arguments: ['@logger.factory', '@config.factory', '@content_hub_connector.client_manager', '@content_hub_connector.content_hub_imported_entities']
 
   content_hub_connector.content_hub_cdf.import_entity:
     class: Drupal\content_hub_connector\Controller\ContentHubEntityImportController
-    arguments: ['@content_hub_connector.entity_manager', '@serializer', '@content_hub_connector.content_hub_imported_entities']
+    arguments: ['@database', '@logger.factory', '@content_hub_connector.entity_manager', '@serializer', '@content_hub_connector.content_hub_imported_entities']
 
   content_hub_connector.content_hub_imported_entities:
     class: Drupal\content_hub_connector\ContentHubImportedEntities
@@ -17,7 +17,7 @@ services:
 
   content_hub_connector.normalizer.entity.content_hub_cdf:
     class: Drupal\content_hub_connector\Normalizer\ContentEntityCdfNormalizer
-    arguments: ['@config.factory', '@content_hub_connector.normalizer.content_entity_view_modes_extractor', '@module_handler']
+    arguments: ['@config.factory', '@content_hub_connector.normalizer.content_entity_view_modes_extractor', '@module_handler', '@entity.repository']
     tags:
       - { name: normalizer, priority: 10 }
 
