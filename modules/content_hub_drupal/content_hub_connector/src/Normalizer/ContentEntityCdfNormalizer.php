@@ -545,21 +545,21 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       return NULL;
     }
 
-    $ch_entity = new ContentHubEntity($data);
-    $entity_type = $ch_entity->getType();
-    $bundle = reset($ch_entity->getAttribute('type')['value']);
-    $langcodes = $ch_entity->getAttribute('langcode')['value'];
+    $content_hub_entity = new ContentHubEntity($data);
+    $entity_type = $content_hub_entity->getType();
+    $bundle = reset($content_hub_entity->getAttribute('type')['value']);
+    $langcodes = $content_hub_entity->getAttribute('langcode')['value'];
 
     // @TODO: Fix this. It should be using dependency injection.
     $entity_manager = \Drupal::entityTypeManager();
 
     // Does this entity exist in this site already?
-    $entity = $this->entityRepository->loadEntityByUuid($entity_type, $ch_entity->getUuid());
+    $entity = $this->entityRepository->loadEntityByUuid($entity_type, $content_hub_entity->getUuid());
     if ($entity == NULL) {
 
       // Transforming Content Hub Entity into a Drupal Entity.
       $values = [
-        'uuid' => $ch_entity->getUuid(),
+        'uuid' => $content_hub_entity->getUuid(),
         'type' => $bundle,
       ];
 
@@ -582,7 +582,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       // Content Hub Entity.
       if (in_array($language, $langcodes)) {
         $localized_entity = $entity->getTranslation($language);
-        $entity = $this->addFieldsToDrupalEntity($localized_entity, $ch_entity, $language, $context);
+        $entity = $this->addFieldsToDrupalEntity($localized_entity, $content_hub_entity, $language, $context);
       }
     }
     return $entity;

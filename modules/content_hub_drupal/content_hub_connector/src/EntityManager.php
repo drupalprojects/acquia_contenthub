@@ -48,6 +48,11 @@ class EntityManager {
    */
   protected $clientManager;
 
+  /**
+   * The Content Hub Imported Entities Service.
+   *
+   * @var \Drupal\content_hub_connector\ContentHubImportedEntities
+   */
   protected $contentHubImportedEntities;
 
 
@@ -61,13 +66,13 @@ class EntityManager {
    * @param \Drupal\content_hub_connector\Client\ClientManagerInterface $client_manager
    *    The client manager.
    */
-  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager, ContentHubImportedEntities $ch_imported_entities) {
+  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager, ContentHubImportedEntities $content_hub_imported_entities) {
     global $base_root;
     $this->baseRoot = $base_root;
     $this->loggerFactory = $logger_factory;
     $this->configFactory = $config_factory;
     $this->clientManager = $client_manager;
-    $this->contentHubImportedEntities = $ch_imported_entities;
+    $this->contentHubImportedEntities = $content_hub_imported_entities;
   }
 
   /**
@@ -251,14 +256,14 @@ class EntityManager {
     /** @var \Drupal\content_hub_connector\Client\ClientManagerInterface $client_manager */
     try {
       $client = $this->clientManager->getClient();
-      $ch_entity = $client->readEntity($uuid);
+      $content_hub_entity = $client->readEntity($uuid);
     }
     catch (ContentHubConnectorException $e) {
       $this->loggerFactory->get('content_hub_connector')->error($e->getMessage());
       return FALSE;
     }
 
-    return $ch_entity;
+    return $content_hub_entity;
   }
 
 }

@@ -41,8 +41,18 @@ class ContentHubEntityImportController extends ControllerBase {
    */
   protected $loggerFactory;
 
+  /**
+   * The Content Hub Entity Manager.
+   *
+   * @var \Drupal\content_hub_connector\EntityManager
+   */
   protected $entityManager;
 
+  /**
+   * The Serializer.
+   *
+   * @var \Symfony\Component\Serializer\SerializerInterface
+   */
   protected $serializer;
 
   /**
@@ -63,15 +73,15 @@ class ContentHubEntityImportController extends ControllerBase {
    *   The Content Hub Connector Entity Manager.
    * @param \Symfony\Component\Serializer\SerializerInterface $serializer
    *   The Serializer.
-   * @param \Drupal\content_hub_connector\ContentHubImportedEntities $ch_imported_entities
+   * @param \Drupal\content_hub_connector\ContentHubImportedEntities $content_hub_imported_entities
    *   The Content Hub Imported Entities Service.
    */
-  public function __construct(Connection $database, LoggerChannelFactory $logger_factory, EntityManager $entity_manager, SerializerInterface $serializer, ContentHubImportedEntities $ch_imported_entities) {
+  public function __construct(Connection $database, LoggerChannelFactory $logger_factory, EntityManager $entity_manager, SerializerInterface $serializer, ContentHubImportedEntities $content_hub_imported_entities) {
     $this->database = $database;
     $this->loggerFactory = $logger_factory;
     $this->entityManager = $entity_manager;
     $this->serializer = $serializer;
-    $this->contentHubImportedEntities = $ch_imported_entities;
+    $this->contentHubImportedEntities = $content_hub_imported_entities;
   }
 
   /**
@@ -122,15 +132,15 @@ class ContentHubEntityImportController extends ControllerBase {
       throw new AccessDeniedHttpException();
     }
 
-    $ch_entity = $this->entityManager->loadRemoteEntity($uuid);
-    $origin = $ch_entity->getOrigin();
+    $content_hub_entity = $this->entityManager->loadRemoteEntity($uuid);
+    $origin = $content_hub_entity->getOrigin();
     $site_origin = $this->contentHubImportedEntities->getSiteOrigin();
 
     // Checking that the entity origin is different than this site origin.
     if ($origin == $site_origin) {
       $args = array(
-        '%type' => $ch_entity->getType(),
-        '%uuid' => $ch_entity->getUuid(),
+        '%type' => $content_hub_entity->getType(),
+        '%uuid' => $content_hub_entity->getUuid(),
         '%origin' => $origin,
       );
       $message = new FormattableMarkup('Cannot save %type entity with uuid=%uuid. It has the same origin as this site: %origin', $args);
@@ -140,11 +150,11 @@ class ContentHubEntityImportController extends ControllerBase {
     }
 
     // Import the entity.
-    $entity_type = $ch_entity->getType();
+    $entity_type = $content_hub_entity->getType();
     $class = \Drupal::entityTypeManager()->getDefinition($entity_type)->getClass();
 
     try {
-      $entity = $this->serializer->deserialize($ch_entity->json(), $class, $this->format);
+      $entity = $this->serializer->deserialize($content_hub_entity->json(), $class, $this->format);
     }
     catch (UnexpectedValueException $e) {
       $error['error'] = $e->getMessage();
