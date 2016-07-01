@@ -11,7 +11,7 @@ use Acquia\ContentHubClient\Attribute;
 use Drupal\Component\Render\FormattableMarkup;
 use Drupal\content_hub_connector\ContentHubConnectorException;
 use Drupal\Core\Entity\ContentEntityInterface;
-use Acquia\ContentHubClient\Entity as ChubEntity;
+use Acquia\ContentHubClient\Entity as ContentHubEntity;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Entity\EntityRepository;
@@ -151,7 +151,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     $base_root = $this->getBaseRoot();
 
     // Initialize Content Hub entity.
-    $content_hub_entity = new ChubEntity();
+    $content_hub_entity = new ContentHubEntity();
     $content_hub_entity
       ->setUuid($entity_uuid)
       ->setType($entity_type_id)
@@ -196,13 +196,13 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    * @param array $context
    *   Additional Context such as the account.
    *
-   * @return \Acquia\ContentHubClient\Entity ChubEntity
+   * @return \Acquia\ContentHubClient\Entity ContentHubEntity
    *   The Content Hub Entity with all the data in it.
    *
    * @throws \Drupal\content_hub_connector\ContentHubConnectorException
    *   The Exception will be thrown if something is going awol.
    */
-  protected function addFieldsToContentHubEntity(ChubEntity $content_hub_entity, \Drupal\Core\Entity\ContentEntityInterface $entity, $langcode = 'und', array $context = array()) {
+  protected function addFieldsToContentHubEntity(ContentHubEntity $content_hub_entity, \Drupal\Core\Entity\ContentEntityInterface $entity, $langcode = 'und', array $context = array()) {
     /** @var \Drupal\Core\Field\FieldItemListInterface[] $fields */
     $fields = $entity->getFields();
 
@@ -330,7 +330,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    * @return \Drupal\Core\Entity\ContentEntityInterface
    *   The Drupal Entity after integrating data from Content Hub.
    */
-  protected function addFieldsToDrupalEntity(\Drupal\Core\Entity\ContentEntityInterface $entity, ChubEntity $content_hub_entity, $langcode = 'und', array $context = array()) {
+  protected function addFieldsToDrupalEntity(\Drupal\Core\Entity\ContentEntityInterface $entity, ContentHubEntity $content_hub_entity, $langcode = 'und', array $context = array()) {
     /** @var \Drupal\Core\Field\FieldItemListInterface[] $fields */
     $fields = $entity->getFields();
 
@@ -545,7 +545,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       return NULL;
     }
 
-    $ch_entity = new ChubEntity($data);
+    $ch_entity = new ContentHubEntity($data);
     $entity_type = $ch_entity->getType();
     $bundle = reset($ch_entity->getAttribute('type')['value']);
     $langcodes = $ch_entity->getAttribute('langcode')['value'];
