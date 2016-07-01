@@ -11,9 +11,10 @@ use Acquia\ContentHubClient\Attribute;
 use Drupal\Component\Render\FormattableMarkup;
 use Drupal\content_hub_connector\ContentHubConnectorException;
 use Drupal\Core\Entity\ContentEntityInterface;
-use Acquia\ContentHubClient\Entity as ChubEntity;
+use Acquia\ContentHubClient\Entity as ContentHubEntity;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
+use Drupal\Core\Entity\EntityRepository;
 
 /**
  * Converts the Drupal entity object to a Acquia Content Hub CDF array.
@@ -56,6 +57,13 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
   protected $moduleHandler;
 
   /**
+   * The Entity Repository.
+   *
+   * @var \Drupal\Core\Entity\EntityRepository
+   */
+  protected  $entityRepository;
+
+  /**
    * Base root path of the application.
    *
    * @var string
@@ -71,11 +79,14 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    *   The content entity view modes normalizer.
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
    *   The module handler to create alter hooks.
+   * @param \Drupal\Core\Entity\EntityRepository $entity_repository
+   *   The entity repository.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, ContentEntityViewModesExtractorInterface $content_entity_view_modes_normalizer, ModuleHandlerInterface $module_handler) {
+  public function __construct(ConfigFactoryInterface $config_factory, ContentEntityViewModesExtractorInterface $content_entity_view_modes_normalizer, ModuleHandlerInterface $module_handler, EntityRepository $entity_repository) {
     $this->contentHubAdminConfig = $config_factory->get('content_hub_connector.admin_settings');
     $this->contentEntityViewModesNormalizer = $content_entity_view_modes_normalizer;
     $this->moduleHandler = $module_handler;
+    $this->entityRepository = $entity_repository;
   }
 
   /**
@@ -140,7 +151,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     $base_root = $this->getBaseRoot();
 
     // Initialize Content Hub entity.
-    $content_hub_entity = new ChubEntity();
+    $content_hub_entity = new ContentHubEntity();
     $content_hub_entity
       ->setUuid($entity_uuid)
       ->setType($entity_type_id)
@@ -185,13 +196,13 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    * @param array $context
    *   Additional Context such as the account.
    *
-   * @return \Acquia\ContentHubClient\Entity ChubEntity
+   * @return \Acquia\ContentHubClient\Entity ContentHubEntity
    *   The Content Hub Entity with all the data in it.
    *
    * @throws \Drupal\content_hub_connector\ContentHubConnectorException
    *   The Exception will be thrown if something is going awol.
    */
-  protected function addFieldsToContentHubEntity(ChubEntity $content_hub_entity, \Drupal\Core\Entity\ContentEntityInterface $entity, $langcode = 'und', array $context = array()) {
+  protected function addFieldsToContentHubEntity(ContentHubEntity $content_hub_entity, \Drupal\Core\Entity\ContentEntityInterface $entity, $langcode = 'und', array $context = array()) {
     /** @var \Drupal\Core\Field\FieldItemListInterface[] $fields */
     $fields = $entity->getFields();
 
@@ -305,6 +316,63 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
   }
 
   /**
+   * Adds Content Hub Data to Drupal Entity Fields.
+   *
+   * @param \Drupal\Core\Entity\ContentEntityInterface $entity
+   *   The Drupal Entity.
+   * @param \Acquia\ContentHubClient\Entity $content_hub_entity
+   *   The Content Hub Entity.
+   * @param string $langcode
+   *   The language code.
+   * @param array $context
+   *   Context.
+   *
+   * @return \Drupal\Core\Entity\ContentEntityInterface
+   *   The Drupal Entity after integrating data from Content Hub.
+   */
+  protected function addFieldsToDrupalEntity(\Drupal\Core\Entity\ContentEntityInterface $entity, ContentHubEntity $content_hub_entity, $langcode = 'und', array $context = array()) {
+    /** @var \Drupal\Core\Field\FieldItemListInterface[] $fields */
+    $fields = $entity->getFields();
+
+    // Get our field mapping. This maps drupal field types to Content Hub
+    // attribute types.
+    $type_mapping = $this->getFieldTypeMapping();
+
+    // Ignore the entity ID and revision ID.
+    // Excluded comes here.
+    $excluded_fields = $this->excludedProperties($entity);
+    $excluded_fields[] = 'langcode';
+    $excluded_fields[] = 'type';
+
+    // Iterate over all attributes.
+    foreach ($content_hub_entity->getAttributes() as $name => $attribute) {
+
+      // If it is an excluded property, then skip it.
+      if (in_array($name, $excluded_fields)) {
+        continue;
+      }
+
+      $field = $fields[$name];
+      // Try to map it to a known field type.
+      $field_type = $field->getFieldDefinition()->getType();
+
+      $value = $attribute['value'][$langcode];
+      $output = [];
+
+      if (strpos($type_mapping[$field_type], 'array') !== FALSE) {
+        foreach ($value as $item) {
+          $output = json_decode($item, TRUE);
+        }
+        $value = $output;
+      }
+
+      $entity->$name = $value;
+    }
+
+    return $entity;
+  }
+
+  /**
    * Append to existing values of Content Hub Attribute.
    *
    * @param \Acquia\ContentHubClient\Attribute $attribute
@@ -348,10 +416,12 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         // These are special field names that we do not want to parse as
         // arrays.
         'title',
+        'type',
         'langcode',
       ),
       'array<string>' => array(
         'fallback',
+        'text_with_summary',
       ),
       'array<reference>' => array(
         'entity_reference',
@@ -412,7 +482,6 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       'id',
       'revision',
       'uuid',
-      'type',
       'created',
       'changed',
 
@@ -468,7 +537,55 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    *   Options available to the denormalizer.
    */
   public function denormalize($data, $class, $format = NULL, array $context = array()) {
-    // TODO: Implement denormalize() method.
+    $context += ['account' => NULL];
+
+    // Exit if the class does not support denormalization of the given data,
+    // class and format.
+    if (!$this->supportsDenormalization($data, $class, $format)) {
+      return NULL;
+    }
+
+    $content_hub_entity = new ContentHubEntity($data);
+    $entity_type = $content_hub_entity->getType();
+    $bundle = reset($content_hub_entity->getAttribute('type')['value']);
+    $langcodes = $content_hub_entity->getAttribute('langcode')['value'];
+
+    // @TODO: Fix this. It should be using dependency injection.
+    $entity_manager = \Drupal::entityTypeManager();
+
+    // Does this entity exist in this site already?
+    $entity = $this->entityRepository->loadEntityByUuid($entity_type, $content_hub_entity->getUuid());
+    if ($entity == NULL) {
+
+      // Transforming Content Hub Entity into a Drupal Entity.
+      $values = [
+        'uuid' => $content_hub_entity->getUuid(),
+        'type' => $bundle,
+      ];
+
+      // Status is by default unpublished if it is a node.
+      if ($entity_type == 'node') {
+        $values['status'] = 0;
+      }
+
+      $entity = $entity_manager->getStorage($entity_type)->create($values);
+    }
+
+    // Assigning langcodes.
+    $entity->langcode = array_values($langcodes);
+
+    // We have to iterate over the entity translations and add all the
+    // translations versions.
+    $languages = $entity->getTranslationLanguages();
+    foreach ($languages as $language => $languagedata) {
+      // Make sure the entity language is one of the language contained in the
+      // Content Hub Entity.
+      if (in_array($language, $langcodes)) {
+        $localized_entity = $entity->getTranslation($language);
+        $entity = $this->addFieldsToDrupalEntity($localized_entity, $content_hub_entity, $language, $context);
+      }
+    }
+    return $entity;
   }
 
 }

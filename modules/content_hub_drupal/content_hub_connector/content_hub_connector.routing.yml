@@ -33,6 +33,15 @@ content_hub_connector.content_hub_cdf.node:
       node:
         type: 'entity:node'
 
+content_hub_connector.content_hub_cdf.entity:
+  path: '/content-hub/{uuid}'
+  methods:
+    - POST
+  defaults:
+    _controller: 'Drupal\content_hub_connector\Controller\ContentHubEntityImportController::saveDrupalEntity'
+  requirements:
+    _access: 'TRUE'
+
 content_hub_connector.content_entity_display.node:
   path: '/content-hub-connector/display/node/{node}/{view_mode_name}'
   defaults:

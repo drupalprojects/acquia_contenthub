@@ -13,6 +13,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\Core\Url;
 use Drupal\Core\Config\ConfigFactory;
+use Drupal\content_hub_connector\ContentHubImportedEntities;
 
 /**
  * Provides a service for managing entity actions for Content Hub.
@@ -47,6 +48,13 @@ class EntityManager {
    */
   protected $clientManager;
 
+  /**
+   * The Content Hub Imported Entities Service.
+   *
+   * @var \Drupal\content_hub_connector\ContentHubImportedEntities
+   */
+  protected $contentHubImportedEntities;
+
 
   /**
    * Constructs an ContentEntityNormalizer object.
@@ -58,12 +66,13 @@ class EntityManager {
    * @param \Drupal\content_hub_connector\Client\ClientManagerInterface $client_manager
    *    The client manager.
    */
-  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager) {
+  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager, ContentHubImportedEntities $content_hub_imported_entities) {
     global $base_root;
     $this->baseRoot = $base_root;
     $this->loggerFactory = $logger_factory;
     $this->configFactory = $config_factory;
     $this->clientManager = $client_manager;
+    $this->contentHubImportedEntities = $content_hub_imported_entities;
   }
 
   /**
@@ -224,7 +233,37 @@ class EntityManager {
     if (empty($entity_type_config) || empty($entity_type_config[$bundle_id]) || empty($entity_type_config[$bundle_id]['enabled'])) {
       return FALSE;
     }
+
+    // If the entity has been imported before, then it didn't originate from
+    // this site and shouldn't be exported.
+    if ($this->contentHubImportedEntities->loadByDrupalEntity($entity->getEntityTypeId(), $entity->id()) !== FALSE) {
+      return FALSE;
+    }
+
     return TRUE;
+  }
+
+  /**
+   * Loads the Remote Content Hub Entity.
+   *
+   * @param string $uuid
+   *   The Remote Entity UUID.
+   *
+   * @return \Acquia\ContentHubClient\Entity
+   *   The Content Hub Entity.
+   */
+  public function loadRemoteEntity($uuid) {
+    /** @var \Drupal\content_hub_connector\Client\ClientManagerInterface $client_manager */
+    try {
+      $client = $this->clientManager->getClient();
+      $content_hub_entity = $client->readEntity($uuid);
+    }
+    catch (ContentHubConnectorException $e) {
+      $this->loggerFactory->get('content_hub_connector')->error($e->getMessage());
+      return FALSE;
+    }
+
+    return $content_hub_entity;
   }
 
 }

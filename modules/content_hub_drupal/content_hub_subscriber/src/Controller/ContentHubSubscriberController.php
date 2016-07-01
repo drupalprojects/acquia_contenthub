@@ -41,6 +41,13 @@ class ContentHubSubscriberController extends ControllerBase {
   public function content_hub_subscriber_discovery() {
     $config = \Drupal::config('content_hub_connector.admin_settings');
     $ember_endpoint = $config->get('ember_app') . '/entity';
+
+    // Set Client User Agent.
+    $module_info = system_get_info('module', 'content_hub_connector');
+    $module_version = (isset($module_info['version'])) ? $module_info['version'] : '0.0.0';
+    $drupal_version = (isset($module_info['core'])) ? $module_info['core'] : '0.0.0';
+    $client_user_agent = 'AcquiaContentHubConnector/' . $drupal_version . '-' . $module_version;
+
     $form = array();
     $form['#attached']['library'][] = 'content_hub_subscriber/content_hub_subscriber';
     $form['#attached']['drupalSettings']['content_hub_subscriber']['host'] = $config->get('hostname');
@@ -49,6 +56,7 @@ class ContentHubSubscriberController extends ControllerBase {
     $form['#attached']['drupalSettings']['content_hub_subscriber']['client'] = $config->get('origin');
     $form['#attached']['drupalSettings']['content_hub_subscriber']['ember_app'] = $ember_endpoint;
     $form['#attached']['drupalSettings']['content_hub_subscriber']['source'] = $config->get('drupal8');
+    $form["#attached"]['drupalSettings']['content_hub_subscriber']['client_user_agent'] = $client_user_agent;
 
     $form['iframe'] = array(
       '#type' => 'markup',
