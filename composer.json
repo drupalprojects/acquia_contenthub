@@ -1,0 +1,21 @@
+{
+  "name": "acquia/content-hub-d8",
+  "type": "drupal-module",
+  "description": "Content Hub Connector.",
+  "license": "proprietary",
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/acquia/content-hub-php"
+    }
+  ],
+  "require": {
+    "acquia/content-hub-php": "dev-master"
+  },
+  "scripts": {
+    "post-install-cmd": [
+        "@install-pre-commit"
+    ],
+    "install-pre-commit": "if [ -x ../.git/hooks ]; then cp pre-commit ../.git/hooks/pre-commit; fi"
+  }
+}
