@@ -1,7 +1,7 @@
 {
   "name": "acquia/content-hub-d8",
   "type": "drupal-module",
-  "description": "Content Hub Connector.",
+  "description": "Module allowing Drupal sites to connect to Acquia Content Hub.",
   "license": "proprietary",
   "repositories": [
     {
