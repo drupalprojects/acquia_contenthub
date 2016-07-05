@@ -69,7 +69,11 @@ class ClientManager implements ClientManagerInterface {
     $client_user_agent = 'AcquiaContentHubConnector/' . $drupal_version . '-' . $module_version;
 
     // Override configuration.
-    $config = array_merge(['base_url' => $config_drupal->get('hostname'), 'client-user-agent' =>  $client_user_agent);
+    $config = array_merge([
+      'base_url' => $config_drupal->get('hostname'), 
+      'client-user-agent' =>  $client_user_agent,
+    ], $config);
+
     $api = $config_drupal->get('api_key');
     $origin = $config_drupal->get('origin');
     $encryption = (bool) $config_drupal->get('encryption_key_file');
