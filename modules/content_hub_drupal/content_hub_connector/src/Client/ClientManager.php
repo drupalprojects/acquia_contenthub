@@ -74,18 +74,17 @@ class ClientManager implements ClientManagerInterface {
       'client-user-agent' =>  $client_user_agent,
     ], $config);
 
+    // Get API information.
     $api = $config_drupal->get('api_key');
     $origin = $config_drupal->get('origin');
+    $secret = $config_drupal->get('secret_key');
     $encryption = (bool) $config_drupal->get('encryption_key_file');
 
     if ($encryption) {
-      $secret = $config_drupal->get('secret_key');
       $secret = $this->cipher()->decrypt($secret);
     }
-    else {
-      $secret = $config_drupal->get('secret_key');
-    }
-    if (!$api || !$secret || !$origin || !$config) {
+
+    if (!isset($api) || !isset($secret) || !isset($origin)) {
       $message = t('Could not create an Acquia Content Hub connection due to missing credentials. Please check your settings.');
       throw new ContentHubConnectorException($message);
     }
