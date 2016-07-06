@@ -39,14 +39,14 @@ class ContentHubSubscriberController extends ControllerBase {
 * Loads the content hub discovery page from an ember app.
 */
   public function content_hub_subscriber_discovery() {
-    $config = \Drupal::config('content_hub_connector.admin_settings');
+    $config = \Drupal::config('acquia_contenthub.admin_settings');
     $ember_endpoint = $config->get('ember_app') . '/entity';
 
     // Set Client User Agent.
-    $module_info = system_get_info('module', 'content_hub_connector');
+    $module_info = system_get_info('module', 'acquia_contenthub');
     $module_version = (isset($module_info['version'])) ? $module_info['version'] : '0.0.0';
     $drupal_version = (isset($module_info['core'])) ? $module_info['core'] : '0.0.0';
-    $client_user_agent = 'AcquiaContentHubConnector/' . $drupal_version . '-' . $module_version;
+    $client_user_agent = 'AcquiaContentHub/' . $drupal_version . '-' . $module_version;
 
     $form = array();
     $form['#attached']['library'][] = 'content_hub_subscriber/content_hub_subscriber';
@@ -60,7 +60,7 @@ class ContentHubSubscriberController extends ControllerBase {
 
     $form['iframe'] = array(
       '#type' => 'markup',
-      '#markup' => $this->t('<iframe id="content-hub-ember" src=' . $ember_endpoint . ' width="100%" height="1000px" style="border:0"></iframe>'),
+      '#markup' => $this->t('<iframe id="acquia-content-hub-ember" src=' . $ember_endpoint . ' width="100%" height="1000px" style="border:0"></iframe>'),
     );
 
     return $form;
