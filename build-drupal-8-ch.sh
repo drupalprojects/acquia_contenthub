@@ -12,4 +12,4 @@ fi
 composer create-project drupal-composer/drupal-project:~8.0 $1 --stability dev --no-interaction
 cd $1
 composer config repositories.acquia-content-hub-d8 vcs https://github.com/acquia/content-hub-d8
-composer require acquia/content-hub-d8:dev-CHMS-769
+composer require acquia/content-hub-d8:dev-develop
