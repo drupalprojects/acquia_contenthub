@@ -5,7 +5,7 @@
 
 (function($) {
   window.onload = function() {
-    var ember_app = drupalSettings.content_hub_subscriber.ember_app;
+    var ember_app = drupalSettings.acquia_contenthub_subscriber.ember_app;
     // @Todo Need to discuss how creating an iframe on the fly helps.
     // Var iframe = document.createElement('iframe');
     // iframe.setAttribute('id', 'receiver');
@@ -14,9 +14,9 @@
     // iframe.setAttribute('width', '100%');
     // iframe.setAttribute('style', 'border:0');
     // iframe.setAttribute('height', '1000px');
-    var receiver = document.getElementById('content-hub-ember').contentWindow
+    var receiver = document.getElementById('acquia-content-hub-ember').contentWindow
     if (receiver) {
-      receiver.postMessage(drupalSettings.content_hub_subscriber, ember_app);
+      receiver.postMessage(drupalSettings.acquia_contenthub_subscriber, ember_app);
     };
   }
 })(jQuery);

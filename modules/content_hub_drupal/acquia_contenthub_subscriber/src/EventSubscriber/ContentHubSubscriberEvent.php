@@ -4,7 +4,7 @@
  * @file
  */
 
-namespace Drupal\content_hub_subscriber\EventSubscriber;
+namespace Drupal\acquia_contenthub_subscriber\EventSubscriber;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\CronInterface;

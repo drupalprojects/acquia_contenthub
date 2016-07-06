@@ -1,7 +1,7 @@
-content_hub_subscriber:
+acquia_contenthub_subscriber:
   version: 1.x
   js:
-    js/content_hub_subscriber.js: {}
+    js/acquia_contenthub_subscriber.js: {}
   dependencies:
     - core/jquery
     - core/drupalSettings

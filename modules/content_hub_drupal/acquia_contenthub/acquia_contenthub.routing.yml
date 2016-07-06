@@ -34,7 +34,7 @@ acquia_contenthub.content_hub_cdf.node:
         type: 'entity:node'
 
 acquia_contenthub.content_hub_cdf.entity:
-  path: '/content-hub/{uuid}'
+  path: '/acquia-content-hub/{uuid}'
   methods:
     - POST
   defaults:
