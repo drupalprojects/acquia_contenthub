@@ -1,11 +1,11 @@
 services:
   acquia_contenthub.entity_manager:
     class: Drupal\acquia_contenthub\EntityManager
-    arguments: ['@logger.factory', '@config.factory', '@acquia_contenthub.client_manager', '@content_hub_connector.content_hub_imported_entities']
+    arguments: ['@logger.factory', '@config.factory', '@acquia_contenthub.client_manager', '@acquia_contenthub.content_hub_imported_entities']
 
   acquia_contenthub.content_hub_cdf.import_entity:
     class: Drupal\acquia_contenthub\Controller\ContentHubEntityImportController
-    arguments: ['@database', '@logger.factory', '@acquia_contenthub.entity_manager', '@serializer', '@content_hub_connector.content_hub_imported_entities']
+    arguments: ['@database', '@logger.factory', '@acquia_contenthub.entity_manager', '@serializer', '@acquia_contenthub.content_hub_imported_entities']
 
   acquia_contenthub.content_hub_imported_entities:
     class: Drupal\acquia_contenthub\ContentHubImportedEntities
@@ -41,7 +41,7 @@ services:
     tags:
       - { name: event_subscriber }
 
-  acquia_contenthub.content_hub_connector_event:
+  acquia_contenthub.acquia_contenthub_event:
     class: Drupal\acquia_contenthub\EventSubscriber\ContentHubEvent
     tags:
       - { name: event_subscriber }

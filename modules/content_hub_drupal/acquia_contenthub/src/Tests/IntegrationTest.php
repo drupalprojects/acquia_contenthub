@@ -37,7 +37,7 @@ class IntegrationTest extends WebTestBase {
   }
 
   /**
-   * Tests various operations via the Content Hub's admin UI.
+   * Tests various operations via the Acquia Content Hub admin UI.
    */
   public function testFramework() {
     // Enable dumpHeaders when you are having caching issues.

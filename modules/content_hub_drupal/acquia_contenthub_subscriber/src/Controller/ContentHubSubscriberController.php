@@ -49,7 +49,7 @@ class ContentHubSubscriberController extends ControllerBase {
     $client_user_agent = 'AcquiaContentHub/' . $drupal_version . '-' . $module_version;
 
     $form = array();
-    $form['#attached']['library'][] = 'acquia_contenthub_subscriber/content_hub_subscriber';
+    $form['#attached']['library'][] = 'acquia_contenthub_subscriber/acquia_contenthub_subscriber';
     $form['#attached']['drupalSettings']['acquia_contenthub_subscriber']['host'] = $config->get('hostname');
     $form['#attached']['drupalSettings']['acquia_contenthub_subscriber']['public_key'] = $config->get('api_key');
     $form['#attached']['drupalSettings']['acquia_contenthub_subscriber']['secret_key'] = $config->get('secret_key');

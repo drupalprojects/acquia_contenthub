@@ -1,9 +1,10 @@
 name: Acquia Content Hub
 description: Module allowing Drupal sites to connect to Acquia Content Hub.
 package: Acquia Content Hub
+
 type: module
-version: 1.0
 core: 8.x
+
 configure: acquia_contenthub.admin_settings
 
 dependencies:
