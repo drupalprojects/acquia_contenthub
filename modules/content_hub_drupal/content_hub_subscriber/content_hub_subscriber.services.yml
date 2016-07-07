@@ -1,5 +1,0 @@
-services:
-  content_hub_subscriber.content_hub_subscriber_event:
-    class: Drupal\content_hub_subscriber\EventSubscriber\ContentHubSubscriberEvent
-    tags:
-      - { name: event_subscriber }

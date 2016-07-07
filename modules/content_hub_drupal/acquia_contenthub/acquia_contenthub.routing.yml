@@ -1,0 +1,52 @@
+acquia_contenthub.admin_settings:
+  path: '/admin/config/services/acquia-content-hub'
+  defaults:
+    _form: '\Drupal\acquia_contenthub\Form\ContentHubSettingsForm'
+    _title: 'Acquia Content Hub Settings'
+  requirements:
+    _permission: 'administer acquia content hub'
+
+acquia_contenthub.entity_config:
+  path: '/admin/config/services/acquia-content-hub/configuration'
+  defaults:
+    _form: '\Drupal\acquia_contenthub\Form\EntityConfigSettingsForm'
+    _title: 'Entity Configuration'
+  requirements:
+    _permission: 'administer acquia content hub'
+
+acquia_contenthub.content_hub_cdf.node:
+  path: '/node/{node}'
+  methods:
+    - GET
+  defaults:
+    _controller: 'Drupal\rest\RequestHandler::handle'
+    _plugin: 'entity:node'
+  requirements:
+    _method: GET
+    _format: content_hub_cdf
+    # This is fine as the rest module will check if the account has permissions
+    # to view the node.
+    # @see EntityResource::get()
+    _access: 'TRUE'
+  options:
+    parameters:
+      node:
+        type: 'entity:node'
+
+acquia_contenthub.content_hub_cdf.entity:
+  path: '/acquia-content-hub/{uuid}'
+  methods:
+    - POST
+  defaults:
+    _controller: 'Drupal\acquia_contenthub\Controller\ContentHubEntityImportController::saveDrupalEntity'
+  requirements:
+    _access: 'TRUE'
+
+acquia_contenthub.content_entity_display.node:
+  path: '/acquia-content-hub/display/node/{node}/{view_mode_name}'
+  defaults:
+    _controller: '\Drupal\acquia_contenthub\Controller\ContentEntityDisplayController::viewNode'
+  requirements:
+    _access: 'TRUE'
+    node: \d+
+    view_mode_name: \w+

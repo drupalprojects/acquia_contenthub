@@ -1,0 +1,9 @@
+acquia_contenthub.admin_settings:
+  route_name: acquia_contenthub.admin_settings
+  title: 'Connection'
+  base_route: acquia_contenthub.admin_settings
+acquia_contenthub.entity_config:
+  route_name: acquia_contenthub.entity_config
+  title: 'Entity Configuration'
+  weight: 100
+  base_route: acquia_contenthub.admin_settings
