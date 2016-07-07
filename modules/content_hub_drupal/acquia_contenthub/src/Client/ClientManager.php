@@ -62,7 +62,7 @@ class ClientManager implements ClientManagerInterface {
     $config_drupal = $this->configFactory->get('acquia_contenthub.admin_settings');
 
     // ADD CODE HERE!
-    // Find out the module version in use
+    // Find out the module version in use.
     $module_info = system_get_info('module', 'acquia_contenthub');
     $module_version = (isset($module_info['version'])) ? $module_info['version'] : '0.0.0';
     $drupal_version = (isset($module_info['core'])) ? $module_info['core'] : '0.0.0';
@@ -70,8 +70,8 @@ class ClientManager implements ClientManagerInterface {
 
     // Override configuration.
     $config = array_merge([
-      'base_url' => $config_drupal->get('hostname'), 
-      'client-user-agent' =>  $client_user_agent,
+      'base_url' => $config_drupal->get('hostname'),
+      'client-user-agent' => $client_user_agent,
     ], $config);
 
     // Get API information.
