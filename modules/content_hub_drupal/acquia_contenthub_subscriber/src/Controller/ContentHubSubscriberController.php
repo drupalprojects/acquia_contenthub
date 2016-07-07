@@ -62,7 +62,7 @@ class ContentHubSubscriberController extends ControllerBase {
 
     $form['iframe'] = array(
       '#type' => 'markup',
-      '#markup' => $this->t('<iframe id="acquia-content-hub-ember" src=' . $ember_endpoint . ' width="100%" height="1000px" style="border:0"></iframe>'),
+      '#markup' => \Drupal\Core\Render\Markup::create('<iframe id="acquia-content-hub-ember" src=' . $ember_endpoint . ' width="100%" height="1000px" style="border:0"></iframe>'),
     );
 
     return $form;
