@@ -11,6 +11,10 @@ services:
     class: Drupal\acquia_contenthub\ContentHubImportedEntities
     arguments: ['@database', '@config.factory']
 
+ acquia_contenthub.content_hub_subscription:
+   class: Drupal\acquia_contenthub\ContentHubSubscription
+   arguments: ['@logger.factory', '@config.factory', '@acquia_contenthub.client_manager']
+
   acquia_contenthub.client_manager:
     class: Drupal\acquia_contenthub\Client\ClientManager
     arguments: ['@logger.factory', '@config.factory']
