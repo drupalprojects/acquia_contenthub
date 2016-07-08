@@ -34,6 +34,13 @@ class ClientManager implements ClientManagerInterface {
   protected $configFactory;
 
   /**
+   * The Acquia Content Hub Client.
+   *
+   * @var \Acquia\ContentHubClient\ContentHub
+   */
+  protected $client;
+
+  /**
    * ClientManager constructor.
    *
    * @param \Drupal\Core\Logger\LoggerChannelFactory $logger_factory
@@ -44,6 +51,9 @@ class ClientManager implements ClientManagerInterface {
   public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory) {
     $this->loggerFactory = $logger_factory;
     $this->configFactory = $config_factory;
+
+    // Initializing Client.
+    $this->setConnection();
   }
 
   /**
@@ -58,40 +68,50 @@ class ClientManager implements ClientManagerInterface {
    * @throws \Drupal\acquia_contenthub\ContentHubException
    *   Throws exception when cannot connect to Content Hub.
    */
+  protected function setConnection($config = []) {
+    $this->client = &drupal_static(__FUNCTION__);
+    if (NULL === $this->client) {
+      // @todo Make sure this injects using proper service injection methods.
+      $config_drupal = $this->configFactory->get('acquia_contenthub.admin_settings');
+
+      // ADD CODE HERE!
+      // Find out the module version in use
+      $module_info = system_get_info('module', 'acquia_contenthub');
+      $module_version = (isset($module_info['version'])) ? $module_info['version'] : '0.0.0';
+      $drupal_version = (isset($module_info['core'])) ? $module_info['core'] : '0.0.0';
+      $client_user_agent = 'AcquiaContentHub/' . $drupal_version . '-' . $module_version;
+
+      // Override configuration.
+      $config = array_merge([
+        'base_url' => $config_drupal->get('hostname'),
+        'client-user-agent' =>  $client_user_agent,
+      ], $config);
+
+      // Get API information.
+      $api = $config_drupal->get('api_key');
+      $origin = $config_drupal->get('origin');
+      $secret = $config_drupal->get('secret_key');
+      $encryption = (bool) $config_drupal->get('encryption_key_file');
+
+      if ($encryption) {
+        $secret = $this->cipher()->decrypt($secret);
+      }
+
+      if (!isset($api) || !isset($secret) || !isset($origin)) {
+        $message = t('Could not create an Acquia Content Hub connection due to missing credentials. Please check your settings.');
+        throw new ContentHubException($message);
+      }
+
+      $this->client = new ContentHub($api, $secret, $origin, $config);
+    }
+    return $this;
+  }
+
+  /**
+   * Function returns the Acquia Content Hub client.
+   */
   public function getConnection($config = []) {
-    // @todo Make sure this injects using proper service injection methods.
-    $config_drupal = $this->configFactory->get('acquia_contenthub.admin_settings');
-
-    // ADD CODE HERE!
-    // Find out the module version in use.
-    $module_info = system_get_info('module', 'acquia_contenthub');
-    $module_version = (isset($module_info['version'])) ? $module_info['version'] : '0.0.0';
-    $drupal_version = (isset($module_info['core'])) ? $module_info['core'] : '0.0.0';
-    $client_user_agent = 'AcquiaContentHub/' . $drupal_version . '-' . $module_version;
-
-    // Override configuration.
-    $config = array_merge([
-      'base_url' => $config_drupal->get('hostname'),
-      'client-user-agent' => $client_user_agent,
-    ], $config);
-
-    // Get API information.
-    $api = $config_drupal->get('api_key');
-    $origin = $config_drupal->get('origin');
-    $secret = $config_drupal->get('secret_key');
-    $encryption = (bool) $config_drupal->get('encryption_key_file');
-
-    if ($encryption) {
-      $secret = $this->cipher()->decrypt($secret);
-    }
-
-    if (!isset($api) || !isset($secret) || !isset($origin)) {
-      $message = t('Could not create an Acquia Content Hub connection due to missing credentials. Please check your settings.');
-      throw new ContentHubException($message);
-    }
-
-    $client = new ContentHub($api, $secret, $origin, $config);
-    return $client;
+    return $this->client;
   }
 
   /**
@@ -194,7 +214,7 @@ class ClientManager implements ClientManagerInterface {
   public function createRequest($request, $args = array(), $exception_messages = array()) {
     try {
       // Check that we have a valid connection.
-      if ($this->client === FALSE) {
+      if ($this->getConnection() === FALSE) {
         $error = t('This client is NOT registered to Content Hub. Please register first');
         throw new Exception($error);
       }
@@ -205,7 +225,7 @@ class ClientManager implements ClientManagerInterface {
         // authentication.
         case 'ping':
         case 'definition':
-          return $this->client->$request();
+          return $this->getConnection()->$request();
 
         // Case for all API calls with no argument that require authentication.
         case 'getSettings':

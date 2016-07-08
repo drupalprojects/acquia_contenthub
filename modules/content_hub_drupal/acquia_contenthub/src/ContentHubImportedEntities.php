@@ -9,6 +9,7 @@ namespace Drupal\acquia_contenthub;
 use Drupal\Core\Database\Connection;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Component\Uuid\Uuid;
 
 /**
  * Tracks in a table the list of all entities imported from Content Hub.
@@ -19,8 +20,6 @@ class ContentHubImportedEntities {
   const AUTO_UPDATE_ENABLED      = 'ENABLED';
   const AUTO_UPDATE_DISABLED     = 'DISABLED';
   const AUTO_UPDATE_LOCAL_CHANGE = 'LOCAL_CHANGE';
-
-  const VALID_UUID               = '[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}';
 
   /**
    * The Database Connection.
@@ -74,19 +73,6 @@ class ContentHubImportedEntities {
    */
   protected function reset() {
     $this->importedEntity = NULL;
-  }
-
-  /**
-   * Validates the UUID.
-   *
-   * @param string $uuid
-   *   A UUID String.
-   *
-   * @return bool
-   *   TRUE if the string given is a UUID, FALSE otherwise.
-   */
-  static public function isUuid($uuid) {
-    return (bool) preg_match('/^' . self::VALID_UUID . '$/', $uuid);
   }
 
   /**
@@ -220,7 +206,7 @@ class ContentHubImportedEntities {
   public function save() {
     $site_origin = $this->contentHubAdminConfig->get('origin');
     $success = FALSE;
-    $valid_input = self::isUuid($this->getUuid()) && self::isUuid($this->getOrigin()) && !empty($this->getEntityType()) && !empty($this->getEntityId());
+    $valid_input = Uuid::isValid($this->getUuid()) && Uuid::isValid($this->getOrigin()) && !empty($this->getEntityType()) && !empty($this->getEntityId());
     $valid_input = $valid_input &&  in_array($this->getAutoUpdate(), array(
       self::AUTO_UPDATE_ENABLED,
       self::AUTO_UPDATE_DISABLED,
@@ -293,7 +279,7 @@ class ContentHubImportedEntities {
    */
   public function loadByUuid($entity_uuid) {
     $this->reset();
-    if (self::isUuid($entity_uuid)) {
+    if (Uuid::isValid($entity_uuid)) {
       $result = $this->database->select(self::TABLE, 'ci')
         ->fields('ci')
         ->condition('entity_uuid', $entity_uuid)
@@ -319,7 +305,7 @@ class ContentHubImportedEntities {
    *   An array containing the list of imported entities from a certain origin.
    */
   public function getFromOrigin($origin) {
-    if (self::isUuid($origin)) {
+    if (Uuid::isValid($origin)) {
       return $this->database->select(self::TABLE, 'ci')
         ->fields('ci')
         ->condition('origin', $origin)

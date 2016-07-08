@@ -9,10 +9,10 @@ namespace Drupal\acquia_contenthub\Form;
 use Drupal\acquia_contenthub\Client\ClientManager;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Form\ConfigFormBase;
+use Drupal\Core\Config\ConfigFactory;
 use Acquia\ContentHubClient;
-use \GuzzleHttp\Exception\ClientException;
-use \GuzzleHttp\Exception\RequestException;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\acquia_contenthub\ContentHubSubscription;
 use Drupal\Core\Url;
 
 /**
@@ -21,27 +21,37 @@ use Drupal\Core\Url;
 class WebhooksSettingsForm extends ConfigFormBase {
 
   /**
-   * The client manager.
+   * Config Factory.
    *
-   * @var |Drupal\acquia_contenthub\Client\ClientManager
+   * @var \Drupal\Core\Config\ConfigFactory
    */
-  protected $clientManager;
+  protected $configFactory;
 
   /**
-   * ContentHubSettingsForm constructor.
+   * Content Hub Subscription.
+   *
+   * @var \Drupal\acquia_contenthub\ContentHubSubscription
+   */
+  protected $contentHubSubscription;
+
+  /**
+   * WebhooksSettingsForm constructor.
    *
    * @param \Drupal\acquia_contenthub\Client\ClientManager $client_manager
    *   The client manager.
    */
-  public function __construct(ClientManager $client_manager) {
-    $this->clientManager = $client_manager;
+  public function __construct(ConfigFactory $config_factory, ContentHubSubscription $contenthub_subscription) {
+    $this->configFactory = $config_factory;
+    $this->contentHubSubscription = $contenthub_subscription;
   }
+
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $content_hub_subscription = $container->get('acquia_contenthub.content_hub_subscription')
+      $container->get('config.factory'),
+      $container->get('acquia_contenthub.content_hub_subscription')
     );
   }
 
@@ -124,15 +134,15 @@ class WebhooksSettingsForm extends ConfigFormBase {
       $config->set('webhook_uuid', $form_state->getValue('webhook_uuid'));
     }
 
-    $webhook_register = (bool) $form_state['values']['content_hub_connector_webhook_uuid'];
-    $webhook_url = $form_state['values']['content_hub_connector_webhook_url'];
+    $webhook_register = (bool) $form_state->getValue('webhook_uuid');
+    $webhook_url = $form_state->getValue('webhook_url');
 
     // Perform the registration / un-registration.
     if ($webhook_register) {
-      return $content_hub_subscription->registerWebhook($webhook_url);
+      return $this->contentHubSubscription->registerWebhook($webhook_url);
     }
     else {
-      return $content_hub_subscription->unregisterWebhook($webhook_url);
+      return $this->contentHubSubscription->unregisterWebhook($webhook_url);
     }
 
     $config->save();
