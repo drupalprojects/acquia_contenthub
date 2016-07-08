@@ -26,7 +26,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    *
    * @var string
    */
-  protected $format = 'content_hub_cdf';
+  protected $format = 'acquia_contenthub_cdf';
 
   /**
    * The interface or class that this Normalizer supports.

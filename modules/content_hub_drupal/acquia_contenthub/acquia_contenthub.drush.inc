@@ -170,7 +170,7 @@ function drush_acquia_contenthub_content_hub_local($entity_type, $entity_id) {
     )));
   }
   // If nothing else, return our object structure.
-  $output = $serializer->normalize($entity, 'content_hub_cdf');
+  $output = $serializer->normalize($entity, 'acquia_contenthub_cdf');
   return $output;
 }
 
@@ -239,7 +239,7 @@ function drush_acquia_contenthub_content_hub_compare($entity_type, $uuid) {
 
   // Get our local CDF version.
   $local_entity = $entity_repository->loadEntityByUuid($entity_type, $uuid);
-  $local_cdf = $serializer->normalize($local_entity, 'content_hub_cdf');
+  $local_cdf = $serializer->normalize($local_entity, 'acquia_contenthub_cdf');
   if (!$local_cdf) {
     $local_cdf = array();
   }

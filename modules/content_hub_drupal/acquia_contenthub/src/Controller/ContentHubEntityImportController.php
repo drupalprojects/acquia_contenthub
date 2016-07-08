@@ -25,7 +25,7 @@ class ContentHubEntityImportController extends ControllerBase {
 
   const VALID_UUID = '[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}';
 
-  protected $format = 'content_hub_cdf';
+  protected $format = 'acquia_contenthub_cdf';
 
   /**
    * The Database Connection.

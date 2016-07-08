@@ -199,7 +199,7 @@ class EntityManager {
   public function getResourceUrl(EntityInterface $entity) {
     switch ($entity->getEntityTypeId()) {
       case 'node':
-        $path = 'node/' . $entity->id() . '?_format=content_hub_cdf';
+        $path = 'node/' . $entity->id() . '?_format=acquia_contenthub_cdf';
         break;
 
       default:

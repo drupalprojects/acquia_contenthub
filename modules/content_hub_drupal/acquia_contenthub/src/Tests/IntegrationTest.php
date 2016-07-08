@@ -96,7 +96,7 @@ class IntegrationTest extends WebTestBase {
    *   The view mode to check in the CDF.
    */
   public function checkCdfOutput(NodeInterface $entity, $view_mode = NULL) {
-    $output = $this->drupalGetJSON($entity->getEntityTypeId() . '/' . $this->article->id(), array('query' => array('_format' => 'content_hub_cdf')));
+    $output = $this->drupalGetJSON($entity->getEntityTypeId() . '/' . $this->article->id(), array('query' => array('_format' => 'acquia_contenthub_cdf')));
     $this->assertResponse(200);
     if (!empty($view_mode)) {
       $this->assertTrue(isset($output['entities']['0']['metadata']), 'Metadata is present');
