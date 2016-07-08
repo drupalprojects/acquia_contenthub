@@ -66,13 +66,13 @@ class EntityManager {
    * @param \Drupal\acquia_contenthub\Client\ClientManagerInterface $client_manager
    *    The client manager.
    */
-  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager, ContentHubImportedEntities $content_hub_imported_entities) {
+  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager, ContentHubImportedEntities $acquia_contenthub_imported_entities) {
     global $base_root;
     $this->baseRoot = $base_root;
     $this->loggerFactory = $logger_factory;
     $this->configFactory = $config_factory;
     $this->clientManager = $client_manager;
-    $this->contentHubImportedEntities = $content_hub_imported_entities;
+    $this->contentHubImportedEntities = $acquia_contenthub_imported_entities;
   }
 
   /**

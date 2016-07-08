@@ -73,15 +73,15 @@ class ContentHubEntityImportController extends ControllerBase {
    *   The Acquia Content Hub Entity Manager.
    * @param \Symfony\Component\Serializer\SerializerInterface $serializer
    *   The Serializer.
-   * @param \Drupal\acquia_contenthub\ContentHubImportedEntities $content_hub_imported_entities
+   * @param \Drupal\acquia_contenthub\ContentHubImportedEntities $acquia_contenthub_imported_entities
    *   The Content Hub Imported Entities Service.
    */
-  public function __construct(Connection $database, LoggerChannelFactory $logger_factory, EntityManager $entity_manager, SerializerInterface $serializer, ContentHubImportedEntities $content_hub_imported_entities) {
+  public function __construct(Connection $database, LoggerChannelFactory $logger_factory, EntityManager $entity_manager, SerializerInterface $serializer, ContentHubImportedEntities $acquia_contenthub_imported_entities) {
     $this->database = $database;
     $this->loggerFactory = $logger_factory;
     $this->entityManager = $entity_manager;
     $this->serializer = $serializer;
-    $this->contentHubImportedEntities = $content_hub_imported_entities;
+    $this->contentHubImportedEntities = $acquia_contenthub_imported_entities;
   }
 
   /**
@@ -93,7 +93,7 @@ class ContentHubEntityImportController extends ControllerBase {
       $container->get('logger.factory'),
       $container->get('acquia_contenthub.entity_manager'),
       $container->get('serializer'),
-      $container->get('acquia_contenthub.content_hub_imported_entities')
+      $container->get('acquia_contenthub.acquia_contenthub_imported_entities')
     );
   }
 
@@ -188,7 +188,7 @@ class ContentHubEntityImportController extends ControllerBase {
         $this->loggerFactory->get('acquia_contenthub')->debug($message);
       }
       else {
-        $message = new FormattableMarkup('Saving %type entity with uuid=%uuid, but not tracking this entity in content_hub_imported_entities table because it could not be saved.', $args);
+        $message = new FormattableMarkup('Saving %type entity with uuid=%uuid, but not tracking this entity in acquia_contenthub_imported_entities table because it could not be saved.', $args);
         $this->loggerFactory->get('acquia_contenthub')->warning($message);
       }
 

@@ -14,7 +14,7 @@
  * @ingroup acquia_contenthub
  */
 function acquia_contenthub_schema() {
-  $schema['content_hub_imported_entities'] = array(
+  $schema['acquia_contenthub_imported_entities'] = array(
     'fields' => array(
       'entity_type' => array(
         'type' => 'varchar',
