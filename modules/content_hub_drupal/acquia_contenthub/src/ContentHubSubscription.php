@@ -10,18 +10,12 @@ namespace Drupal\acquia_contenthub;
 use Drupal\Component\Render\FormattableMarkup;
 use Drupal\acquia_contenthub\Client\ClientManagerInterface;
 use Drupal\Core\Config\ConfigFactory;
+use Drupal\Component\Uuid\Uuid;
 
 /**
  * Handles operations on the Acquia Content Hub Subscription.
  */
 class ContentHubSubscription {
-
-  /**
-   * Base root.
-   *
-   * @var string
-   */
-  protected $baseRoot;
 
   /**
    * Logger.
@@ -58,7 +52,7 @@ class ContentHubSubscription {
     return new static(
       $container->get('logger.factory'),
       $container->get('config.factory'),
-      $container->get('config.factory')
+      $container->get('acquia_contenthub.client_manager')
     );
   }
 
@@ -73,8 +67,6 @@ class ContentHubSubscription {
    *    The client manager.
    */
   public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager) {
-    global $base_root;
-    $this->baseRoot = $base_root;
     $this->loggerFactory = $logger_factory;
     $this->configFactory = $config_factory;
     $this->clientManager = $client_manager;
@@ -88,7 +80,7 @@ class ContentHubSubscription {
    *   otherwise.
    */
   public function getSettings() {
-    if ($this->settings = $this->createRequest('getSettings')) {
+    if ($this->settings = $this->ClientManager->createRequest('getSettings')) {
       $shared_secret = $this->settings->getSharedSecret();
 
       // If encryption is activated, then encrypt the shared secret.
@@ -114,7 +106,7 @@ class ContentHubSubscription {
       return $this->settings->getUuid();
     }
     else {
-      if ($settings = $this->createRequest('getSettings')) {
+      if ($settings = $this->ClientManager->createRequest('getSettings')) {
         return $settings->getUuid();
       }
       return FALSE;
@@ -132,7 +124,7 @@ class ContentHubSubscription {
       return $this->settings->getCreated();
     }
     else {
-      if ($settings = $this->createRequest('getSettings')) {
+      if ($settings = $this->ClientManager->createRequest('getSettings')) {
         return $settings->getCreated();
       }
       return FALSE;
@@ -150,7 +142,7 @@ class ContentHubSubscription {
       return $this->settings->getModified();
     }
     else {
-      if ($settings = $this->createRequest('getSettings')) {
+      if ($settings = $this->ClientManager->createRequest('getSettings')) {
         return $settings->getModified();
       }
       return FALSE;
@@ -168,7 +160,7 @@ class ContentHubSubscription {
       return $this->settings->getClients();
     }
     else {
-      if ($settings = $this->createRequest('getSettings')) {
+      if ($settings = $this->ClientManager->createRequest('getSettings')) {
         return $settings->getClients();
       }
       return FALSE;
@@ -196,7 +188,7 @@ class ContentHubSubscription {
         return $this->settings->getSharedSecret();
       }
       else {
-        if ($settings = $this->createRequest('getSettings')) {
+        if ($settings = $this->ClientManager->createRequest('getSettings')) {
           return $settings->getSharedSecret();
         }
         return FALSE;
@@ -211,7 +203,7 @@ class ContentHubSubscription {
    *   The new shared secret if successful, FALSE otherwise.
    */
   public function regenerateSharedSecret() {
-    if ($response = $this->createRequest('regenerateSharedSecret')) {
+    if ($response = $this->ClientManager->createRequest('regenerateSharedSecret')) {
       if (isset($response['success']) && $response['success'] == 1) {
         $this->getSettings();
         return $this->getSharedSecret();
@@ -232,7 +224,7 @@ class ContentHubSubscription {
    *   TRUE if succeeds, FALSE otherwise.
    */
   public function registerClient($client_name) {
-    if ($site = $this->createRequest('register', array($client_name))) {
+    if ($site = $this->ClientManager->createRequest('register', array($client_name))) {
       // Resetting the origin now that we have one.
       $origin = $site['uuid'];
 
@@ -266,8 +258,8 @@ class ContentHubSubscription {
    *   TRUE if available, FALSE otherwise.
    */
   public function isClientNameAvailable($client_name) {
-    if ($site = $this->createRequest('getClientByName', array($client_name))) {
-      if (isset($site['uuid']) && Cdf::isUuid($site['uuid'])) {
+    if ($site = $this->ClientManager->createRequest('getClientByName', array($client_name))) {
+      if (isset($site['uuid']) && Uuid::isValid($site['uuid'])) {
         return FALSE;
       }
     }
@@ -282,7 +274,7 @@ class ContentHubSubscription {
    */
   public function updateSharedSecret() {
     if ($this->isConnected()) {
-      if ($this->getSharedSecret() !== $this->createRequest('getSettings')->getSharedSecret()) {
+      if ($this->getSharedSecret() !== $this->ClientManager->createRequest('getSettings')->getSharedSecret()) {
         // If this condition is met, then the locally stored shared secret is
         // outdated. We need to update the value from the Hub.
         $this->getSettings();
@@ -309,7 +301,7 @@ class ContentHubSubscription {
   public function registerWebhook($webhook_url) {
     $success = FALSE;
     $config = $this->configFactory->get('acquia_contenthub.admin_settings');
-    if ($webhook = $this->createRequest('addWebhook', array($webhook_url))) {
+    if ($webhook = $this->ClientManager->createRequest('addWebhook', array($webhook_url))) {
       $config->set('webhook_uuid', $webhook['uuid']);
       $config->set('webhook_url', $webhook['url']);
       drupal_set_message(t('Webhooks have been enabled. This site will now receive updates from Content Hub.'), 'status');
@@ -332,13 +324,14 @@ class ContentHubSubscription {
    *   TRUE if successful unregistration, FALSE otherwise.
    */
   public function unregisterWebhook($webhook_url) {
-    if ($settings = $this->createRequest('getSettings')) {
+    if ($settings = $this->ClientManager->createRequest('getSettings')) {
       if ($webhook = $settings->getWebhook($webhook_url)) {
-        $this->createRequest('deleteWebhook', array($webhook['uuid'], $webhook['url']));
+        $this->ClientManager->createRequest('deleteWebhook', array($webhook['uuid'], $webhook['url']));
         drupal_set_message(t('Webhooks have been <b>disabled</b>. This site will no longer receive updates from Content Hub.', array(
           '@URL' => $webhook['url'],
         )), 'warning');
-        variable_set('content_hub_connector_webhook_uuid', 0);
+        $config = $this->configFactory->get('acquia_contenthub.admin_settings');
+        $config->set('webhook_uuid', 0);
         return TRUE;
       }
     }
@@ -350,8 +343,8 @@ class ContentHubSubscription {
    */
   public function disconnectClient() {
     $config = $this->configFactory->get('acquia_contenthub.admin_settings');
-    $webhook_register = (bool) config->get('webhook_uuid');
-    $webhook_url = config->get('webhook_url');
+    $webhook_register = (bool) $config->get('webhook_uuid');
+    $webhook_url = $config->get('webhook_url');
     // Un-register the webhook.
     if ($webhook_register) {
       $this->unregisterWebhook($webhook_url);
@@ -396,7 +389,7 @@ class ContentHubSubscription {
    *   The result array or FALSE otherwise.
    */
   public function listEntities(array $options) {
-    if ($entities = $this->createRequest('listEntities', array($options))) {
+    if ($entities = $this->ClientManager->createRequest('listEntities', array($options))) {
       return $entities;
     }
     return FALSE;
@@ -412,7 +405,7 @@ class ContentHubSubscription {
    *   Returns the json data of the entities list or FALSE if fails.
    */
   public function purgeEntities() {
-    if ($list = $this->createRequest('purge')) {
+    if ($list = $this->ClientManager->createRequest('purge')) {
       return $list;
     }
     return FALSE;

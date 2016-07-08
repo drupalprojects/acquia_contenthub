@@ -28,6 +28,24 @@ class WebhooksSettingsForm extends ConfigFormBase {
   protected $clientManager;
 
   /**
+   * ContentHubSettingsForm constructor.
+   *
+   * @param \Drupal\acquia_contenthub\Client\ClientManager $client_manager
+   *   The client manager.
+   */
+  public function __construct(ClientManager $client_manager) {
+    $this->clientManager = $client_manager;
+  }
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $content_hub_subscription = $container->get('acquia_contenthub.content_hub_subscription')
+    );
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function getFormId() {
@@ -39,24 +57,6 @@ class WebhooksSettingsForm extends ConfigFormBase {
    */
   protected function getEditableConfigNames() {
     return ['acquia_contenthub.admin_settings'];
-  }
-
-  /**
-   * ContentHubSettingsForm constructor.
-   *
-   * @param \Drupal\acquia_contenthub\Client\ClientManager $client_manager
-   *   The client manager.
-   */
-  public function __construct(ClientManager $client_manager) {
-    $this->clientManager = $client_manager;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    $client_manager = \Drupal::service('acquia_contenthub.client_manager');
-    return new static($client_manager);
   }
 
   /**
@@ -126,9 +126,6 @@ class WebhooksSettingsForm extends ConfigFormBase {
 
     $webhook_register = (bool) $form_state['values']['content_hub_connector_webhook_uuid'];
     $webhook_url = $form_state['values']['content_hub_connector_webhook_url'];
-
-    // Load the Subscription.
-    $content_hub_subscription = new ContentHubSubscription();
 
     // Perform the registration / un-registration.
     if ($webhook_register) {
