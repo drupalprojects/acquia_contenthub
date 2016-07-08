@@ -124,6 +124,20 @@ class WebhooksSettingsForm extends ConfigFormBase {
       $config->set('webhook_uuid', $form_state->getValue('webhook_uuid'));
     }
 
+    $webhook_register = (bool) $form_state['values']['content_hub_connector_webhook_uuid'];
+    $webhook_url = $form_state['values']['content_hub_connector_webhook_url'];
+
+    // Load the Subscription.
+    $content_hub_subscription = new ContentHubSubscription();
+
+    // Perform the registration / un-registration.
+    if ($webhook_register) {
+      return $content_hub_subscription->registerWebhook($webhook_url);
+    }
+    else {
+      return $content_hub_subscription->unregisterWebhook($webhook_url);
+    }
+
     $config->save();
   }
 
