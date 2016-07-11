@@ -66,4 +66,17 @@ interface ClientManagerInterface {
    */
   public function createRequest($request, $args = array(), $exception_messages = array());
 
+  /**
+   * Extracts HMAC signature from the request.
+   *
+  * @param \Symfony\Component\HttpFoundation\Request $request
+  *   The Request to evaluate signature.
+   * @param string $secret_key
+   *  The secret key used to generate the signature.
+   *
+   * @return string
+   *   The HMAC signature for this request.
+   */
+  public function getRequestSignature(Request $request, $secret_key = '');
+
 }

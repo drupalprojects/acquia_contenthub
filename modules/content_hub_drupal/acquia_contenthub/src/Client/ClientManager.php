@@ -7,12 +7,13 @@
 
 namespace Drupal\acquia_contenthub\Client;
 
-use Acquia\ContentHubClient\ContentHub;
+use Acquia\ContentHubClient;
 use Drupal\acquia_contenthub\Cipher;
 use Drupal\acquia_contenthub\ContentHubException;
 use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Component\Render\FormattableMarkup;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Provides a service for managing pending server tasks.
@@ -41,6 +42,13 @@ class ClientManager implements ClientManagerInterface {
   protected $client;
 
   /**
+   * The Drupal Configuration.
+   *
+   * @var \Drupal\Core\Config\Config
+   */
+  protected $config;
+
+  /**
    * ClientManager constructor.
    *
    * @param \Drupal\Core\Logger\LoggerChannelFactory $logger_factory
@@ -51,6 +59,9 @@ class ClientManager implements ClientManagerInterface {
   public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory) {
     $this->loggerFactory = $logger_factory;
     $this->configFactory = $config_factory;
+
+    // Get the content hub config settings.
+    $this->config = $this->configFactory->get('acquia_contenthub.admin_settings');
 
     // Initializing Client.
     $this->setConnection();
@@ -71,8 +82,6 @@ class ClientManager implements ClientManagerInterface {
   protected function setConnection($config = []) {
     $this->client = &drupal_static(__FUNCTION__);
     if (NULL === $this->client) {
-      // @todo Make sure this injects using proper service injection methods.
-      $config_drupal = $this->configFactory->get('acquia_contenthub.admin_settings');
 
       // ADD CODE HERE!
       // Find out the module version in use
@@ -83,15 +92,15 @@ class ClientManager implements ClientManagerInterface {
 
       // Override configuration.
       $config = array_merge([
-        'base_url' => $config_drupal->get('hostname'),
+        'base_url' => $this->config->get('hostname'),
         'client-user-agent' =>  $client_user_agent,
       ], $config);
 
       // Get API information.
-      $api = $config_drupal->get('api_key');
-      $origin = $config_drupal->get('origin');
-      $secret = $config_drupal->get('secret_key');
-      $encryption = (bool) $config_drupal->get('encryption_key_file');
+      $api = $this->config->get('api_key');
+      $origin = $this->config->get('origin');
+      $secret = $this->config->get('secret_key');
+      $encryption = (bool) $this->config->get('encryption_key_file');
 
       if ($encryption) {
         $secret = $this->cipher()->decrypt($secret);
@@ -141,10 +150,11 @@ class ClientManager implements ClientManagerInterface {
    * @param array $config
    *   The Configuration options.
    */
-  public function resetConnection(array $variables, $config = array()) {
+  public function resetConnection(array $variables, $config = []) {
     $hostname = isset($variables['hostname']) ? $variables['hostname'] : '';;
-    $api = isset($variables['api']) ? $variables['api'] : '';;
+    $api = isset($variables['api']) ? $variables['api'] : '';
 
+    // @todo Make sure this injects using proper service injection methods.
     // We assume that the secret passed to this function is always
     // unencrypted.
     $secret = isset($variables['secret']) ? $variables['secret'] : '';;
@@ -157,7 +167,7 @@ class ClientManager implements ClientManagerInterface {
 
     // Override configuration.
     $config = array_merge([
-      'base_url' => $config_drupal->get('hostname'),
+      'base_url' => $this->config->get('hostname'),
       'client-user-agent' =>  $client_user_agent,
     ], $config);
 
@@ -298,7 +308,7 @@ class ClientManager implements ClientManagerInterface {
     if (isset($msg)) {
       if ($msg !== FALSE) {
         $this->loggerFactory->get('acquia_contenthub')->error($msg);
-        throw $e;
+        throw $ex;
       }
       else {
         // If the message is FALSE, then there is no error message, which
@@ -309,6 +319,42 @@ class ClientManager implements ClientManagerInterface {
 
     return FALSE;
 
+  }
+
+  /**
+  * Extracts HMAC signature from the request.
+  *
+  * @param \Symfony\Component\HttpFoundation\Request $request
+  *   The Request to evaluate signature.
+  * @param string $secret_key
+  *   The Secret Key.
+  *
+  *  @return string
+  *   A base64 encoded string signature.
+  */
+  public function getRequestSignature(Request $request, $secret_key = '') {
+     // Extract signature information from the request.
+     $headers = array_map('current', $request->headers->all());
+     $http_verb = $request->getMethod();
+     $path = $request->getPathInfo();
+     $body = $request->getContent();
+
+     // If the headers are not given, then the request is probably not coming from
+     // the Content Hub. Replace them for empty string to fail validation.
+     $content_type = isset($headers['content-type']) ? $headers['content-type'] : '';
+     $date = isset($headers['date']) ? $headers['date'] : '';
+     $message_array = array(
+       $http_verb,
+       md5($body),
+       $content_type,
+       $date,
+       '',
+       $path,
+     );
+     $message = implode("\n", $message_array);
+     $s = hash_hmac('sha256', $message, $secret_key, TRUE);
+     $signature = base64_encode($s);
+     return $signature;
   }
 
   /**

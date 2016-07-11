@@ -47,6 +47,13 @@ class ContentHubSubscription {
   protected $settings;
 
   /**
+   * The Drupal Configuration.
+   *
+   * @var \Drupal\Core\Config\Config
+   */
+  protected $config;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
@@ -71,6 +78,8 @@ class ContentHubSubscription {
     $this->loggerFactory = $logger_factory;
     $this->configFactory = $config_factory;
     $this->clientManager = $client_manager;
+    // Get the content hub config settings.
+    $this->config = $this->configFactory->get('acquia_contenthub.admin_settings');
   }
 
   /**
@@ -85,12 +94,11 @@ class ContentHubSubscription {
       $shared_secret = $this->settings->getSharedSecret();
 
       // If encryption is activated, then encrypt the shared secret.
-      $config = $this->configFactory->get('acquia_contenthub.admin_settings');
-      $encryption = $config->get('encryption_key_file', FALSE);
+      $encryption = $this->config->get('encryption_key_file', FALSE);
       if ($encryption) {
         $shared_secret = content_hub_connector_cipher()->encrypt($shared_secret);
       }
-      $config->set('shared_secret', $shared_secret);
+      $this->config->set('shared_secret', $shared_secret);
       return $this->settings;
     }
     return FALSE;
@@ -175,10 +183,9 @@ class ContentHubSubscription {
    *   The shared secret, FALSE otherwise.
    */
   public function getSharedSecret() {
-    $config = $this->configFactory->get('acquia_contenthub.admin_settings');
-    $encryption = $config->get('shared_secret', FALSE);
-    if ($shared_secret = $config->get('shared_secret', FALSE)) {
-      $encryption = (bool) $config->get('encryption_key_file', FALSE);
+    $encryption = $this->config->get('shared_secret', FALSE);
+    if ($shared_secret = $this->config->get('shared_secret', FALSE)) {
+      $encryption = (bool) $this->config->get('encryption_key_file', FALSE);
       if ($encryption) {
         $shared_secret = content_hub_connector_cipher()->decrypt($shared_secret);
       }
@@ -230,9 +237,8 @@ class ContentHubSubscription {
       $origin = $site['uuid'];
 
       // Registration successful. Setting up the origin and client name.
-      $config = $this->configFactory->get('acquia_contenthub.admin_settings');
-      $config->set('origin', $origin);
-      $config->set('client_name', $client_name);
+      $this->config->set('origin', $origin);
+      $this->config->set('client_name', $client_name);
 
       drupal_set_message(t('Successful Client registration with name "@name" (UUID = @uuid)', array(
         '@name' => $client_name,
@@ -301,10 +307,9 @@ class ContentHubSubscription {
    */
   public function registerWebhook($webhook_url) {
     $success = FALSE;
-    $config = $this->configFactory->get('acquia_contenthub.admin_settings');
     if ($webhook = $this->clientManager->createRequest('addWebhook', array($webhook_url))) {
-      $config->set('webhook_uuid', $webhook['uuid']);
-      $config->set('webhook_url', $webhook['url']);
+      $this->config->set('webhook_uuid', $webhook['uuid']);
+      $this->config->set('webhook_url', $webhook['url']);
       drupal_set_message(t('Webhooks have been enabled. This site will now receive updates from Content Hub.'), 'status');
       $success = TRUE;
       $message = new FormattableMarkup('Successful registration of Webhook URL = @URL', array(
@@ -331,8 +336,7 @@ class ContentHubSubscription {
         drupal_set_message(t('Webhooks have been <b>disabled</b>. This site will no longer receive updates from Content Hub.', array(
           '@URL' => $webhook['url'],
         )), 'warning');
-        $config = $this->configFactory->get('acquia_contenthub.admin_settings');
-        $config->set('webhook_uuid', 0);
+        $this->config->set('webhook_uuid', 0);
         return TRUE;
       }
     }
@@ -343,9 +347,8 @@ class ContentHubSubscription {
    * Disconnects the client from the Content Hub.
    */
   public function disconnectClient() {
-    $config = $this->configFactory->get('acquia_contenthub.admin_settings');
-    $webhook_register = (bool) $config->get('webhook_uuid');
-    $webhook_url = $config->get('webhook_url');
+    $webhook_register = (bool) $this->config->get('webhook_uuid');
+    $webhook_url = $this->config->get('webhook_url');
     // Un-register the webhook.
     if ($webhook_register) {
       $this->unregisterWebhook($webhook_url);
