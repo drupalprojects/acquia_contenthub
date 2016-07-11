@@ -4,6 +4,21 @@
  * Processes Webhooks coming from Content Hub.
  */
 
+namespace Drupal\acquia_contenthub\Controller;
+
+use Acquia\ContentHubClient\ResponseSigner;
+use Drupal\Component\Render\FormattableMarkup;
+use Drupal\Core\Controller\ControllerBase;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Drupal\Core\Logger\LoggerChannelFactory;
+use Drupal\Core\Config\ConfigFactory;
+use Drupal\acquia_contenthub\Client\ClientManagerInterface;
+use Drupal\acquia_contenthub\ContentHubSubscription;
+use Symfony\Component\HttpFoundation\Request as Request;
+
 /**
  * Controller for Content Hub Imported Entities.
  */
@@ -39,6 +54,13 @@ class ContentHubWebhookController extends ControllerBase {
   protected $contentHubSubscription;
 
   /**
+   * The Drupal Configuration.
+   *
+   * @var \Drupal\Core\Config\Config
+   */
+  protected $config;
+
+  /**
    * WebhooksSettingsForm constructor.
    *
    * @param \Drupal\Core\Logger\LoggerChannelFactory $logger_factory
@@ -55,6 +77,8 @@ class ContentHubWebhookController extends ControllerBase {
     $this->configFactory = $config_factory;
     $this->clientManager = $client_manager;
     $this->contentHubSubscription = $contenthub_subscription;
+    // Get the content hub config settings.
+    $this->config = $this->configFactory->get('acquia_contenthub.admin_settings');
   }
 
   /**
@@ -69,11 +93,84 @@ class ContentHubWebhookController extends ControllerBase {
     );
   }
 
-  public function receiveWebhook($webhook) {
+  public function receiveWebhook() {
     // Obtain the headers.
     $request = Request::createFromGlobals();
     $headers = array_map('current', $request->headers->all());
+    $webhook = $request->getContent();
+
+    if ($this->validateWebhookSignature($webhook)) {
+      // Notify about the arrival of the webhook request.
+      $args = array(
+        '@whook' => print_r($webhook, TRUE),
+      );
+      $message = new FormattableMarkup('Webhook landing: @whook', $args);
+      $this->loggerFactory->get('acquia_contenthub')->debug($message);
+
+      if ($webhook = Json::decode($webhook)) {
+        // Verification process successful!
+        // Now we can process the webhook.
+        if (isset($webhook['status'])) {
+          switch ($webhook['status']) {
+            case 'successful':
+              $this->processWebhook($webhook);
+              break;
+
+            case 'pending':
+              $this->registerWebhook($webhook);
+              break;
+
+            case 'shared_secret_regenerated':
+              $this->updateSharedSecret($webhook);
+
+          }
+        }
+      }
+
+    }
 
   }
 
+  public function validateWebhookSignature($webhook) {
+
+  }
+
+  /**
+   * Processing the registration of a webhook.
+   *
+   * @param  array $webhook
+   *   The webhook coming from Plexus.
+   */
+  public function registerWebhook($webhook) {
+    $uuid = isset($webhook['uuid']) ? $webhook['uuid'] : FALSE;
+    $origin = $this->config->get('origin', '');
+    $api_key = $this->config->get('api_key', '');
+
+    if ($uuid && $webhook['initiator'] == $origin && $webhook['publickey'] == $api_key) {
+
+      $encryption = (bool) $this->config->get('encryption_key_file', '');
+      $secret = $this->config->get('secret_key', '');
+      if ($encryption) {
+        $secret = $this->clientManager->cipher()->decrypt($secret);
+      }
+
+      // Creating a response.
+      $response = new ResponseSigner($api_key, $secret);
+      $response->setContent('{}');
+      $response->setResource('');
+      $response->setStatusCode(ResponseSigner::HTTP_OK);
+      $response->signWithCustomHeaders(FALSE);
+      $response->signResponse();
+      $response->send();
+      return $response;
+    }
+    else {
+      $ip_address = Drupal::request()->getClientIp();
+      $message = new FormattableMarkup('Webhook [from IP = @IP] rejected (initiator and/or publickey do not match local settings): @whook', array(
+        '@IP' => $ip_address,
+        '@whook' => print_r($webhook, TRUE),
+      ));
+      $this->loggerFactory->get('acquia_contenthub')->debug($message);
+    }
+  }
 }

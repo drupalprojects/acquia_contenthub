@@ -17,9 +17,9 @@ acquia_contenthub.webhooks_settings:
 acquia_contenthub.webhook:
   path: 'content-hub/webhook'
   defaults:
-      _controller: 'Drupal\acquia_contenthub\Controller\ContentHubWebhookController::receiveWebhook'
-    requirements:
-      _access: 'TRUE'
+    _controller: 'Drupal\acquia_contenthub\Controller\ContentHubWebhookController::receiveWebhook'
+  requirements:
+    _access: 'TRUE'
 
 acquia_contenthub.entity_config:
   path: '/admin/config/services/acquia-contenthub/configuration'

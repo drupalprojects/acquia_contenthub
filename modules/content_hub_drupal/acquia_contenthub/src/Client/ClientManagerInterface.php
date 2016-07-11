@@ -7,6 +7,8 @@
 
 namespace Drupal\acquia_contenthub\Client;
 
+use Symfony\Component\HttpFoundation\Request as Request;
+
 /**
  * Interface for CipherInterface.
  */

@@ -7,13 +7,13 @@
 
 namespace Drupal\acquia_contenthub\Client;
 
-use Acquia\ContentHubClient;
+use Acquia\ContentHubClient\ContentHub;
 use Drupal\acquia_contenthub\Cipher;
 use Drupal\acquia_contenthub\ContentHubException;
 use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Component\Render\FormattableMarkup;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Request as Request;
 
 /**
  * Provides a service for managing pending server tasks.
@@ -171,7 +171,7 @@ class ClientManager implements ClientManagerInterface {
       'client-user-agent' =>  $client_user_agent,
     ], $config);
 
-    $this->client = new ContentHubClient\ContentHub($api, $secret, $origin, $config);
+    $this->client = new ContentHub($api, $secret, $origin, $config);
   }
 
   /**
