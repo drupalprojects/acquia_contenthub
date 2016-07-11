@@ -14,6 +14,8 @@ use Acquia\ContentHubClient;
 use \GuzzleHttp\Exception\ClientException;
 use \GuzzleHttp\Exception\RequestException;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Component\Utility\UrlHelper;
+use Drupal\Component\Uuid\Uuid;
 
 /**
  * Defines the form to configure the Content Hub connection settings.
@@ -121,6 +123,58 @@ class ContentHubSettingsForm extends ConfigFormBase {
     return parent::buildForm($form, $form_state);
   }
 
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    $hostname = NULL;
+    if (UrlHelper::isValid($form_state->hasValue('hostname'), TRUE)) {
+      $hostname = $form_state->getValue('hostname');
+    }
+    else {
+      return $form_state->setErrorByName('hostname', $this->t('This is not a valid URL. Please insert it again.'));
+    }
+
+    $api = NULL;
+    if (Uuid::isValid($form_state->hasValue('api_key'))) {
+      $api = $form_state->getValue('api_key');
+    }
+    else {
+      return $form_state->setErrorByName('hostname', $this->t('Please insert a valid API Key.'));
+    }
+
+    $secret = NULL;
+    if ($form_state->hasValue('secret_key')) {
+      $secret = $form_state->getValue('secret_key');
+    }
+    else {
+      return $form_state->setErrorByName('secret_key', $this->t('Please insert a Secret Key.'));
+    }
+
+    if ($form_state->hasValue('client_name')) {
+      $client_name = $form_state->getValue('client_name');
+    }
+    else {
+      return $form_state->setErrorByName('client_name', $this->t('Please insert a Client Name.'));
+    }
+
+    if (Uuid::isValid($form_state->hasValue('origin'))) {
+      $origin = $form_state->getValue('origin');
+    }
+
+    // Validate that the client name does not exist yet.
+    $this->clientManager->resetConnection([
+      'hostname' => $hostname,
+      'api' => $api,
+      'secret' => $secret,
+      'origin' => $origin,
+    ]);
+
+    if ($this->clientManager->isClientNameAvailable($client_name) === FALSE) {
+      $message = $this->t('The client name "%name" is already being used. Please insert another one.', array(
+        '%name' => $client_name,
+      ));
+      return $form_state->setErrorByName('client_name', $message);
+    }
+  }
+
   /**
    * {@inheritdoc}
    */
@@ -191,60 +245,12 @@ class ContentHubSettingsForm extends ConfigFormBase {
       }
     }
 
-    $origin = $config->get('origin');
-    $client = new ContentHubClient\ContentHub($api, $decrypted_secret, $origin, ['base_url' => $hostname]);
-
-    // Store what's we have set so far before registering.
-    $config->save();
-
-    // Content Hub does not support a new registration when we already have a
-    // client_name.
-    if ($config->get('client_name')) {
-      // return;.
-    }
-
     // Get the client name.
-    $name = $form_state->getValue('client_name');
+    $client_name = $form_state->getValue('client_name');
 
-    try {
-      // This will fail if the name was already registered.
-      $site = $client->register($name);
+    if ($this->contentHubSubscription->registerClient($client_name)) {
+    // $config->save();
     }
-    catch (ClientException $e) {
-      $response = $e->getResponse();
-      if (isset($response)) {
-        drupal_set_message(t('Error registering client with name="@name" (Error Code = @error_code: @error_message)', array(
-          '@error_code' => $response->getStatusCode(),
-          '@name' => $name,
-          '@error_message' => $response->getReasonPhrase(),
-        )), 'error');
-        // @todo inject this with a service
-        \Drupal::logger('acquia_contenthub')->error($response->getReasonPhrase());
-      }
-      return;
-    } catch (RequestException $e) {
-      // Some error connecting to Content Hub... are your credentials set
-      // correctly?
-      $message = $e->getMessage();
-      drupal_set_message(t("Couldn't get authorization from Content Hub. Are your credentials inserted correctly? The following error was returned: @msg", array(
-        '@msg' => $message,
-      )), 'error');
-      \Drupal::logger('acquia_contenthub')->error($message);
-      return;
-    }
-
-    // Registration successful. Setting up the origin and other variables.
-    $config->set('origin', $site['uuid']);
-    $config->set('client_name', $name);
-
-    // Resetting the origin now that we have one.
-    $origin = $site['uuid'];
-    drupal_set_message(t('Successful Client registration with name "@name" (UUID = @uuid)', array(
-      '@name' => $name,
-      '@uuid' => $origin,
-    )), 'status');
-
-    $config->save();
   }
 
 }

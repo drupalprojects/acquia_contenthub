@@ -239,6 +239,7 @@ class ContentHubSubscription {
       // Registration successful. Setting up the origin and client name.
       $this->config->set('origin', $origin);
       $this->config->set('client_name', $client_name);
+      $this->config->save();
 
       drupal_set_message(t('Successful Client registration with name "@name" (UUID = @uuid)', array(
         '@name' => $client_name,
@@ -253,24 +254,6 @@ class ContentHubSubscription {
       return TRUE;
     }
     return FALSE;
-  }
-
-  /**
-   * Checks whether the client name given is available in this Subscription.
-   *
-   * @param string $client_name
-   *   The client name to check availability.
-   *
-   * @return bool
-   *   TRUE if available, FALSE otherwise.
-   */
-  public function isClientNameAvailable($client_name) {
-    if ($site = $this->clientManager->createRequest('getClientByName', array($client_name))) {
-      if (isset($site['uuid']) && Uuid::isValid($site['uuid'])) {
-        return FALSE;
-      }
-    }
-    return TRUE;
   }
 
   /**

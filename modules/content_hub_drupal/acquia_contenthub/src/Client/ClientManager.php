@@ -14,6 +14,7 @@ use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Component\Render\FormattableMarkup;
 use Symfony\Component\HttpFoundation\Request as Request;
+use Drupal\Component\Uuid\Uuid;
 
 /**
  * Provides a service for managing pending server tasks.
@@ -106,9 +107,10 @@ class ClientManager implements ClientManagerInterface {
         $secret = $this->cipher()->decrypt($secret);
       }
 
-      if (!isset($api) || !isset($secret) || !isset($origin)) {
-        $message = t('Could not create an Acquia Content Hub connection due to missing credentials. Please check your settings.');
-        throw new ContentHubException($message);
+      // If any of these variables is empty, then we do NOT have a valid
+      // connection.
+      if (!Uuid::isValid($origin) || empty($client_name) || empty($hostname) || empty($api) || empty($secret)) {
+        return FALSE;
       }
 
       $this->client = new ContentHub($api, $secret, $origin, $config);
@@ -203,6 +205,24 @@ class ClientManager implements ClientManagerInterface {
     }
 
     // If we reached here then client has a valid connection.
+    return TRUE;
+  }
+
+  /**
+   * Checks whether the client name given is available in this Subscription.
+   *
+   * @param string $client_name
+   *   The client name to check availability.
+   *
+   * @return bool
+   *   TRUE if available, FALSE otherwise.
+   */
+  public function isClientNameAvailable($client_name) {
+    if ($site = $this->createRequest('getClientByName', array($client_name))) {
+      if (isset($site['uuid']) && Uuid::isValid($site['uuid'])) {
+        return FALSE;
+      }
+    }
     return TRUE;
   }
 
