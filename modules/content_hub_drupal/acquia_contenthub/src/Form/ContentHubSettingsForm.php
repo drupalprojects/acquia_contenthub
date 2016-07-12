@@ -16,6 +16,7 @@ use \GuzzleHttp\Exception\RequestException;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Component\Uuid\Uuid;
+use Drupal\acquia_contenthub\ContentHubSubscription;
 
 /**
  * Defines the form to configure the Content Hub connection settings.
@@ -28,6 +29,13 @@ class ContentHubSettingsForm extends ConfigFormBase {
    * @var |Drupal\acquia_contenthub\Client\ClientManager
    */
   protected $clientManager;
+
+  /**
+   * Content Hub Subscription.
+   *
+   * @var \Drupal\acquia_contenthub\ContentHubSubscription
+   */
+  protected $contentHubSubscription;
 
   /**
    * {@inheritdoc}
@@ -49,16 +57,19 @@ class ContentHubSettingsForm extends ConfigFormBase {
    * @param \Drupal\acquia_contenthub\Client\ClientManager $client_manager
    *   The client manager.
    */
-  public function __construct(ClientManager $client_manager) {
+  public function __construct(ClientManager $client_manager, ContentHubSubscription $contenthub_subscription) {
     $this->clientManager = $client_manager;
+    $this->contentHubSubscription = $contenthub_subscription;
   }
 
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    $client_manager = \Drupal::service('acquia_contenthub.client_manager');
-    return new static($client_manager);
+    return new static(
+      $container->get('acquia_contenthub.client_manager'),
+      $container->get('acquia_contenthub.content_hub_subscription')
+    );
   }
 
   /**
@@ -170,12 +181,12 @@ class ContentHubSettingsForm extends ConfigFormBase {
       'origin' => $origin,
     ]);
 
-    if ($this->clientManager->isClientNameAvailable($client_name) === FALSE) {
-      $message = $this->t('The client name "%name" is already being used. Please insert another one.', array(
-        '%name' => $client_name,
-      ));
-      return $form_state->setErrorByName('client_name', $message);
-    }
+    // if ($this->clientManager->isClientNameAvailable($client_name) === TRUE) {
+    //   $message = $this->t('The client name "%name" is already being used. Please insert another one.', array(
+    //     '%name' => $client_name,
+    //   ));
+    //   return $form_state->setErrorByName('client_name', $message);
+    // }
   }
 
   /**
@@ -252,7 +263,7 @@ class ContentHubSettingsForm extends ConfigFormBase {
     $client_name = $form_state->getValue('client_name');
 
     if ($this->contentHubSubscription->registerClient($client_name)) {
-    // $config->save();
+       $config->save();
     }
   }
 

@@ -79,7 +79,7 @@ class ContentHubSubscription {
     $this->configFactory = $config_factory;
     $this->clientManager = $client_manager;
     // Get the content hub config settings.
-    $this->config = $this->configFactory->get('acquia_contenthub.admin_settings');
+    $this->config = $this->configFactory->getEditable('acquia_contenthub.admin_settings');
   }
 
   /**

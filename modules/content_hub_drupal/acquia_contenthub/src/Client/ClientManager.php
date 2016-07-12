@@ -162,7 +162,6 @@ class ClientManager implements ClientManagerInterface {
     $hostname = isset($variables['hostname']) ? $variables['hostname'] : '';;
     $api = isset($variables['api']) ? $variables['api'] : '';
 
-    // @todo Make sure this injects using proper service injection methods.
     // We assume that the secret passed to this function is always
     // unencrypted.
     $secret = isset($variables['secret']) ? $variables['secret'] : '';;
@@ -226,10 +225,10 @@ class ClientManager implements ClientManagerInterface {
   public function isClientNameAvailable($client_name) {
     if ($site = $this->createRequest('getClientByName', array($client_name))) {
       if (isset($site['uuid']) && Uuid::isValid($site['uuid'])) {
-        return FALSE;
+        return TRUE;
       }
     }
-    return TRUE;
+    return FALSE;
   }
 
   /**
@@ -312,18 +311,18 @@ class ClientManager implements ClientManagerInterface {
       $msg = $this->getExceptionMessage($request, $args, $ex, $exception_messages);
     }
     catch (ClientException $ex) {
-      $response = $ex->getResponse()->json();
+      $response = $ex->getResponse()->getBody()->getContents();
       $msg = $this->getExceptionMessage($request, $args, $ex, $exception_messages, $response);
     }
     catch (RequestException $ex) {
       $msg = $this->getExceptionMessage($request, $args, ex, $exception_messages);
     }
     catch (BadResponseException $ex) {
-      $response = $ex->getResponse()->json();
+      $response = $ex->getResponse()->getBody()->getContents();
       $msg = $this->getExceptionMessage($request, $args, $ex, $exception_messages, $response);
     }
     catch (ServerErrorResponseException $ex) {
-      $response = $ex->getResponse()->json();
+      $response = $ex->getResponse()->getBody()->getContents();
       $msg = $this->getExceptionMessage($request, $args, $ex, $exception_messages, $response);
     }
     catch (Exception $ex) {

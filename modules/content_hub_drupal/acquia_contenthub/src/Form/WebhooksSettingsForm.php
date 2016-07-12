@@ -85,7 +85,7 @@ class WebhooksSettingsForm extends ConfigFormBase {
       'absolute' => TRUE,
     ));
     $webhook_url = $config->get('webhook_url', $webhook_url);
-    $webhook_uuid = $config->get('webhook_uuid', $webhook_uuid, 0);
+    $webhook_uuid = $config->get('webhook_uuid', 0);
     $readonly = (bool) $webhook_uuid ? ['readonly' => TRUE] : [];
 
     if ((bool) $webhook_uuid) {
