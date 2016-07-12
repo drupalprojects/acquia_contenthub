@@ -125,7 +125,7 @@ class ContentHubSettingsForm extends ConfigFormBase {
 
   public function validateForm(array &$form, FormStateInterface $form_state) {
     $hostname = NULL;
-    if (UrlHelper::isValid($form_state->hasValue('hostname'), TRUE)) {
+    if (UrlHelper::isValid($form_state->getValue('hostname'), TRUE)) {
       $hostname = $form_state->getValue('hostname');
     }
     else {
@@ -133,11 +133,11 @@ class ContentHubSettingsForm extends ConfigFormBase {
     }
 
     $api = NULL;
-    if (Uuid::isValid($form_state->hasValue('api_key'))) {
+    if (Uuid::isValid($form_state->getValue('api_key'))) {
       $api = $form_state->getValue('api_key');
     }
     else {
-      return $form_state->setErrorByName('hostname', $this->t('Please insert a valid API Key.'));
+      return $form_state->setErrorByName('api_key', $this->t('Please insert a valid API Key.'));
     }
 
     $secret = NULL;
@@ -155,7 +155,7 @@ class ContentHubSettingsForm extends ConfigFormBase {
       return $form_state->setErrorByName('client_name', $this->t('Please insert a Client Name.'));
     }
 
-    if (Uuid::isValid($form_state->hasValue('origin'))) {
+    if (Uuid::isValid($form_state->getValue('origin'))) {
       $origin = $form_state->getValue('origin');
     }
 
