@@ -12,7 +12,8 @@ use Symfony\Component\Serializer\Encoder\JsonEncoder as SymfonyJsonEncoder;
 /**
  * Encodes Content Hub CDF data in JSON.
  *
- * Simply respond to acquia_contenthub_cdf format requests using the JSON encoder.
+ * Simply respond to the acquia_contenthub_cdf format requests using the JSON
+ * encoder.
  */
 class ContentHubCdfEncoder extends SymfonyJsonEncoder {
 
