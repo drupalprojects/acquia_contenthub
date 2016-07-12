@@ -8,6 +8,12 @@
 namespace Drupal\acquia_contenthub\Client;
 
 use Acquia\ContentHubClient\ContentHub;
+use \Exception;
+use \GuzzleHttp\Exception\ConnectException as ConnectException;
+use \GuzzleHttp\Exception\RequestException as RequestException;
+use \GuzzleHttp\Exception\ServerException as ServerException;
+use \GuzzleHttp\Exception\ClientException as ClientException;
+use \GuzzleHttp\Exception\BadResponseException as BadResponseException;
 use Drupal\acquia_contenthub\Cipher;
 use Drupal\acquia_contenthub\ContentHubException;
 use Drupal\Core\Logger\LoggerChannelFactory;
@@ -169,7 +175,7 @@ class ClientManager implements ClientManagerInterface {
 
     // Override configuration.
     $config = array_merge([
-      'base_url' => $this->config->get('hostname'),
+      'base_url' => $hostname,
       'client-user-agent' =>  $client_user_agent,
     ], $config);
 

@@ -158,6 +158,9 @@ class ContentHubSettingsForm extends ConfigFormBase {
     if (Uuid::isValid($form_state->getValue('origin'))) {
       $origin = $form_state->getValue('origin');
     }
+    else {
+      $origin = '';
+    }
 
     // Validate that the client name does not exist yet.
     $this->clientManager->resetConnection([
