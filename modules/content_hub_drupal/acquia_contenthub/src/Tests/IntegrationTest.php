@@ -71,7 +71,7 @@ class IntegrationTest extends WebTestBase {
    *   The bundles to enable.
    */
   public function configureContentHubContentTypes($entity_type, array $bundles) {
-    $this->drupalGet('admin/config/services/acquia-content-hub/configuration');
+    $this->drupalGet('admin/config/services/acquia-contenthub/configuration');
     $this->assertResponse(200);
 
     $edit = array();
@@ -82,7 +82,7 @@ class IntegrationTest extends WebTestBase {
     $this->drupalPostForm(NULL, $edit, $this->t('Save configuration'));
     $this->assertResponse(200);
 
-    $this->drupalGet('admin/config/services/acquia-content-hub/configuration');
+    $this->drupalGet('admin/config/services/acquia-contenthub/configuration');
     $this->assertResponse(200);
 
   }
@@ -118,7 +118,7 @@ class IntegrationTest extends WebTestBase {
    *   The view mode to enable.
    */
   public function enableViewModeFor($entity_type, $bundle, $view_mode) {
-    $this->drupalGet('admin/config/services/acquia-content-hub/configuration');
+    $this->drupalGet('admin/config/services/acquia-contenthub/configuration');
     $this->assertResponse(200);
 
     $edit = array(
@@ -127,7 +127,7 @@ class IntegrationTest extends WebTestBase {
     $this->drupalPostForm(NULL, $edit, $this->t('Save configuration'));
     $this->assertResponse(200);
 
-    $this->drupalGet('admin/config/services/acquia-content-hub/configuration');
+    $this->drupalGet('admin/config/services/acquia-contenthub/configuration');
     $this->assertResponse(200);
   }
 

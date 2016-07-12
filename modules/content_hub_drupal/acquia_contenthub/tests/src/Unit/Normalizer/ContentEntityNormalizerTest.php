@@ -702,14 +702,14 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    *   The fake config.
    */
   public function createMockForContentHubAdminConfig() {
-    $content_hub_admin_config = $this->getMockBuilder('Drupal\Core\Config\ImmutableConfig')
+    $contenthub_admin_config = $this->getMockBuilder('Drupal\Core\Config\ImmutableConfig')
       ->disableOriginalConstructor()
       ->setMethods(array('get'))
       ->getMockForAbstractClass();
 
-    $content_hub_admin_config->method('get')->with('origin')->willReturn('test-origin');
+    $contenthub_admin_config->method('get')->with('origin')->willReturn('test-origin');
 
-    return $content_hub_admin_config;
+    return $contenthub_admin_config;
   }
 
   /**

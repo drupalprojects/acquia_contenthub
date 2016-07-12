@@ -86,8 +86,8 @@ class EntityManager {
   public function entityAction($entity, $action) {
     // Checking if the entity has already been synchronized so not to generate
     // an endless loop.
-    if (isset($entity->__content_hub_synchronized)) {
-      unset($entity->__content_hub_synchronized);
+    if (isset($entity->__contenthub_synchronized)) {
+      unset($entity->__contenthub_synchronized);
       return;
     }
 
@@ -256,14 +256,14 @@ class EntityManager {
     /** @var \Drupal\acquia_contenthub\Client\ClientManagerInterface $client_manager */
     try {
       $client = $this->clientManager->getClient();
-      $content_hub_entity = $client->readEntity($uuid);
+      $contenthub_entity = $client->readEntity($uuid);
     }
     catch (ContentHubException $e) {
       $this->loggerFactory->get('acquia_contenthub')->error($e->getMessage());
       return FALSE;
     }
 
-    return $content_hub_entity;
+    return $contenthub_entity;
   }
 
 }

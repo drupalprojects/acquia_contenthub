@@ -132,15 +132,15 @@ class ContentHubEntityImportController extends ControllerBase {
       throw new AccessDeniedHttpException();
     }
 
-    $content_hub_entity = $this->entityManager->loadRemoteEntity($uuid);
-    $origin = $content_hub_entity->getOrigin();
+    $contenthub_entity = $this->entityManager->loadRemoteEntity($uuid);
+    $origin = $contenthub_entity->getOrigin();
     $site_origin = $this->contentHubImportedEntities->getSiteOrigin();
 
     // Checking that the entity origin is different than this site origin.
     if ($origin == $site_origin) {
       $args = array(
-        '%type' => $content_hub_entity->getType(),
-        '%uuid' => $content_hub_entity->getUuid(),
+        '%type' => $contenthub_entity->getType(),
+        '%uuid' => $contenthub_entity->getUuid(),
         '%origin' => $origin,
       );
       $message = new FormattableMarkup('Cannot save %type entity with uuid=%uuid. It has the same origin as this site: %origin', $args);
@@ -150,11 +150,11 @@ class ContentHubEntityImportController extends ControllerBase {
     }
 
     // Import the entity.
-    $entity_type = $content_hub_entity->getType();
+    $entity_type = $contenthub_entity->getType();
     $class = \Drupal::entityTypeManager()->getDefinition($entity_type)->getClass();
 
     try {
-      $entity = $this->serializer->deserialize($content_hub_entity->json(), $class, $this->format);
+      $entity = $this->serializer->deserialize($contenthub_entity->json(), $class, $this->format);
     }
     catch (UnexpectedValueException $e) {
       $error['error'] = $e->getMessage();
@@ -166,7 +166,7 @@ class ContentHubEntityImportController extends ControllerBase {
     $transaction = $this->database->startTransaction();
     try {
       // Add synchronization flag.
-      $entity->__content_hub_synchronized = TRUE;
+      $entity->__contenthub_synchronized = TRUE;
 
       // Save the entity.
       $entity->save();

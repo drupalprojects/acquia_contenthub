@@ -75,7 +75,7 @@ function hook_acquia_contenthub_field_type_mapping_alter(array &$mapping) {
  *
  * Modules may implement this hook to alter...
  *
- * @param \Acquia\ContentHubClient\Entity $content_hub_entity
+ * @param \Acquia\ContentHubClient\Entity $contenthub_entity
  *   The Acquia Content Hub entity.
  * @param array $context
  *   Array consists out of at least 3 keys:
@@ -93,7 +93,7 @@ function hook_acquia_contenthub_field_type_mapping_alter(array &$mapping) {
  *
  * @see \Drupal\acquia_contenthub\Normalizer\ContentEntityNormalizer
  */
-function hook_acquia_contenthub_cdf_alter(ContentHubEntity &$content_hub_entity, array &$context) {
+function hook_acquia_contenthub_cdf_alter(ContentHubEntity &$contenthub_entity, array &$context) {
   $langcode = isset($context['langcode']) ? $context['langcode'] : \Drupal::languageManager()->getDefaultLanguage();
-  $content_hub_entity->setAttributeValue('my_attribute', 'this_is_my_value', $langcode);
+  $contenthub_entity->setAttributeValue('my_attribute', 'this_is_my_value', $langcode);
 }

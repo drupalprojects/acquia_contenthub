@@ -16,7 +16,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
  */
 class ContentHubSubscriberController extends ControllerBase {
   /**
-   * Callback for `acquia-content-hub-api/post.json` API method.
+   * Callback for `acquia-contenthub-api/post.json` API method.
    */
   public function postExample(Request $request) {
     // This condition checks the `Content-type` and makes sure to
@@ -62,7 +62,7 @@ class ContentHubSubscriberController extends ControllerBase {
 
     $form['iframe'] = array(
       '#type' => 'markup',
-      '#markup' => \Drupal\Core\Render\Markup::create('<iframe id="acquia-content-hub-ember" src=' . $ember_endpoint . ' width="100%" height="1000px" style="border:0"></iframe>'),
+      '#markup' => \Drupal\Core\Render\Markup::create('<iframe id="acquia-contenthub-ember" src=' . $ember_endpoint . ' width="100%" height="1000px" style="border:0"></iframe>'),
     );
 
     return $form;
