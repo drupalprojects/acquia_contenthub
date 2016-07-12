@@ -181,12 +181,12 @@ class ContentHubSettingsForm extends ConfigFormBase {
       'origin' => $origin,
     ]);
 
-    // if ($this->clientManager->isClientNameAvailable($client_name) === TRUE) {
-    //   $message = $this->t('The client name "%name" is already being used. Please insert another one.', array(
-    //     '%name' => $client_name,
-    //   ));
-    //   return $form_state->setErrorByName('client_name', $message);
-    // }
+     if ($this->clientManager->isClientNameAvailable($client_name) === TRUE) {
+       $message = $this->t('The client name "%name" is already being used. Please insert another one.', array(
+         '%name' => $client_name,
+       ));
+       return $form_state->setErrorByName('client_name', $message);
+     }
   }
 
   /**
@@ -227,9 +227,9 @@ class ContentHubSettingsForm extends ConfigFormBase {
       $config->set('client_name', $form_state->getValue('client_name'));
     }
 
-    if ($form_state->hasValue('origin')) {
-      $config->set('origin', $form_state->getValue('origin'));
-    }
+//    if ($form_state->hasValue('origin')) {
+//      $config->set('origin', $form_state->getValue('origin'));
+//    }
 
     // Only reset the secret if it is passed. If encryption is activated,
     // then encrypt it too.

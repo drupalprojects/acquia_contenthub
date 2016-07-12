@@ -225,10 +225,10 @@ class ClientManager implements ClientManagerInterface {
   public function isClientNameAvailable($client_name) {
     if ($site = $this->createRequest('getClientByName', array($client_name))) {
       if (isset($site['uuid']) && Uuid::isValid($site['uuid'])) {
-        return TRUE;
+        return FALSE;
       }
     }
-    return FALSE;
+    return TRUE;
   }
 
   /**
@@ -311,18 +311,18 @@ class ClientManager implements ClientManagerInterface {
       $msg = $this->getExceptionMessage($request, $args, $ex, $exception_messages);
     }
     catch (ClientException $ex) {
-      $response = $ex->getResponse()->getBody()->getContents();
+      $response = json_decode($ex->getResponse()->getBody(), TRUE);
       $msg = $this->getExceptionMessage($request, $args, $ex, $exception_messages, $response);
     }
     catch (RequestException $ex) {
       $msg = $this->getExceptionMessage($request, $args, ex, $exception_messages);
     }
     catch (BadResponseException $ex) {
-      $response = $ex->getResponse()->getBody()->getContents();
+      $response = json_decode($ex->getResponse()->getBody(), TRUE);
       $msg = $this->getExceptionMessage($request, $args, $ex, $exception_messages, $response);
     }
     catch (ServerErrorResponseException $ex) {
-      $response = $ex->getResponse()->getBody()->getContents();
+      $response = json_decode($ex->getResponse()->getBody(), TRUE);
       $msg = $this->getExceptionMessage($request, $args, $ex, $exception_messages, $response);
     }
     catch (Exception $ex) {
