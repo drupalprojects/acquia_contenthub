@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Contains \Drupal\TODO
+ * Contains \Drupal\acquia_contenthub_subscriber\Controller\ContentHubSubscriberController.
  */
 
 namespace Drupal\acquia_contenthub_subscriber\Controller;
@@ -11,34 +11,36 @@ use \Drupal\node\Entity\Node;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
+/**
+ * Controller for Content Hub Discovery page.
+ */
 class ContentHubSubscriberController extends ControllerBase {
   /**
    * Callback for `acquia-content-hub-api/post.json` API method.
    */
-  public function post_example( Request $request ) {
-
+  public function postExample(Request $request) {
     // This condition checks the `Content-type` and makes sure to
     // decode JSON string from the request body into array.
-    if ( 0 === strpos( $request->headers->get( 'Content-Type' ), 'application/json' ) ) {
-      $data = json_decode( $request->getContent(), TRUE );
-      $request->request->replace( is_array( $data ) ? $data : [] );
+    if (0 === strpos($request->headers->get('Content-Type'), 'application/json')) {
+      $data = json_decode($request->getContent(), TRUE);
+      $request->request->replace(is_array($data) ? $data : []);
     }
 
     $node = Node::create([
       'type'        => 'article',
-      'title'       => $data['title']
+      'title'       => $data['title'],
     ]);
     $node->save();
     $response['message'] = "Article created with title - " . $data['title'];
     $response['method'] = 'POST';
 
-    return new JsonResponse( $response );
+    return new JsonResponse($response);
   }
 
-/**
-* Loads the content hub discovery page from an ember app.
-*/
-  public function acquia_contenthub_subscriber_discovery() {
+  /**
+   * Loads the content hub discovery page from an ember app.
+   */
+  public function loadDiscovery() {
     $config = \Drupal::config('acquia_contenthub.admin_settings');
     $ember_endpoint = $config->get('ember_app') . '/entity';
 
@@ -60,9 +62,10 @@ class ContentHubSubscriberController extends ControllerBase {
 
     $form['iframe'] = array(
       '#type' => 'markup',
-      '#markup' => $this->t('<iframe id="acquia-content-hub-ember" src=' . $ember_endpoint . ' width="100%" height="1000px" style="border:0"></iframe>'),
+      '#markup' => \Drupal\Core\Render\Markup::create('<iframe id="acquia-content-hub-ember" src=' . $ember_endpoint . ' width="100%" height="1000px" style="border:0"></iframe>'),
     );
 
     return $form;
   }
+
 }

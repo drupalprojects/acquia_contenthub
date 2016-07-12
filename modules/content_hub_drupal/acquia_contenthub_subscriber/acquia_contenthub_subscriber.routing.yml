@@ -1,14 +1,14 @@
-acquia_contenthub_subscriber.acquia_contenthub_subscriber_discovery:
+acquia_contenthub_subscriber.discovery:
   path: '/acquia-content-hub'
   defaults:
-    _controller: '\Drupal\acquia_contenthub_subscriber\Controller\ContentHubSubscriberController::acquia_contenthub_subscriber_discovery'
+    _controller: '\Drupal\acquia_contenthub_subscriber\Controller\ContentHubSubscriberController::loadDiscovery'
   requirements:
     _permission: 'access content'
 
 acquia_contenthub_subscriber.post:
   path: 'acquia-content-hub-api/post.json'
   defaults:
-    _controller: '\Drupal\acquia_contenthub_subscriber\Controller\ContentHubSubscriberController::post_example'
+    _controller: '\Drupal\acquia_contenthub_subscriber\Controller\ContentHubSubscriberController::postExample'
   methods:  [POST]
   requirements:
     _access: 'TRUE'
