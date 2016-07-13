@@ -232,6 +232,42 @@ class ClientManager implements ClientManagerInterface {
   }
 
   /**
+   * Extracts HMAC signature from the request.
+   *
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The Request to evaluate signature.
+   * @param string $secret_key
+   *   The Secret Key.
+   *
+   *  @return string
+   *   A base64 encoded string signature.
+   */
+  public function getRequestSignature(Request $request, $secret_key = '') {
+    // Extract signature information from the request.
+    $headers = array_map('current', $request->headers->all());
+    $http_verb = $request->getMethod();
+    $path = $request->getPathInfo();
+    $body = $request->getContent();
+
+    // If the headers are not given, then the request is probably not coming from
+    // the Content Hub. Replace them for empty string to fail validation.
+    $content_type = isset($headers['content-type']) ? $headers['content-type'] : '';
+    $date = isset($headers['date']) ? $headers['date'] : '';
+    $message_array = array(
+      $http_verb,
+      md5($body),
+      $content_type,
+      $date,
+      '',
+      $path,
+    );
+    $message = implode("\n", $message_array);
+    $s = hash_hmac('sha256', $message, $secret_key, TRUE);
+    $signature = base64_encode($s);
+    return $signature;
+  }
+
+  /**
    * Makes an API Call Request to Acquia Content Hub, with exception handling.
    *
    * It handles generic exceptions and allows for text overrides.
@@ -344,42 +380,6 @@ class ClientManager implements ClientManagerInterface {
 
     return FALSE;
 
-  }
-
-  /**
-  * Extracts HMAC signature from the request.
-  *
-  * @param \Symfony\Component\HttpFoundation\Request $request
-  *   The Request to evaluate signature.
-  * @param string $secret_key
-  *   The Secret Key.
-  *
-  *  @return string
-  *   A base64 encoded string signature.
-  */
-  public function getRequestSignature(Request $request, $secret_key = '') {
-     // Extract signature information from the request.
-     $headers = array_map('current', $request->headers->all());
-     $http_verb = $request->getMethod();
-     $path = $request->getPathInfo();
-     $body = $request->getContent();
-
-     // If the headers are not given, then the request is probably not coming from
-     // the Content Hub. Replace them for empty string to fail validation.
-     $content_type = isset($headers['content-type']) ? $headers['content-type'] : '';
-     $date = isset($headers['date']) ? $headers['date'] : '';
-     $message_array = array(
-       $http_verb,
-       md5($body),
-       $content_type,
-       $date,
-       '',
-       $path,
-     );
-     $message = implode("\n", $message_array);
-     $s = hash_hmac('sha256', $message, $secret_key, TRUE);
-     $signature = base64_encode($s);
-     return $signature;
   }
 
   /**

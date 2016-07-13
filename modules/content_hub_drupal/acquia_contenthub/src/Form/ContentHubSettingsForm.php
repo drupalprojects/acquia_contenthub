@@ -181,7 +181,7 @@ class ContentHubSettingsForm extends ConfigFormBase {
       'origin' => $origin,
     ]);
 
-     if ($this->clientManager->isClientNameAvailable($client_name) === TRUE) {
+     if ($this->clientManager->isClientNameAvailable($client_name) === FALSE) {
        $message = $this->t('The client name "%name" is already being used. Please insert another one.', array(
          '%name' => $client_name,
        ));
@@ -194,77 +194,58 @@ class ContentHubSettingsForm extends ConfigFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     parent::submitForm($form, $form_state);
-    $config = $this->config('acquia_contenthub.admin_settings');
 
-    /*// Let active plugins save their settings.
-    foreach ($this->configurableInstances as $instance) {
-    $instance->submitConfigurationForm($form, $form_state);
-    }*/
-
-    $hostname = NULL;
-    if ($form_state->hasValue('hostname')) {
-      $hostname = $form_state->getValue('hostname');
-      $config->set('hostname', $form_state->getValue('hostname'));
-    }
-
-    $api = NULL;
-    if ($form_state->hasValue('api_key')) {
-      $api = $form_state->getValue('api_key');
-      $config->set('api_key', $form_state->getValue('api_key'));
-    }
-
-    $secret = NULL;
-    if ($form_state->hasValue('secret_key')) {
-      $secret = $form_state->getValue('secret_key');
-      $config->set('secret_key', $form_state->getValue('secret_key'));
-    }
-
-    if ($form_state->hasValue('rewrite_domain')) {
-      $config->set('rewrite_domain', $form_state->getValue('rewrite_domain'));
-    }
-
-    if ($form_state->hasValue('client_name')) {
-      $config->set('client_name', $form_state->getValue('client_name'));
-    }
-
-//    if ($form_state->hasValue('origin')) {
-//      $config->set('origin', $form_state->getValue('origin'));
-//    }
-
-    // Only reset the secret if it is passed. If encryption is activated,
-    // then encrypt it too.
-    $encryption = $config->get('encryption_key_file');
-
-    // Encrypting the secret, to save for later use.
-    if (!empty($secret) && !empty($encryption)) {
-      $encrypted_secret = $this->clientManager->cipher()->encrypt($secret);
-      $decrypted_secret = $secret;
-    }
-    elseif ($secret) {
-      $encrypted_secret = $secret;
-      $decrypted_secret = $secret;
-    }
-    else {
-      // We need a decrypted secret to make the API call, but sometimes it might
-      // not be given.
-      // Secret was not provided, try to get it from the variable.
-      $secret = $config->get('secret_key');
-      $encrypted_secret = $secret;
-
-      if ($secret && !empty($encryption)) {
-        $decrypted_secret = $this->clientManager->cipher()->decrypt($secret);
-      }
-      else {
-        $decrypted_secret = $secret;
-      }
-    }
-
-    // Get the client name.
+    // We assume here all inserted values have passed validation.
+    // First Register the site to Content Hub.
     $client_name = $form_state->getValue('client_name');
 
     if ($this->contentHubSubscription->registerClient($client_name)) {
-       $config->save();
+      // Registration was successful. Save the rest of the values.
+      $config = $this->config('acquia_contenthub.admin_settings');
+
+      /*// Let active plugins save their settings.
+      foreach ($this->configurableInstances as $instance) {
+      $instance->submitConfigurationForm($form, $form_state);
+      }*/
+
+      $hostname = NULL;
+      if ($form_state->hasValue('hostname')) {
+        $config->set('hostname', $form_state->getValue('hostname'));
+      }
+
+      $api = NULL;
+      if ($form_state->hasValue('api_key')) {
+        $config->set('api_key', $form_state->getValue('api_key'));
+      }
+
+      $secret = NULL;
+      if ($form_state->hasValue('secret_key')) {
+        $secret = $form_state->getValue('secret_key');
+
+        // Only reset the secret if it is passed. If encryption is activated,
+        // then encrypt it too.
+        $encryption = $config->get('encryption_key_file');
+
+        // Encrypting the secret, to save for later use.
+        if (!empty($secret) && !empty($encryption)) {
+          $encrypted_secret = $this->clientManager->cipher()->encrypt($secret);
+        }
+        elseif ($secret) {
+          // Not encryption was provided.
+          $encrypted_secret = $secret;
+        }
+        $config->set('secret_key', $encrypted_secret);
+      }
+
+      if ($form_state->hasValue('rewrite_domain')) {
+        $config->set('rewrite_domain', $form_state->getValue('rewrite_domain'));
+      }
+
+      $config->save();
+
     }
+
   }
+
 
 }
