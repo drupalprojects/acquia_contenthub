@@ -49,3 +49,10 @@ services:
     class: Drupal\acquia_contenthub\EventSubscriber\ContentHubEvent
     tags:
       - { name: event_subscriber }
+
+  cache.acquia_contenthub:
+    class: Drupal\Core\Cache\CacheBackendInterface
+    tags:
+      - { name: cache.bin }
+    factory: cache_factory:get
+    arguments: [acquia_contenthub]

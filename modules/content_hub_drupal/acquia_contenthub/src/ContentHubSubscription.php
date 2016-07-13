@@ -183,7 +183,6 @@ class ContentHubSubscription {
    *   The shared secret, FALSE otherwise.
    */
   public function getSharedSecret() {
-    $encryption = $this->config->get('shared_secret', FALSE);
     if ($shared_secret = $this->config->get('shared_secret', FALSE)) {
       $encryption = (bool) $this->config->get('encryption_key_file', FALSE);
       if ($encryption) {
@@ -336,15 +335,14 @@ class ContentHubSubscription {
     if ($webhook_register) {
       $this->unregisterWebhook($webhook_url);
     }
-    variable_del('content_hub_connector_origin');
-    variable_del('content_hub_connector_client_name');
-    variable_del('content_hub_connector_hostname');
-    variable_del('content_hub_connector_api_key');
-    variable_del('content_hub_connector_secret_key');
-    variable_del('content_hub_connector_webhook_url');
-    variable_del('content_hub_connector_webhook_uuid');
+
+    $this->config->delete();
+
     // Clear the cache for suggested client name after disconnecting the client.
-    cache_clear_all("suggested_client_name", "cache");
+
+    // @TODO: Use dependency injection for accessing the cache.
+    $cache = \Drupal::cache('acquia_contenthub');
+    $cache->delete("suggested_client_name");
     return FALSE;
   }
 
