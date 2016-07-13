@@ -15,7 +15,7 @@ acquia_contenthub.webhooks_settings:
     _permission: 'administer acquia content hub'
 
 acquia_contenthub.webhook:
-  path: 'content-hub/webhook'
+  path: 'acquia-content-hub/webhook'
   defaults:
     _controller: 'Drupal\acquia_contenthub\Controller\ContentHubWebhookController::receiveWebhook'
   requirements:

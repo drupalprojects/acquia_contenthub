@@ -90,23 +90,24 @@ class ClientManager implements ClientManagerInterface {
     $this->client = &drupal_static(__FUNCTION__);
     if (NULL === $this->client) {
 
-      // ADD CODE HERE!
       // Find out the module version in use
       $module_info = system_get_info('module', 'acquia_contenthub');
       $module_version = (isset($module_info['version'])) ? $module_info['version'] : '0.0.0';
       $drupal_version = (isset($module_info['core'])) ? $module_info['core'] : '0.0.0';
       $client_user_agent = 'AcquiaContentHub/' . $drupal_version . '-' . $module_version;
+      $hostname = $this->config->get('hostname');
 
       // Override configuration.
       $config = array_merge([
-        'base_url' => $this->config->get('hostname'),
+        'base_url' => $hostname,
         'client-user-agent' =>  $client_user_agent,
       ], $config);
 
       // Get API information.
       $api = $this->config->get('api_key');
-      $origin = $this->config->get('origin');
       $secret = $this->config->get('secret_key');
+      $client_name = $this->config->get('client_name');
+      $origin = $this->config->get('origin');
       $encryption = (bool) $this->config->get('encryption_key_file');
 
       if ($encryption) {
@@ -369,7 +370,7 @@ class ClientManager implements ClientManagerInterface {
     if (isset($msg)) {
       if ($msg !== FALSE) {
         $this->loggerFactory->get('acquia_contenthub')->error($msg);
-        throw $ex;
+        // throw $ex;
       }
       else {
         // If the message is FALSE, then there is no error message, which
