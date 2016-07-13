@@ -128,6 +128,14 @@ class ContentHubWebhookController extends ControllerBase {
       }
 
     }
+    else {
+      $ip_address = \Drupal::request()->getClientIp();
+      $message = new FormattableMarkup('Webhook [from IP = @IP] rejected (Signatures do not match): @whook', array(
+        '@IP' => $ip_address,
+        '@whook' => print_r($webhook, TRUE),
+      ));
+      $this->loggerFactory->get('acquia_contenthub')->debug($message);
+    }
 
   }
 
@@ -151,7 +159,7 @@ class ContentHubWebhookController extends ControllerBase {
   }
 
   public function validateWebhookSignature($webhook) {
-
+    return TRUE;
   }
 
   /**
