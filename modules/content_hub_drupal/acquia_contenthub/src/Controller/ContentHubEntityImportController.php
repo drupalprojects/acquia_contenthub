@@ -25,7 +25,7 @@ class ContentHubEntityImportController extends ControllerBase {
 
   const VALID_UUID = '[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}';
 
-  protected $format = 'content_hub_cdf';
+  protected $format = 'acquia_contenthub_cdf';
 
   /**
    * The Database Connection.
@@ -73,15 +73,15 @@ class ContentHubEntityImportController extends ControllerBase {
    *   The Acquia Content Hub Entity Manager.
    * @param \Symfony\Component\Serializer\SerializerInterface $serializer
    *   The Serializer.
-   * @param \Drupal\acquia_contenthub\ContentHubImportedEntities $content_hub_imported_entities
+   * @param \Drupal\acquia_contenthub\ContentHubImportedEntities $acquia_contenthub_imported_entities
    *   The Content Hub Imported Entities Service.
    */
-  public function __construct(Connection $database, LoggerChannelFactory $logger_factory, EntityManager $entity_manager, SerializerInterface $serializer, ContentHubImportedEntities $content_hub_imported_entities) {
+  public function __construct(Connection $database, LoggerChannelFactory $logger_factory, EntityManager $entity_manager, SerializerInterface $serializer, ContentHubImportedEntities $acquia_contenthub_imported_entities) {
     $this->database = $database;
     $this->loggerFactory = $logger_factory;
     $this->entityManager = $entity_manager;
     $this->serializer = $serializer;
-    $this->contentHubImportedEntities = $content_hub_imported_entities;
+    $this->contentHubImportedEntities = $acquia_contenthub_imported_entities;
   }
 
   /**
@@ -93,7 +93,7 @@ class ContentHubEntityImportController extends ControllerBase {
       $container->get('logger.factory'),
       $container->get('acquia_contenthub.entity_manager'),
       $container->get('serializer'),
-      $container->get('acquia_contenthub.content_hub_imported_entities')
+      $container->get('acquia_contenthub.acquia_contenthub_imported_entities')
     );
   }
 
@@ -132,15 +132,15 @@ class ContentHubEntityImportController extends ControllerBase {
       throw new AccessDeniedHttpException();
     }
 
-    $content_hub_entity = $this->entityManager->loadRemoteEntity($uuid);
-    $origin = $content_hub_entity->getOrigin();
+    $contenthub_entity = $this->entityManager->loadRemoteEntity($uuid);
+    $origin = $contenthub_entity->getOrigin();
     $site_origin = $this->contentHubImportedEntities->getSiteOrigin();
 
     // Checking that the entity origin is different than this site origin.
     if ($origin == $site_origin) {
       $args = array(
-        '%type' => $content_hub_entity->getType(),
-        '%uuid' => $content_hub_entity->getUuid(),
+        '%type' => $contenthub_entity->getType(),
+        '%uuid' => $contenthub_entity->getUuid(),
         '%origin' => $origin,
       );
       $message = new FormattableMarkup('Cannot save %type entity with uuid=%uuid. It has the same origin as this site: %origin', $args);
@@ -150,11 +150,11 @@ class ContentHubEntityImportController extends ControllerBase {
     }
 
     // Import the entity.
-    $entity_type = $content_hub_entity->getType();
+    $entity_type = $contenthub_entity->getType();
     $class = \Drupal::entityTypeManager()->getDefinition($entity_type)->getClass();
 
     try {
-      $entity = $this->serializer->deserialize($content_hub_entity->json(), $class, $this->format);
+      $entity = $this->serializer->deserialize($contenthub_entity->json(), $class, $this->format);
     }
     catch (UnexpectedValueException $e) {
       $error['error'] = $e->getMessage();
@@ -166,7 +166,7 @@ class ContentHubEntityImportController extends ControllerBase {
     $transaction = $this->database->startTransaction();
     try {
       // Add synchronization flag.
-      $entity->__content_hub_synchronized = TRUE;
+      $entity->__contenthub_synchronized = TRUE;
 
       // Save the entity.
       $entity->save();
@@ -188,7 +188,7 @@ class ContentHubEntityImportController extends ControllerBase {
         $this->loggerFactory->get('acquia_contenthub')->debug($message);
       }
       else {
-        $message = new FormattableMarkup('Saving %type entity with uuid=%uuid, but not tracking this entity in content_hub_imported_entities table because it could not be saved.', $args);
+        $message = new FormattableMarkup('Saving %type entity with uuid=%uuid, but not tracking this entity in acquia_contenthub_imported_entities table because it could not be saved.', $args);
         $this->loggerFactory->get('acquia_contenthub')->warning($message);
       }
 

@@ -15,7 +15,7 @@ use Drupal\Core\Config\ConfigFactoryInterface;
  */
 class ContentHubImportedEntities {
 
-  const TABLE                    = 'content_hub_imported_entities';
+  const TABLE                    = 'acquia_contenthub_imported_entities';
   const AUTO_UPDATE_ENABLED      = 'ENABLED';
   const AUTO_UPDATE_DISABLED     = 'DISABLED';
   const AUTO_UPDATE_LOCAL_CHANGE = 'LOCAL_CHANGE';

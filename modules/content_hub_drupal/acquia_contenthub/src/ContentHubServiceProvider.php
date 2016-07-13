@@ -11,7 +11,7 @@ use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Core\DependencyInjection\ServiceModifierInterface;
 
 /**
- * Make sure it exposes the content_hub_cdf format as json.
+ * Make sure it exposes the acquia_contenthub_cdf format as json.
  */
 class ContentHubServiceProvider implements ServiceModifierInterface {
 
@@ -20,7 +20,7 @@ class ContentHubServiceProvider implements ServiceModifierInterface {
    */
   public function alter(ContainerBuilder $container) {
     if ($container->has('http_middleware.negotiation') && is_a($container->getDefinition('http_middleware.negotiation')->getClass(), '\Drupal\Core\StackMiddleware\NegotiationMiddleware', TRUE)) {
-      $container->getDefinition('http_middleware.negotiation')->addMethodCall('registerFormat', ['content_hub_cdf', ['application/json']]);
+      $container->getDefinition('http_middleware.negotiation')->addMethodCall('registerFormat', ['acquia_contenthub_cdf', ['application/json']]);
     }
   }
 

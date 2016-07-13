@@ -18,7 +18,7 @@ class ExceptionCdfJsonSubscriber extends ExceptionJsonSubscriber {
    * {@inheritdoc}
    */
   protected function getHandledFormats() {
-    return ['content_hub_cdf'];
+    return ['acquia_contenthub_cdf'];
   }
 
 }

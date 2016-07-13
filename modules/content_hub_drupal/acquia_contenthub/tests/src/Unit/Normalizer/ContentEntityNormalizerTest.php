@@ -138,7 +138,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     // Create a config entity class.
     $config_mock = $this->getMock('Drupal\Core\Entity\ConfigEntityInterface');
     // Normalize the Config Entity with the class that we are testing.
-    $normalized = $this->contentEntityNormalizer->normalize($config_mock, 'content_hub_cdf');
+    $normalized = $this->contentEntityNormalizer->normalize($config_mock, 'acquia_contenthub_cdf');
     // Make sure it didn't do anything.
     $this->assertNull($normalized);
   }
@@ -165,7 +165,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $content_entity_mock = $this->createMockForContentEntity($definitions, array('en'));
 
     // Normalize the Content Entity with the class that we are testing.
-    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'content_hub_cdf');
+    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'acquia_contenthub_cdf');
 
     // Check if valid result.
     $this->doTestValidResultForOneEntity($normalized);
@@ -211,7 +211,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $content_entity_mock = $this->createMockForContentEntity($definitions, array('en', 'nl'));
 
     // Normalize the Content Entity with the class that we are testing.
-    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'content_hub_cdf');
+    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'acquia_contenthub_cdf');
 
     // Check if valid result.
     $this->doTestValidResultForOneEntity($normalized);
@@ -263,7 +263,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $content_entity_mock = $this->createMockForContentEntity($definitions, array('en'));
 
     // Normalize the Content Entity with the class that we are testing.
-    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'content_hub_cdf');
+    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'acquia_contenthub_cdf');
 
     // Check if valid result.
     $this->doTestValidResultForOneEntity($normalized);
@@ -304,7 +304,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $content_entity_mock = $this->createMockForContentEntity($definitions, array('en'));
 
     // Normalize the Content Entity with the class that we are testing.
-    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'content_hub_cdf');
+    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'acquia_contenthub_cdf');
 
     // Check if valid result.
     $this->doTestValidResultForOneEntity($normalized);
@@ -339,7 +339,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $content_entity_mock = $this->createMockForContentEntity($definitions, array('en'));
 
     // Normalize the Content Entity with the class that we are testing.
-    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'content_hub_cdf');
+    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'acquia_contenthub_cdf');
 
     // Check if valid result.
     $this->doTestValidResultForOneEntity($normalized);
@@ -372,7 +372,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $content_entity_mock = $this->createMockForContentEntity($definitions, array('en'));
 
     // Normalize the Content Entity with the class that we are testing.
-    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'content_hub_cdf');
+    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'acquia_contenthub_cdf');
 
     // Check if valid result.
     $this->doTestValidResultForOneEntity($normalized);
@@ -405,7 +405,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $content_entity_mock = $this->createMockForContentEntity($definitions, array('en'));
 
     // Normalize the Content Entity with the class that we are testing.
-    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'content_hub_cdf');
+    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'acquia_contenthub_cdf');
 
     // Check if valid result.
     $this->doTestValidResultForOneEntity($normalized);
@@ -438,7 +438,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $content_entity_mock = $this->createMockForContentEntity($definitions, array('en'));
 
     // Normalize the Content Entity with the class that we are testing.
-    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'content_hub_cdf');
+    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'acquia_contenthub_cdf');
 
     // Check if valid result.
     $this->doTestValidResultForOneEntity($normalized);
@@ -479,7 +479,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $content_entity_mock = $this->createMockForContentEntity($definitions, array('en'));
 
     // Normalize the Content Entity with the class that we are testing.
-    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'content_hub_cdf', $context);
+    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'acquia_contenthub_cdf', $context);
 
     // Check if valid result.
     $this->doTestValidResultForOneEntity($normalized);
@@ -514,7 +514,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $content_entity_mock = $this->createMockForContentEntity($definitions, array('en'));
 
     // Normalize the Content Entity with the class that we are testing.
-    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'content_hub_cdf');
+    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'acquia_contenthub_cdf');
 
     // Check if valid result.
     $this->doTestValidResultForOneEntity($normalized);
@@ -548,7 +548,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $content_entity_mock = $this->createMockForContentEntity($definitions, array('en'));
 
     // Normalize the Content Entity with the class that we are testing.
-    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'content_hub_cdf');
+    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'acquia_contenthub_cdf');
 
     // Check if valid result.
     $this->doTestValidResultForOneEntity($normalized);
@@ -702,14 +702,14 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    *   The fake config.
    */
   public function createMockForContentHubAdminConfig() {
-    $content_hub_admin_config = $this->getMockBuilder('Drupal\Core\Config\ImmutableConfig')
+    $contenthub_admin_config = $this->getMockBuilder('Drupal\Core\Config\ImmutableConfig')
       ->disableOriginalConstructor()
       ->setMethods(array('get'))
       ->getMockForAbstractClass();
 
-    $content_hub_admin_config->method('get')->with('origin')->willReturn('test-origin');
+    $contenthub_admin_config->method('get')->with('origin')->willReturn('test-origin');
 
-    return $content_hub_admin_config;
+    return $contenthub_admin_config;
   }
 
   /**

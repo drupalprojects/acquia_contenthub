@@ -1,5 +1,5 @@
 acquia_contenthub.admin_settings:
-  path: '/admin/config/services/acquia-content-hub'
+  path: '/admin/config/services/acquia-contenthub'
   defaults:
     _form: '\Drupal\acquia_contenthub\Form\ContentHubSettingsForm'
     _title: 'Acquia Content Hub Settings'
@@ -7,14 +7,14 @@ acquia_contenthub.admin_settings:
     _permission: 'administer acquia content hub'
 
 acquia_contenthub.entity_config:
-  path: '/admin/config/services/acquia-content-hub/configuration'
+  path: '/admin/config/services/acquia-contenthub/configuration'
   defaults:
     _form: '\Drupal\acquia_contenthub\Form\EntityConfigSettingsForm'
     _title: 'Entity Configuration'
   requirements:
     _permission: 'administer acquia content hub'
 
-acquia_contenthub.content_hub_cdf.node:
+acquia_contenthub.acquia_contenthub_cdf.node:
   path: '/node/{node}'
   methods:
     - GET
@@ -23,7 +23,7 @@ acquia_contenthub.content_hub_cdf.node:
     _plugin: 'entity:node'
   requirements:
     _method: GET
-    _format: content_hub_cdf
+    _format: acquia_contenthub_cdf
     # This is fine as the rest module will check if the account has permissions
     # to view the node.
     # @see EntityResource::get()
@@ -33,8 +33,8 @@ acquia_contenthub.content_hub_cdf.node:
       node:
         type: 'entity:node'
 
-acquia_contenthub.content_hub_cdf.entity:
-  path: '/acquia-content-hub/{uuid}'
+acquia_contenthub.acquia_contenthub_cdf.entity:
+  path: '/acquia-contenthub/{uuid}'
   methods:
     - POST
   defaults:
@@ -43,7 +43,7 @@ acquia_contenthub.content_hub_cdf.entity:
     _access: 'TRUE'
 
 acquia_contenthub.content_entity_display.node:
-  path: '/acquia-content-hub/display/node/{node}/{view_mode_name}'
+  path: '/acquia-contenthub/display/node/{node}/{view_mode_name}'
   defaults:
     _controller: '\Drupal\acquia_contenthub\Controller\ContentEntityDisplayController::viewNode'
   requirements:

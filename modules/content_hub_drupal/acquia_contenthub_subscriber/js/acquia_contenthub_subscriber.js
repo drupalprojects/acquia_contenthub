@@ -14,7 +14,7 @@
     // iframe.setAttribute('width', '100%');
     // iframe.setAttribute('style', 'border:0');
     // iframe.setAttribute('height', '1000px');
-    var receiver = document.getElementById('acquia-content-hub-ember').contentWindow
+    var receiver = document.getElementById('acquia-contenthub-ember').contentWindow
     if (receiver) {
       receiver.postMessage(drupalSettings.acquia_contenthub_subscriber, ember_app);
     };

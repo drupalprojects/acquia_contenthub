@@ -22,7 +22,7 @@ class ContentHubCdfEncoderTest extends UnitTestCase {
   public function testSupportsEncoding() {
     $encoder = new ContentHubCdfEncoder();
 
-    $this->assertTrue($encoder->supportsEncoding('content_hub_cdf'));
+    $this->assertTrue($encoder->supportsEncoding('acquia_contenthub_cdf'));
   }
 
 }

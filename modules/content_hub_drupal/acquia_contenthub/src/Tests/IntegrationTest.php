@@ -71,7 +71,7 @@ class IntegrationTest extends WebTestBase {
    *   The bundles to enable.
    */
   public function configureContentHubContentTypes($entity_type, array $bundles) {
-    $this->drupalGet('admin/config/services/acquia-content-hub/configuration');
+    $this->drupalGet('admin/config/services/acquia-contenthub/configuration');
     $this->assertResponse(200);
 
     $edit = array();
@@ -82,7 +82,7 @@ class IntegrationTest extends WebTestBase {
     $this->drupalPostForm(NULL, $edit, $this->t('Save configuration'));
     $this->assertResponse(200);
 
-    $this->drupalGet('admin/config/services/acquia-content-hub/configuration');
+    $this->drupalGet('admin/config/services/acquia-contenthub/configuration');
     $this->assertResponse(200);
 
   }
@@ -96,7 +96,7 @@ class IntegrationTest extends WebTestBase {
    *   The view mode to check in the CDF.
    */
   public function checkCdfOutput(NodeInterface $entity, $view_mode = NULL) {
-    $output = $this->drupalGetJSON($entity->getEntityTypeId() . '/' . $this->article->id(), array('query' => array('_format' => 'content_hub_cdf')));
+    $output = $this->drupalGetJSON($entity->getEntityTypeId() . '/' . $this->article->id(), array('query' => array('_format' => 'acquia_contenthub_cdf')));
     $this->assertResponse(200);
     if (!empty($view_mode)) {
       $this->assertTrue(isset($output['entities']['0']['metadata']), 'Metadata is present');
@@ -118,7 +118,7 @@ class IntegrationTest extends WebTestBase {
    *   The view mode to enable.
    */
   public function enableViewModeFor($entity_type, $bundle, $view_mode) {
-    $this->drupalGet('admin/config/services/acquia-content-hub/configuration');
+    $this->drupalGet('admin/config/services/acquia-contenthub/configuration');
     $this->assertResponse(200);
 
     $edit = array(
@@ -127,7 +127,7 @@ class IntegrationTest extends WebTestBase {
     $this->drupalPostForm(NULL, $edit, $this->t('Save configuration'));
     $this->assertResponse(200);
 
-    $this->drupalGet('admin/config/services/acquia-content-hub/configuration');
+    $this->drupalGet('admin/config/services/acquia-contenthub/configuration');
     $this->assertResponse(200);
   }
 

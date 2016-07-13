@@ -1,13 +1,13 @@
 services:
   acquia_contenthub.entity_manager:
     class: Drupal\acquia_contenthub\EntityManager
-    arguments: ['@logger.factory', '@config.factory', '@acquia_contenthub.client_manager', '@acquia_contenthub.content_hub_imported_entities']
+    arguments: ['@logger.factory', '@config.factory', '@acquia_contenthub.client_manager', '@acquia_contenthub.acquia_contenthub_imported_entities']
 
-  acquia_contenthub.content_hub_cdf.import_entity:
+  acquia_contenthub.acquia_contenthub_cdf.import_entity:
     class: Drupal\acquia_contenthub\Controller\ContentHubEntityImportController
-    arguments: ['@database', '@logger.factory', '@acquia_contenthub.entity_manager', '@serializer', '@acquia_contenthub.content_hub_imported_entities']
+    arguments: ['@database', '@logger.factory', '@acquia_contenthub.entity_manager', '@serializer', '@acquia_contenthub.acquia_contenthub_imported_entities']
 
-  acquia_contenthub.content_hub_imported_entities:
+  acquia_contenthub.acquia_contenthub_imported_entities:
     class: Drupal\acquia_contenthub\ContentHubImportedEntities
     arguments: ['@database', '@config.factory']
 
@@ -15,7 +15,7 @@ services:
     class: Drupal\acquia_contenthub\Client\ClientManager
     arguments: ['@logger.factory', '@config.factory']
 
-  acquia_contenthub.normalizer.entity.content_hub_cdf:
+  acquia_contenthub.normalizer.entity.acquia_contenthub_cdf:
     class: Drupal\acquia_contenthub\Normalizer\ContentEntityCdfNormalizer
     arguments: ['@config.factory', '@acquia_contenthub.normalizer.content_entity_view_modes_extractor', '@module_handler', '@entity.repository']
     tags:
@@ -25,12 +25,12 @@ services:
     class: Drupal\acquia_contenthub\Normalizer\ContentEntityViewModesExtractor
     arguments: ['@current_user', '@config.factory', '@entity_display.repository', '@entity_type.manager', '@renderer', '@http_kernel.basic', '@account_switcher']
 
-  acquia_contenthub.encoder.content_hub_cdf:
+  acquia_contenthub.encoder.acquia_contenthub_cdf:
     class: Drupal\acquia_contenthub\Encoder\ContentHubCdfEncoder
     tags:
-      - { name: encoder, priority: 10, format: content_hub_cdf }
+      - { name: encoder, priority: 10, format: acquia_contenthub_cdf }
 
-  acquia_contenthub.exception.content_hub_cdf:
+  acquia_contenthub.exception.acquia_contenthub_cdf:
     class: Drupal\acquia_contenthub\EventSubscriber\ExceptionCdfJsonSubscriber
     tags:
       - { name: event_subscriber }

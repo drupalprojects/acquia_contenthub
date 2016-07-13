@@ -66,13 +66,13 @@ class EntityManager {
    * @param \Drupal\acquia_contenthub\Client\ClientManagerInterface $client_manager
    *    The client manager.
    */
-  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager, ContentHubImportedEntities $content_hub_imported_entities) {
+  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager, ContentHubImportedEntities $acquia_contenthub_imported_entities) {
     global $base_root;
     $this->baseRoot = $base_root;
     $this->loggerFactory = $logger_factory;
     $this->configFactory = $config_factory;
     $this->clientManager = $client_manager;
-    $this->contentHubImportedEntities = $content_hub_imported_entities;
+    $this->contentHubImportedEntities = $acquia_contenthub_imported_entities;
   }
 
   /**
@@ -86,8 +86,8 @@ class EntityManager {
   public function entityAction($entity, $action) {
     // Checking if the entity has already been synchronized so not to generate
     // an endless loop.
-    if (isset($entity->__content_hub_synchronized)) {
-      unset($entity->__content_hub_synchronized);
+    if (isset($entity->__contenthub_synchronized)) {
+      unset($entity->__contenthub_synchronized);
       return;
     }
 
@@ -199,7 +199,7 @@ class EntityManager {
   public function getResourceUrl(EntityInterface $entity) {
     switch ($entity->getEntityTypeId()) {
       case 'node':
-        $path = 'node/' . $entity->id() . '?_format=content_hub_cdf';
+        $path = 'node/' . $entity->id() . '?_format=acquia_contenthub_cdf';
         break;
 
       default:
@@ -256,14 +256,14 @@ class EntityManager {
     /** @var \Drupal\acquia_contenthub\Client\ClientManagerInterface $client_manager */
     try {
       $client = $this->clientManager->getClient();
-      $content_hub_entity = $client->readEntity($uuid);
+      $contenthub_entity = $client->readEntity($uuid);
     }
     catch (ContentHubException $e) {
       $this->loggerFactory->get('acquia_contenthub')->error($e->getMessage());
       return FALSE;
     }
 
-    return $content_hub_entity;
+    return $contenthub_entity;
   }
 
 }
