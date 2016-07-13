@@ -131,6 +131,25 @@ class ContentHubWebhookController extends ControllerBase {
 
   }
 
+  /**
+   * Enables other modules to process the webhook.
+   *
+   * @param array $webhook
+   *   The webhook sent by the Content Hub.
+   */
+  public function processWebhook($webhook) {
+    $assets = isset($webhook['assets']) ? $webhook['assets'] : FALSE;
+    if (count($assets) > 0) {
+      \Drupal::moduleHandler()->alter('content_hub_connector_process_webhook', $webhook);
+    }
+    else {
+      $message = new FormattableMarkup('Error processing Webhook (It contains no assets): @whook', array(
+        '@whook' => print_r($webhook, TRUE),
+      ));
+      $this->loggerFactory->get('acquia_contenthub')->debug($message);
+    }
+  }
+
   public function validateWebhookSignature($webhook) {
 
   }
@@ -165,7 +184,7 @@ class ContentHubWebhookController extends ControllerBase {
       return $response;
     }
     else {
-      $ip_address = Drupal::request()->getClientIp();
+      $ip_address = \Drupal::request()->getClientIp();
       $message = new FormattableMarkup('Webhook [from IP = @IP] rejected (initiator and/or publickey do not match local settings): @whook', array(
         '@IP' => $ip_address,
         '@whook' => print_r($webhook, TRUE),
