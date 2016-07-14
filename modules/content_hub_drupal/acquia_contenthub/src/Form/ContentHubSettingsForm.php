@@ -68,7 +68,7 @@ class ContentHubSettingsForm extends ConfigFormBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('acquia_contenthub.client_manager'),
-      $container->get('acquia_contenthub.content_hub_subscription')
+      $container->get('acquia_contenthub.acquia_contenthub_subscription')
     );
   }
 

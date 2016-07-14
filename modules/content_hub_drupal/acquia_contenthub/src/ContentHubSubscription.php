@@ -96,7 +96,7 @@ class ContentHubSubscription {
       // If encryption is activated, then encrypt the shared secret.
       $encryption = $this->config->get('encryption_key_file', FALSE);
       if ($encryption) {
-        $shared_secret = content_hub_connector_cipher()->encrypt($shared_secret);
+        $shared_secret = $this->clientManager->cipher()->encrypt($shared_secret);
       }
       $this->config->set('shared_secret', $shared_secret);
       return $this->settings;
@@ -186,7 +186,7 @@ class ContentHubSubscription {
     if ($shared_secret = $this->config->get('shared_secret')) {
       $encryption = (bool) $this->config->get('encryption_key_file');
       if ($encryption) {
-        $shared_secret = content_hub_connector_cipher()->decrypt($shared_secret);
+        $shared_secret = $this->clientManager->cipher()->decrypt($shared_secret);
       }
       return $shared_secret;
     }
