@@ -6,11 +6,9 @@
 
 namespace Drupal\acquia_contenthub\Form;
 
-use Drupal\acquia_contenthub\Client\ClientManager;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Config\ConfigFactory;
-use Acquia\ContentHubClient;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\acquia_contenthub\ContentHubSubscription;
 use Drupal\Core\Url;
@@ -38,8 +36,10 @@ class WebhooksSettingsForm extends ConfigFormBase {
   /**
    * WebhooksSettingsForm constructor.
    *
-   * @param \Drupal\acquia_contenthub\Client\ClientManager $client_manager
+   * @param \Drupal\core\Config\ConfigFactory $config_factory
    *   The client manager.
+   * @param \Drupal\acquia_contenthub\ContentHubSubscription $contenthub_subscription
+   *   The content hub subscription.
    */
   public function __construct(ConfigFactory $config_factory, ContentHubSubscription $contenthub_subscription) {
     $this->configFactory = $config_factory;
@@ -154,7 +154,6 @@ class WebhooksSettingsForm extends ConfigFormBase {
         drupal_set_message('There was a problem trying to unregister this webhook.', 'error');
       }
     }
-
 
   }
 

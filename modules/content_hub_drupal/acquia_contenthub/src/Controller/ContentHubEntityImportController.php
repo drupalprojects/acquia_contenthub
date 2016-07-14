@@ -23,7 +23,7 @@ use Drupal\Component\Uuid\Uuid;
  * Controller for Content Hub Imported Entities.
  */
 class ContentHubEntityImportController extends ControllerBase {
-  
+
   protected $format = 'acquia_contenthub_cdf';
 
   /**

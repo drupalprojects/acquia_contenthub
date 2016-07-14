@@ -10,10 +10,8 @@ use Acquia\ContentHubClient\ResponseSigner;
 use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\HttpFoundation\Response as Response;
-use Symfony\Component\Serializer\SerializerInterface;
 use Drupal\Component\Serialization\Json;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\acquia_contenthub\Client\ClientManagerInterface;
@@ -98,6 +96,7 @@ class ContentHubWebhookController extends ControllerBase {
    * Process a webhook.
    *
    * @return \Acquia\ContentHubClient\ResponseSigner|\Symfony\Component\HttpFoundation\Response
+   *   The response object.
    */
   public function receiveWebhook() {
     // Obtain the headers.
@@ -119,11 +118,9 @@ class ContentHubWebhookController extends ControllerBase {
           switch ($webhook['status']) {
             case 'successful':
               return $this->processWebhook($webhook);
-              break;
 
             case 'pending':
               return $this->registerWebhook($webhook);
-              break;
 
             case 'shared_secret_regenerated':
               return $this->updateSharedSecret($webhook);
@@ -163,7 +160,8 @@ class ContentHubWebhookController extends ControllerBase {
     $headers = array_map('current', $request->headers->all());
     $webhook = $request->getContent();
 
-    // Quick validation to make sure we are not replaying a request from the past.
+    // Quick validation to make sure we are not replaying a request
+    // from the past.
     $request_date = isset($headers['date']) ? $headers['date'] : "1970";
     $request_timestamp = strtotime($request_date);
     $timestamp = time();
@@ -256,7 +254,7 @@ class ContentHubWebhookController extends ControllerBase {
   /**
    * Processing the registration of a webhook.
    *
-   * @param  array $webhook
+   * @param array $webhook
    *   The webhook coming from Plexus.
    *
    * @return \Acquia\ContentHubClient\ResponseSigner|\Symfony\Component\HttpFoundation\Response
@@ -294,4 +292,5 @@ class ContentHubWebhookController extends ControllerBase {
       return new Response('');
     }
   }
+
 }

@@ -71,10 +71,10 @@ interface ClientManagerInterface {
   /**
    * Extracts HMAC signature from the request.
    *
-  * @param \Symfony\Component\HttpFoundation\Request $request
-  *   The Request to evaluate signature.
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The Request to evaluate signature.
    * @param string $secret_key
-   *  The secret key used to generate the signature.
+   *   The secret key used to generate the signature.
    *
    * @return string
    *   The HMAC signature for this request.

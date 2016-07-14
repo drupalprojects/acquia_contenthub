@@ -11,7 +11,6 @@ use Drupal\Component\Render\FormattableMarkup;
 use Drupal\acquia_contenthub\Client\ClientManagerInterface;
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Logger\LoggerChannelFactory;
-use Drupal\Component\Uuid\Uuid;
 
 /**
  * Handles operations on the Acquia Content Hub Subscription.
@@ -40,10 +39,10 @@ class ContentHubSubscription {
   protected $clientManager;
 
   /**
-  * The Subscription Settings.
-  *
-  * @var \Acquia\ContentHubClient\Settings
-  */
+   * The Subscription Settings.
+   *
+   * @var \Acquia\ContentHubClient\Settings
+   */
   protected $settings;
 
   /**
@@ -351,7 +350,6 @@ class ContentHubSubscription {
     $this->config->delete();
 
     // Clear the cache for suggested client name after disconnecting the client.
-
     // @TODO: Use dependency injection for accessing the cache.
     $cache = \Drupal::cache('acquia_contenthub');
     $cache->delete("suggested_client_name");

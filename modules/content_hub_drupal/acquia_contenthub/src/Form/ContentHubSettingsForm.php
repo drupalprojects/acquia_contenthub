@@ -10,9 +10,6 @@ namespace Drupal\acquia_contenthub\Form;
 use Drupal\acquia_contenthub\Client\ClientManager;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Form\ConfigFormBase;
-use Acquia\ContentHubClient;
-use \GuzzleHttp\Exception\ClientException;
-use \GuzzleHttp\Exception\RequestException;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Component\Uuid\Uuid;
@@ -134,6 +131,9 @@ class ContentHubSettingsForm extends ConfigFormBase {
     return parent::buildForm($form, $form_state);
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function validateForm(array &$form, FormStateInterface $form_state) {
     $hostname = NULL;
     if (UrlHelper::isValid($form_state->getValue('hostname'), TRUE)) {
@@ -181,12 +181,12 @@ class ContentHubSettingsForm extends ConfigFormBase {
       'origin' => $origin,
     ]);
 
-     if ($this->clientManager->isClientNameAvailable($client_name) === FALSE) {
-       $message = $this->t('The client name "%name" is already being used. Please insert another one.', array(
-         '%name' => $client_name,
-       ));
-       return $form_state->setErrorByName('client_name', $message);
-     }
+    if ($this->clientManager->isClientNameAvailable($client_name) === FALSE) {
+      $message = $this->t('The client name "%name" is already being used. Please insert another one.', array(
+        '%name' => $client_name,
+      ));
+      return $form_state->setErrorByName('client_name', $message);
+    }
   }
 
   /**
@@ -246,6 +246,5 @@ class ContentHubSettingsForm extends ConfigFormBase {
     }
 
   }
-
 
 }

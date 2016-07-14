@@ -15,7 +15,6 @@ use \GuzzleHttp\Exception\ServerException as ServerException;
 use \GuzzleHttp\Exception\ClientException as ClientException;
 use \GuzzleHttp\Exception\BadResponseException as BadResponseException;
 use Drupal\acquia_contenthub\Cipher;
-use Drupal\acquia_contenthub\ContentHubException;
 use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Component\Render\FormattableMarkup;
@@ -90,7 +89,7 @@ class ClientManager implements ClientManagerInterface {
     $this->client = &drupal_static(__FUNCTION__);
     if (NULL === $this->client) {
 
-      // Find out the module version in use
+      // Find out the module version in use.
       $module_info = system_get_info('module', 'acquia_contenthub');
       $module_version = (isset($module_info['version'])) ? $module_info['version'] : '0.0.0';
       $drupal_version = (isset($module_info['core'])) ? $module_info['core'] : '0.0.0';
@@ -100,7 +99,7 @@ class ClientManager implements ClientManagerInterface {
       // Override configuration.
       $config = array_merge([
         'base_url' => $hostname,
-        'client-user-agent' =>  $client_user_agent,
+        'client-user-agent' => $client_user_agent,
       ], $config);
 
       // Get API information.
@@ -176,14 +175,14 @@ class ClientManager implements ClientManagerInterface {
     // Override configuration.
     $config = array_merge([
       'base_url' => $hostname,
-      'client-user-agent' =>  $client_user_agent,
+      'client-user-agent' => $client_user_agent,
     ], $config);
 
     $this->client = new ContentHub($api, $secret, $origin, $config);
   }
 
   /**
-   * Checks whether the current client has a valid connection to Acquia Content Hub.
+   * Checks whether the current client has a valid connection to Content Hub.
    *
    * @param bool $full_check
    *   Use TRUE to make a full validation (check that the drupal variables
@@ -240,7 +239,7 @@ class ClientManager implements ClientManagerInterface {
    * @param string $secret_key
    *   The Secret Key.
    *
-   *  @return string
+   * @return string
    *   A base64 encoded string signature.
    */
   public function getRequestSignature(Request $request, $secret_key = '') {
@@ -250,8 +249,8 @@ class ClientManager implements ClientManagerInterface {
     $path = $request->getPathInfo();
     $body = $request->getContent();
 
-    // If the headers are not given, then the request is probably not coming from
-    // the Content Hub. Replace them for empty string to fail validation.
+    // If the headers are not given, then the request is probably not coming
+    // from the Content Hub. Replace them for empty string to fail validation.
     $content_type = isset($headers['content-type']) ? $headers['content-type'] : '';
     $date = isset($headers['date']) ? $headers['date'] : '';
     $message_array = array(
@@ -370,7 +369,7 @@ class ClientManager implements ClientManagerInterface {
     if (isset($msg)) {
       if ($msg !== FALSE) {
         $this->loggerFactory->get('acquia_contenthub')->error($msg);
-        // throw $ex;
+        // Throw $ex;.
       }
       else {
         // If the message is FALSE, then there is no error message, which
@@ -440,7 +439,12 @@ class ClientManager implements ClientManagerInterface {
               // Customize the error message per request here.
               case 'register':
                 $client_name = $args[0];
-                $msg = new FormattableMarkup('Error registering client with name="@name" (Error Code = @error_code: @error_message)', ['@error_code' => $error['code'], '@name' => $client_name, '@error_message' => $error['message']]);
+                $msg = new FormattableMarkup('Error registering client with name="@name" (Error Code = @error_code: @error_message)',
+                  array(
+                    '@error_code' => $error['code'],
+                    '@name' => $client_name,
+                    '@error_message' => $error['message'],
+                  ));
                 break;
 
               case 'getClientByName':
@@ -634,4 +638,5 @@ class ClientManager implements ClientManagerInterface {
 
     return $msg;
   }
+
 }

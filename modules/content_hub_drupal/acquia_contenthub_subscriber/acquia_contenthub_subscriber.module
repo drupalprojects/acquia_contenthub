@@ -16,8 +16,7 @@ function acquia_contenthub_subscriber_acquia_contenthub_process_webhook_alter($w
   foreach ($assets as $asset) {
     // @TODO: We need to exclude post-dependencies (entity dependent).
     // @TODO: We need to invoke the default rule.
-    //rules_invoke_event('content_hub_event_webhook_landing', $asset);
-
+    // rules_invoke_event('content_hub_event_webhook_landing', $asset);
     // For now, we are just importing anything that comes in.
     $contenthub_import_controller->saveDrupalEntity($asset['uuid']);
   }

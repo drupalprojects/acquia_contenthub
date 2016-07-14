@@ -1,8 +1,12 @@
 <?php
 
+/**
+ * @file
+ * Acquia Content Hub Default Rule Action.
+ */
+
 namespace Drupal\acquia_contenthub\Plugin\RulesAction;
 
-use Drupal\user\UserInterface;
 use Drupal\rules\Core\RulesActionBase;
 
 /**
@@ -21,9 +25,7 @@ use Drupal\rules\Core\RulesActionBase;
  *     )
  *   }
  * )
- *
  */
-
 class ContentHubEntityAction extends RulesActionBase {
 
 }
