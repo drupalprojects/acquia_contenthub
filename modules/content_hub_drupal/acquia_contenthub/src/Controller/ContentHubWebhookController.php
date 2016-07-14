@@ -102,10 +102,9 @@ class ContentHubWebhookController extends ControllerBase {
   public function receiveWebhook() {
     // Obtain the headers.
     $request = Request::createFromGlobals();
-    $headers = array_map('current', $request->headers->all());
     $webhook = $request->getContent();
 
-    if ($this->validateWebhookSignature($webhook)) {
+    if ($this->validateWebhookSignature($request)) {
       // Notify about the arrival of the webhook request.
       $args = array(
         '@whook' => print_r($webhook, TRUE),
@@ -147,6 +146,86 @@ class ContentHubWebhookController extends ControllerBase {
   }
 
   /**
+   * Validates a webhook signature.
+   *
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The Webhook Request.
+   *
+   * @return bool
+   *   TRUE if signature verification passes, FALSE otherwise.
+   */
+  public function validateWebhookSignature(\Symfony\Component\HttpFoundation\Request $request) {
+    $headers = array_map('current', $request->headers->all());
+    $webhook = $request->getContent();
+
+    // Quick validation to make sure we are not replaying a request from the past.
+    $request_date = isset($headers['date']) ? $headers['date'] : "1970";
+    $request_timestamp = strtotime($request_date);
+    $timestamp = time();
+    // Due to networking delays and mismatched clocks, we are making the request
+    // accepting window 60s.
+    if (abs($request_timestamp - $timestamp) > 60) {
+      $message = new FormattableMarkup('The Webhook request seems that was issued in the past [Request timestamp = @t1, server timestamp = @t2]: rejected: @whook', array(
+        '@t1' => $request_timestamp,
+        '@t2' => $timestamp,
+        '@whook' => print_r($webhook, TRUE),
+      ));
+      $this->loggerFactory->get('acquia_contenthub')->debug($message);
+      return FALSE;
+    }
+
+    // Reading webhook endpoint:
+    $path = $request->getPathInfo();
+    $webhook_url = variable_get('content_hub_connector_webhook_url', $path);
+    $url = parse_url($webhook_url);
+    $webhook_path = $url['path'];
+    $webhook_path .= isset($url['query']) ? '?' . $url['query'] : '';
+
+    $authorization_header = isset($headers['authorization']) ? $headers['authorization'] : '';
+    // Reading type of webhook request.
+    $webhook_array = Json::decode($webhook);
+    $status = $webhook_array['status'];
+    $authorization = '';
+
+    // Constructing the message to sign.
+    switch ($status) {
+      case 'shared_secret_regenerated':
+        $this->contentHubSubscription->getSettings();
+        $secret_key = $this->contentHubSubscription->getSharedSecret();
+        $signature = $this->clientManager->getRequestSignature($request, $secret_key);
+        $authorization = 'Acquia Webhook:' . $signature;
+        $this->loggerFactory->get('acquia_contenthub')->debug('Received Webhook for shared secret regeneration. Settings updated.');
+        break;
+
+      case 'successful':
+      case 'processing':
+      case 'in-queue':
+      case 'failed':
+        $secret_key = $this->contentHubSubscription->getSharedSecret();
+        $signature = $this->clientManager->getRequestSignature($request, $secret_key);
+        $authorization = 'Acquia Webhook:' . $signature;
+        break;
+
+      case 'pending':
+        $api = $this->config->get('api_key');
+        $encryption = (bool) $this->config->get('encryption_key_file');
+        if ($encryption) {
+          $secret = $this->config->get('secret_key');
+          $secret_key = $this->clientManager->cipher()->decrypt($secret);
+        }
+        else {
+          $secret_key = $this->config->get('secret_key');
+        }
+        $signature = $this->clientManager->getRequestSignature($request, $secret_key);
+
+        $authorization = "Acquia $api:" . $signature;
+        break;
+
+    }
+    return (bool) ($authorization === $authorization_header);
+  }
+
+  /**
    * Enables other modules to process the webhook.
    *
    * @param array $webhook
@@ -167,10 +246,6 @@ class ContentHubWebhookController extends ControllerBase {
       $this->loggerFactory->get('acquia_contenthub')->debug($message);
     }
     return new Response('');
-  }
-
-  public function validateWebhookSignature($webhook) {
-    return TRUE;
   }
 
   /**

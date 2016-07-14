@@ -130,8 +130,6 @@ class WebhooksSettingsForm extends ConfigFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     parent::submitForm($form, $form_state);
-    $config = $this->config('acquia_contenthub.admin_settings');
-
     $webhook_url = NULL;
     if ($form_state->hasValue('webhook_url')) {
       $webhook_url = $form_state->getValue('webhook_url');
@@ -141,11 +139,10 @@ class WebhooksSettingsForm extends ConfigFormBase {
     if ($form_state->hasValue('webhook_uuid')) {
       $webhook_uuid = $form_state->getValue('webhook_uuid');
     }
-
     $webhook_register = (bool) $form_state->getValue('webhook_uuid');
 
     // Perform the registration / un-registration.
-    if ($webhook_register && isset($webhook_url)) {
+    if ($webhook_register) {
       $success = $this->contentHubSubscription->registerWebhook($webhook_url);
       if (!$success) {
         drupal_set_message('There was a problem trying to register this webhook.', 'error');
