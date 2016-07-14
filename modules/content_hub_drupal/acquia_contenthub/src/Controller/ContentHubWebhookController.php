@@ -237,7 +237,7 @@ class ContentHubWebhookController extends ControllerBase {
   public function processWebhook($webhook) {
     $assets = isset($webhook['assets']) ? $webhook['assets'] : FALSE;
     if (count($assets) > 0) {
-      \Drupal::moduleHandler()->alter('content_hub_connector_process_webhook', $webhook);
+      \Drupal::moduleHandler()->alter('acquia_contenthub_process_webhook', $webhook);
     }
     else {
       $message = new FormattableMarkup('Error processing Webhook (It contains no assets): @whook', array(
