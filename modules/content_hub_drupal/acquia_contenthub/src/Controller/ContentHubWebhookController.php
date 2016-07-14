@@ -9,8 +9,9 @@ namespace Drupal\acquia_contenthub\Controller;
 use Acquia\ContentHubClient\ResponseSigner;
 use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Core\Controller\ControllerBase;
-use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Response as Response;
 use Symfony\Component\Serializer\SerializerInterface;
+use Drupal\Component\Serialization\Json;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Drupal\Core\Logger\LoggerChannelFactory;
@@ -93,6 +94,11 @@ class ContentHubWebhookController extends ControllerBase {
     );
   }
 
+  /**
+   * Process a webhook.
+   *
+   * @return \Acquia\ContentHubClient\ResponseSigner|\Symfony\Component\HttpFoundation\Response
+   */
   public function receiveWebhook() {
     // Obtain the headers.
     $request = Request::createFromGlobals();
@@ -113,15 +119,15 @@ class ContentHubWebhookController extends ControllerBase {
         if (isset($webhook['status'])) {
           switch ($webhook['status']) {
             case 'successful':
-              $this->processWebhook($webhook);
+              return $this->processWebhook($webhook);
               break;
 
             case 'pending':
-              $this->registerWebhook($webhook);
+              return $this->registerWebhook($webhook);
               break;
 
             case 'shared_secret_regenerated':
-              $this->updateSharedSecret($webhook);
+              return $this->updateSharedSecret($webhook);
 
           }
         }
@@ -135,6 +141,7 @@ class ContentHubWebhookController extends ControllerBase {
         '@whook' => print_r($webhook, TRUE),
       ));
       $this->loggerFactory->get('acquia_contenthub')->debug($message);
+      return new Response('');
     }
 
   }
@@ -144,6 +151,9 @@ class ContentHubWebhookController extends ControllerBase {
    *
    * @param array $webhook
    *   The webhook sent by the Content Hub.
+   *
+   * @return \Symfony\Component\HttpFoundation\Response
+   *   The Response Object.
    */
   public function processWebhook($webhook) {
     $assets = isset($webhook['assets']) ? $webhook['assets'] : FALSE;
@@ -156,6 +166,7 @@ class ContentHubWebhookController extends ControllerBase {
       ));
       $this->loggerFactory->get('acquia_contenthub')->debug($message);
     }
+    return new Response('');
   }
 
   public function validateWebhookSignature($webhook) {
@@ -167,6 +178,9 @@ class ContentHubWebhookController extends ControllerBase {
    *
    * @param  array $webhook
    *   The webhook coming from Plexus.
+   *
+   * @return \Acquia\ContentHubClient\ResponseSigner|\Symfony\Component\HttpFoundation\Response
+   *   The REsponse.
    */
   public function registerWebhook($webhook) {
     $uuid = isset($webhook['uuid']) ? $webhook['uuid'] : FALSE;
@@ -188,7 +202,6 @@ class ContentHubWebhookController extends ControllerBase {
       $response->setStatusCode(ResponseSigner::HTTP_OK);
       $response->signWithCustomHeaders(FALSE);
       $response->signResponse();
-      $response->send();
       return $response;
     }
     else {
@@ -198,6 +211,7 @@ class ContentHubWebhookController extends ControllerBase {
         '@whook' => print_r($webhook, TRUE),
       ));
       $this->loggerFactory->get('acquia_contenthub')->debug($message);
+      return new Response('');
     }
   }
 }

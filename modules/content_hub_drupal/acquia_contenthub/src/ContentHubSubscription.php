@@ -292,6 +292,7 @@ class ContentHubSubscription {
     if ($webhook = $this->clientManager->createRequest('addWebhook', array($webhook_url))) {
       $this->config->set('webhook_uuid', $webhook['uuid']);
       $this->config->set('webhook_url', $webhook['url']);
+      $this->config->save();
       drupal_set_message(t('Webhooks have been enabled. This site will now receive updates from Content Hub.'), 'status');
       $success = TRUE;
       $message = new FormattableMarkup('Successful registration of Webhook URL = @URL', array(
@@ -314,11 +315,22 @@ class ContentHubSubscription {
   public function unregisterWebhook($webhook_url) {
     if ($settings = $this->clientManager->createRequest('getSettings')) {
       if ($webhook = $settings->getWebhook($webhook_url)) {
-        $this->clientManager->createRequest('deleteWebhook', array($webhook['uuid'], $webhook['url']));
-        drupal_set_message(t('Webhooks have been <b>disabled</b>. This site will no longer receive updates from Content Hub.', array(
-          '@URL' => $webhook['url'],
-        )), 'warning');
-        $this->config->set('webhook_uuid', 0);
+        if ($response = $this->clientManager->createRequest('deleteWebhook', array($webhook['uuid'], $webhook['url']))) {
+          $success = $response->json();
+          if (isset($success['success']) && $success['success'] == TRUE) {
+            drupal_set_message(t('Webhooks have been <b>disabled</b>. This site will no longer receive updates from Content Hub.', array(
+              '@URL' => $webhook['url'],
+            )), 'warning');
+            $this->config->clear('webhook_uuid')->clear('webhook_url')->save();
+            return TRUE;
+          }
+        }
+      }
+      else {
+        // If the webhook was not found in the Subscription settings but the
+        // variables are still set, we should delete the variables to be in
+        // sync with the subscription settings.
+        $this->config->clear('webhook_uuid')->clear('webhook_url')->save();
         return TRUE;
       }
     }

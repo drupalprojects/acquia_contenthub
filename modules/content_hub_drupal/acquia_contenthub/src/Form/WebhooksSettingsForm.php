@@ -125,27 +125,30 @@ class WebhooksSettingsForm extends ConfigFormBase {
     $webhook_url = NULL;
     if ($form_state->hasValue('webhook_url')) {
       $webhook_url = $form_state->getValue('webhook_url');
-      $config->set('webhook_url', $form_state->getValue('webhook_url'));
     }
 
     $webhook_uuid = NULL;
     if ($form_state->hasValue('webhook_uuid')) {
       $webhook_uuid = $form_state->getValue('webhook_uuid');
-      $config->set('webhook_uuid', $form_state->getValue('webhook_uuid'));
     }
 
     $webhook_register = (bool) $form_state->getValue('webhook_uuid');
-    $webhook_url = $form_state->getValue('webhook_url');
 
     // Perform the registration / un-registration.
-    if ($webhook_register) {
-      return $this->contentHubSubscription->registerWebhook($webhook_url);
+    if ($webhook_register && isset($webhook_url)) {
+      $success = $this->contentHubSubscription->registerWebhook($webhook_url);
+      if (!$success) {
+        drupal_set_message('There was a problem trying to register this webhook.', 'error');
+      }
     }
     else {
-      return $this->contentHubSubscription->unregisterWebhook($webhook_url);
+      $success = $this->contentHubSubscription->unregisterWebhook($webhook_url);
+      if (!$success) {
+        drupal_set_message('There was a problem trying to unregister this webhook.', 'error');
+      }
     }
 
-    $config->save();
+
   }
 
 }
