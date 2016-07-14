@@ -183,8 +183,8 @@ class ContentHubSubscription {
    *   The shared secret, FALSE otherwise.
    */
   public function getSharedSecret() {
-    if ($shared_secret = $this->config->get('shared_secret', FALSE)) {
-      $encryption = (bool) $this->config->get('encryption_key_file', FALSE);
+    if ($shared_secret = $this->config->get('shared_secret')) {
+      $encryption = (bool) $this->config->get('encryption_key_file');
       if ($encryption) {
         $shared_secret = content_hub_connector_cipher()->decrypt($shared_secret);
       }
