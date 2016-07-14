@@ -178,7 +178,7 @@ class ContentHubWebhookController extends ControllerBase {
     }
 
     // Reading webhook endpoint:
-    $path = $request->getPathInfo();
+    $path = $request->getBasePath() . $request->getPathInfo();
     $webhook_url = $this->config->get('webhook_url') ?: $path;
     $url = parse_url($webhook_url);
     $webhook_path = $url['path'];
