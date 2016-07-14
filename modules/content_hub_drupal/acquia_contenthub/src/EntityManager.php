@@ -255,7 +255,7 @@ class EntityManager {
   public function loadRemoteEntity($uuid) {
     /** @var \Drupal\acquia_contenthub\Client\ClientManagerInterface $client_manager */
     try {
-      $client = $this->clientManager->getClient();
+      $client = $this->clientManager->getConnection();
       $contenthub_entity = $client->readEntity($uuid);
     }
     catch (ContentHubException $e) {

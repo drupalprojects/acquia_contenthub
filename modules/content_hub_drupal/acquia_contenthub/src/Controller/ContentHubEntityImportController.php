@@ -17,6 +17,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\acquia_contenthub\ContentHubImportedEntities;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Drupal\Component\Uuid\Uuid;
 
 /**
  * Controller for Content Hub Imported Entities.
