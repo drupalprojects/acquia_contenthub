@@ -2,5 +2,23 @@
 
 /**
  * @file
- * TODO.
+ * Implements entity auto-updates through webhooks.
  */
+
+/**
+ * Implements hook_acquia_contenthub_process_webhook_alter().
+ */
+function acquia_contenthub_subscriber_acquia_contenthub_process_webhook_alter($webhook) {
+  $content_hub_import_controller = \Drupal::service('acquia_contenthub.content_hub_cdf.import_entity');
+  $assets = $webhook['assets'];
+  // Process every asset that comes in the webhook, other than the
+  // post dependencies.
+  foreach ($assets as $asset) {
+    // @TODO: We need to exclude post-dependencies (entity dependent).
+    // @TODO: We need to invoke the default rule.
+    //rules_invoke_event('content_hub_event_webhook_landing', $asset);
+
+    // For now, we are just importing anything that comes in.
+    $content_hub_import_controller->saveDrupalEntity($asset['uuid']);
+  }
+}
