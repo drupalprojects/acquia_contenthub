@@ -5,9 +5,6 @@
  */
 
 use Drupal\Component\Uuid\Uuid;
-use Guzzle\Http\Exception\BadResponseException;
-use Guzzle\Http\Exception\ServerErrorResponseException;
-use GuzzleHttp\Exception\ClientException;
 
 /**
  * Implements hook_drush_command().
