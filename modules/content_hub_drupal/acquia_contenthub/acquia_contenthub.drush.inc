@@ -385,35 +385,7 @@ function drush_acquia_contenthub_delete($uuid) {
  * Purges entities from the Content Hub.
  */
 function drush_acquia_contenthub_purge() {
-  /** @var \Drupal\acquia_contenthub\Client\ClientManager $client_manager */
-  $client_manager = \Drupal::service('acquia_contenthub.client_manager');
-  $client = $client_manager->getClient();
-
-  if (drush_confirm('Are you sure you want to PURGE ALL your entities from the Content Hub? There is no way back from this action!!')) {
-    try {
-      $list = $client->purge();
-      drush_print("All your entities in the Content Hub have been successfully purged. \n");
-      return $list;
-    }
-    catch (ClientException $e) {
-      $response = $e->getResponse()->json();
-    }
-    catch (ServerErrorResponseException $e) {
-      $response = $e->getResponse()->json();
-    }
-    catch (BadResponseException $e) {
-      $response = $e->getResponse()->json();
-    }
-    if (isset($response['error']) && $error = $response['error']) {
-      return drush_set_error(dt("Error purging entities from the Content Hub [Error Code = @error_code: @error_message]", array(
-        '@error_code' => $error['code'],
-        '@error_message' => $error['message'],
-      )));
-    }
-  }
-  else {
-    drush_user_abort();
-  }
+  drush_print("Purge is not currently available. Please create a new subscription or contact your Acquia Account Manager to have your subscription purged.");
 }
 
 /**
