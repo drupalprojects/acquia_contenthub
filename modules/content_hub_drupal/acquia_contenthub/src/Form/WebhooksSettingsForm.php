@@ -14,6 +14,7 @@ use Acquia\ContentHubClient;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\acquia_contenthub\ContentHubSubscription;
 use Drupal\Core\Url;
+use Drupal\Component\Utility\UrlHelper;
 
 /**
  * Defines the form to register the webhooks.
@@ -113,6 +114,15 @@ class WebhooksSettingsForm extends ConfigFormBase {
     ];
 
     return parent::buildForm($form, $form_state);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    if (!UrlHelper::isValid($form_state->getValue('webhook_url'), TRUE)) {
+      return $form_state->setErrorByName('webhook_url', $this->t('This is not a valid URL. Please insert it again.'));
+    }
   }
 
   /**

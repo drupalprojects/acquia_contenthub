@@ -316,7 +316,7 @@ class ContentHubSubscription {
     if ($settings = $this->clientManager->createRequest('getSettings')) {
       if ($webhook = $settings->getWebhook($webhook_url)) {
         if ($response = $this->clientManager->createRequest('deleteWebhook', array($webhook['uuid'], $webhook['url']))) {
-          $success = $response->json();
+          $success = json_decode($response->getBody(), TRUE);
           if (isset($success['success']) && $success['success'] == TRUE) {
             drupal_set_message(t('Webhooks have been <b>disabled</b>. This site will no longer receive updates from Content Hub.', array(
               '@URL' => $webhook['url'],
