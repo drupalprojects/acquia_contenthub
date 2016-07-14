@@ -128,6 +128,11 @@ class ContentHubWebhookController extends ControllerBase {
             case 'shared_secret_regenerated':
               return $this->updateSharedSecret($webhook);
 
+            default:
+              // If any other webhook we are not processing then just display
+              // the response.
+              return new Response('');
+
           }
         }
       }
