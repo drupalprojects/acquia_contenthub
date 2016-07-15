@@ -11,6 +11,10 @@ services:
     class: Drupal\acquia_contenthub\ContentHubImportedEntities
     arguments: ['@database', '@config.factory']
 
+  acquia_contenthub.acquia_contenthub_subscription:
+    class: Drupal\acquia_contenthub\ContentHubSubscription
+    arguments: ['@logger.factory', '@config.factory', '@acquia_contenthub.client_manager']
+
   acquia_contenthub.client_manager:
     class: Drupal\acquia_contenthub\Client\ClientManager
     arguments: ['@logger.factory', '@config.factory']
@@ -45,3 +49,10 @@ services:
     class: Drupal\acquia_contenthub\EventSubscriber\ContentHubEvent
     tags:
       - { name: event_subscriber }
+
+  cache.acquia_contenthub:
+    class: Drupal\Core\Cache\CacheBackendInterface
+    tags:
+      - { name: cache.bin }
+    factory: cache_factory:get
+    arguments: [acquia_contenthub]

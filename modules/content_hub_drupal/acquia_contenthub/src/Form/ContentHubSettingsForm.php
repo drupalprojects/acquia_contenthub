@@ -10,10 +10,10 @@ namespace Drupal\acquia_contenthub\Form;
 use Drupal\acquia_contenthub\Client\ClientManager;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Form\ConfigFormBase;
-use Acquia\ContentHubClient;
-use \GuzzleHttp\Exception\ClientException;
-use \GuzzleHttp\Exception\RequestException;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Component\Utility\UrlHelper;
+use Drupal\Component\Uuid\Uuid;
+use Drupal\acquia_contenthub\ContentHubSubscription;
 
 /**
  * Defines the form to configure the Content Hub connection settings.
@@ -26,6 +26,13 @@ class ContentHubSettingsForm extends ConfigFormBase {
    * @var |Drupal\acquia_contenthub\Client\ClientManager
    */
   protected $clientManager;
+
+  /**
+   * Content Hub Subscription.
+   *
+   * @var \Drupal\acquia_contenthub\ContentHubSubscription
+   */
+  protected $contentHubSubscription;
 
   /**
    * {@inheritdoc}
@@ -47,16 +54,19 @@ class ContentHubSettingsForm extends ConfigFormBase {
    * @param \Drupal\acquia_contenthub\Client\ClientManager $client_manager
    *   The client manager.
    */
-  public function __construct(ClientManager $client_manager) {
+  public function __construct(ClientManager $client_manager, ContentHubSubscription $contenthub_subscription) {
     $this->clientManager = $client_manager;
+    $this->contentHubSubscription = $contenthub_subscription;
   }
 
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    $client_manager = \Drupal::service('acquia_contenthub.client_manager');
-    return new static($client_manager);
+    return new static(
+      $container->get('acquia_contenthub.client_manager'),
+      $container->get('acquia_contenthub.acquia_contenthub_subscription')
+    );
   }
 
   /**
@@ -124,127 +134,117 @@ class ContentHubSettingsForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, FormStateInterface $form_state) {
-    parent::submitForm($form, $form_state);
-    $config = $this->config('acquia_contenthub.admin_settings');
-
-    /*// Let active plugins save their settings.
-    foreach ($this->configurableInstances as $instance) {
-    $instance->submitConfigurationForm($form, $form_state);
-    }*/
-
+  public function validateForm(array &$form, FormStateInterface $form_state) {
     $hostname = NULL;
-    if ($form_state->hasValue('hostname')) {
+    if (UrlHelper::isValid($form_state->getValue('hostname'), TRUE)) {
       $hostname = $form_state->getValue('hostname');
-      $config->set('hostname', $form_state->getValue('hostname'));
+    }
+    else {
+      return $form_state->setErrorByName('hostname', $this->t('This is not a valid URL. Please insert it again.'));
     }
 
     $api = NULL;
-    if ($form_state->hasValue('api_key')) {
+    if (Uuid::isValid($form_state->getValue('api_key'))) {
       $api = $form_state->getValue('api_key');
-      $config->set('api_key', $form_state->getValue('api_key'));
+    }
+    else {
+      return $form_state->setErrorByName('api_key', $this->t('Please insert a valid API Key.'));
     }
 
     $secret = NULL;
     if ($form_state->hasValue('secret_key')) {
       $secret = $form_state->getValue('secret_key');
-      $config->set('secret_key', $form_state->getValue('secret_key'));
     }
-
-    if ($form_state->hasValue('rewrite_domain')) {
-      $config->set('rewrite_domain', $form_state->getValue('rewrite_domain'));
+    else {
+      return $form_state->setErrorByName('secret_key', $this->t('Please insert a Secret Key.'));
     }
 
     if ($form_state->hasValue('client_name')) {
-      $config->set('client_name', $form_state->getValue('client_name'));
-    }
-
-    if ($form_state->hasValue('origin')) {
-      $config->set('origin', $form_state->getValue('origin'));
-    }
-
-    // Only reset the secret if it is passed. If encryption is activated,
-    // then encrypt it too.
-    $encryption = $config->get('encryption_key_file');
-
-    // Encrypting the secret, to save for later use.
-    if (!empty($secret) && !empty($encryption)) {
-      $encrypted_secret = $this->clientManager->cipher()->encrypt($secret);
-      $decrypted_secret = $secret;
-    }
-    elseif ($secret) {
-      $encrypted_secret = $secret;
-      $decrypted_secret = $secret;
+      $client_name = $form_state->getValue('client_name');
     }
     else {
-      // We need a decrypted secret to make the API call, but sometimes it might
-      // not be given.
-      // Secret was not provided, try to get it from the variable.
-      $secret = $config->get('secret_key');
-      $encrypted_secret = $secret;
+      return $form_state->setErrorByName('client_name', $this->t('Please insert a Client Name.'));
+    }
 
-      if ($secret && !empty($encryption)) {
-        $decrypted_secret = $this->clientManager->cipher()->decrypt($secret);
+    if (Uuid::isValid($form_state->getValue('origin'))) {
+      $origin = $form_state->getValue('origin');
+    }
+    else {
+      $origin = '';
+    }
+
+    // Validate that the client name does not exist yet.
+    $this->clientManager->resetConnection([
+      'hostname' => $hostname,
+      'api' => $api,
+      'secret' => $secret,
+      'origin' => $origin,
+    ]);
+
+    if ($this->clientManager->isClientNameAvailable($client_name) === FALSE) {
+      $message = $this->t('The client name "%name" is already being used. Please insert another one.', array(
+        '%name' => $client_name,
+      ));
+      return $form_state->setErrorByName('client_name', $message);
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function submitForm(array &$form, FormStateInterface $form_state) {
+    parent::submitForm($form, $form_state);
+
+    // We assume here all inserted values have passed validation.
+    // First Register the site to Content Hub.
+    $client_name = $form_state->getValue('client_name');
+
+    if ($this->contentHubSubscription->registerClient($client_name)) {
+      // Registration was successful. Save the rest of the values.
+      $config = $this->config('acquia_contenthub.admin_settings');
+
+      /*// Let active plugins save their settings.
+      foreach ($this->configurableInstances as $instance) {
+      $instance->submitConfigurationForm($form, $form_state);
+      }*/
+
+      $hostname = NULL;
+      if ($form_state->hasValue('hostname')) {
+        $config->set('hostname', $form_state->getValue('hostname'));
       }
-      else {
-        $decrypted_secret = $secret;
+
+      $api = NULL;
+      if ($form_state->hasValue('api_key')) {
+        $config->set('api_key', $form_state->getValue('api_key'));
       }
-    }
 
-    $origin = $config->get('origin');
-    $client = new ContentHubClient\ContentHub($api, $decrypted_secret, $origin, ['base_url' => $hostname]);
+      $secret = NULL;
+      if ($form_state->hasValue('secret_key')) {
+        $secret = $form_state->getValue('secret_key');
 
-    // Store what's we have set so far before registering.
-    $config->save();
+        // Only reset the secret if it is passed. If encryption is activated,
+        // then encrypt it too.
+        $encryption = $config->get('encryption_key_file');
 
-    // Content Hub does not support a new registration when we already have a
-    // client_name.
-    if ($config->get('client_name')) {
-      // return;.
-    }
-
-    // Get the client name.
-    $name = $form_state->getValue('client_name');
-
-    try {
-      // This will fail if the name was already registered.
-      $site = $client->register($name);
-    }
-    catch (ClientException $e) {
-      $response = $e->getResponse();
-      if (isset($response)) {
-        drupal_set_message(t('Error registering client with name="@name" (Error Code = @error_code: @error_message)', array(
-          '@error_code' => $response->getStatusCode(),
-          '@name' => $name,
-          '@error_message' => $response->getReasonPhrase(),
-        )), 'error');
-        // @todo inject this with a service
-        \Drupal::logger('acquia_contenthub')->error($response->getReasonPhrase());
+        // Encrypting the secret, to save for later use.
+        if (!empty($secret) && !empty($encryption)) {
+          $encrypted_secret = $this->clientManager->cipher()->encrypt($secret);
+        }
+        elseif ($secret) {
+          // Not encryption was provided.
+          $encrypted_secret = $secret;
+        }
+        $config->set('secret_key', $encrypted_secret);
       }
-      return;
-    } catch (RequestException $e) {
-      // Some error connecting to Content Hub... are your credentials set
-      // correctly?
-      $message = $e->getMessage();
-      drupal_set_message(t("Couldn't get authorization from Content Hub. Are your credentials inserted correctly? The following error was returned: @msg", array(
-        '@msg' => $message,
-      )), 'error');
-      \Drupal::logger('acquia_contenthub')->error($message);
-      return;
+
+      if ($form_state->hasValue('rewrite_domain')) {
+        $config->set('rewrite_domain', $form_state->getValue('rewrite_domain'));
+      }
+
+      $config->save();
+
     }
 
-    // Registration successful. Setting up the origin and other variables.
-    $config->set('origin', $site['uuid']);
-    $config->set('client_name', $name);
-
-    // Resetting the origin now that we have one.
-    $origin = $site['uuid'];
-    drupal_set_message(t('Successful Client registration with name "@name" (UUID = @uuid)', array(
-      '@name' => $name,
-      '@uuid' => $origin,
-    )), 'status');
-
-    $config->save();
   }
 
 }

@@ -17,13 +17,12 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\acquia_contenthub\ContentHubImportedEntities;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Drupal\Component\Uuid\Uuid;
 
 /**
  * Controller for Content Hub Imported Entities.
  */
 class ContentHubEntityImportController extends ControllerBase {
-
-  const VALID_UUID = '[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}';
 
   protected $format = 'acquia_contenthub_cdf';
 
@@ -98,19 +97,6 @@ class ContentHubEntityImportController extends ControllerBase {
   }
 
   /**
-   * Validates the UUID.
-   *
-   * @param string $uuid
-   *   A UUID String.
-   *
-   * @return bool
-   *   TRUE if the string given is a UUID, FALSE otherwise.
-   */
-  static public function isUuid($uuid) {
-    return (bool) preg_match('/^' . self::VALID_UUID . '$/', $uuid);
-  }
-
-  /**
    * Saves a Content Hub Entity into a Drupal Entity, given its UUID.
    *
    * @param string $uuid
@@ -127,7 +113,7 @@ class ContentHubEntityImportController extends ControllerBase {
   public function saveDrupalEntity($uuid) {
 
     // Checking that the parameter given is a UUID.
-    if (!self::isUuid($uuid)) {
+    if (!Uuid::isValid($uuid)) {
       // We will just show a standard "access denied" page in this case.
       throw new AccessDeniedHttpException();
     }

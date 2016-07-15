@@ -6,6 +6,21 @@ acquia_contenthub.admin_settings:
   requirements:
     _permission: 'administer acquia content hub'
 
+acquia_contenthub.webhooks_settings:
+  path: '/admin/config/services/acquia-contenthub/webhooks'
+  defaults:
+    _form: '\Drupal\acquia_contenthub\Form\WebhooksSettingsForm'
+    _title: 'Webhooks'
+  requirements:
+    _permission: 'administer acquia content hub'
+
+acquia_contenthub.webhook:
+  path: 'acquia-contenthub/webhook'
+  defaults:
+    _controller: 'Drupal\acquia_contenthub\Controller\ContentHubWebhookController::receiveWebhook'
+  requirements:
+    _access: 'TRUE'
+
 acquia_contenthub.entity_config:
   path: '/admin/config/services/acquia-contenthub/configuration'
   defaults:
