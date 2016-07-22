@@ -49,6 +49,7 @@ else
   git fetch
   echo " checking out $branch"
   git checkout $branch
+  git pull
 fi
 
 # could include additional modules here ??
