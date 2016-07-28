@@ -197,6 +197,14 @@ class EntityManager {
    *   The absolute resource URL, if it can be generated, FALSE otherwise.
    */
   public function getResourceUrl(EntityInterface $entity) {
+    // Get the content hub config settings.
+    $config = $this->configFactory->get('acquia_contenthub.admin_settings');
+    $rewrite_localdomain = $config->get('rewrite_domain');
+
+    if ($entity->uuid()) {
+      //var_dump($entity->uriRelationships());
+    }
+
     switch ($entity->getEntityTypeId()) {
       case 'node':
         $path = 'node/' . $entity->id() . '?_format=acquia_contenthub_cdf';
@@ -206,8 +214,6 @@ class EntityManager {
         return FALSE;
     }
 
-    $config = $this->configFactory->get('acquia_contenthub.admin_settings');
-    $rewrite_localdomain = $config->get('rewrite_domain');
     if ($rewrite_localdomain) {
       $url = Url::fromUri($rewrite_localdomain . '/' . $path);
     }

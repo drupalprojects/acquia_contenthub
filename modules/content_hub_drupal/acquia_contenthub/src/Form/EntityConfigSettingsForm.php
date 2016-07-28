@@ -114,11 +114,18 @@ class EntityConfigSettingsForm extends ConfigFormBase {
       '#tree' => TRUE,
     );
     $entity_types = $this->getEntityTypes();
+    //ResourcePluginManager $manager
+    $excluded_types = array(
+      'comment' => 'comment',
+      'user' => 'user',
+      'contact_message' => 'contact_message',
+      'shortcut' => 'shortcut',
+      'menu_link_content' => 'menu_link_content',
+      'user' => 'user',
+    );
+    $entity_types = array_diff_key($entity_types, $excluded_types);
+
     foreach ($entity_types as $type => $bundle) {
-      // @todo Fix this. Total hack to only support explicit content types.
-      if ($type != 'node') {
-        continue;
-      }
       $form[$type] = array(
         '#title' => $type,
         '#type' => 'details',
@@ -147,32 +154,56 @@ class EntityConfigSettingsForm extends ConfigFormBase {
     $form = array();
     foreach ($bundle as $bundle_id => $bundle_name) {
       $view_modes = $this->entityDisplayRepository->getViewModeOptionsByBundle($type, $bundle_id);
+      // Remove default view mode from the options, as it cannot be rendered.
+      // entityDisplayRepository->getViewModes doesn't return the default mode.
+      if (count($view_modes) > 1) {
+        unset($view_modes['default']);
+      }
       $entity_type_label = $this->entityTypeManager->getDefinition($type)->getLabel();
       $form[$bundle_id] = array(
         '#type' => 'fieldset',
         '#title' => $this->t('%entity_type_label » %bundle_name', array('%entity_type_label' => $entity_type_label, '%bundle_name' => $bundle_name)),
         '#collapsible' => TRUE,
       );
-      $form[$bundle_id]['enabled'] = [
+      $enable_viewmodes = 0;
+      $enable_index = 0;
+      $rendering = array();
+      if (array_key_exists($bundle_id, $entities[$type])) {
+        $enable_viewmodes = array_key_exists('enable_viewmodes', $entities[$type][$bundle_id]) ? $entities[$type][$bundle_id]['enable_viewmodes'] : 0;
+        $enable_index = array_key_exists('enable_index', $entities[$type][$bundle_id]) ? $entities[$type]['enable_index'] : 0;
+        $rendering = array_key_exists('rendering', $entities[$type][$bundle_id]) ? $entities[$type][$bundle_id]['rendering'] : FALSE;
+      }
+
+      $form[$bundle_id]['enable_index'] = [
         '#type' => 'checkbox',
         '#title' => $this->t('Publish'),
+        '#default_value' => $enable_index,
+        '#description' => $this->t("Enable if you want to index this content into Content Hub."),
+      ];
+
+      $form[$bundle_id]['enable_viewmodes'] = [
+        '#type' => 'checkbox',
+        '#title' => $this->t('Publish View modes'),
         '#disabled' => empty($view_modes),
-        '#default_value' => empty($view_modes) ? FALSE : $entities[$type][$bundle_id]['enabled'],
-        '#description' => empty($view_modes) ? $this->t('is disabled because there is no available view modes.') : NULL,
+        '#default_value' => empty($view_modes) ? FALSE : $enable_viewmodes,
+        '#description' => empty($view_modes) ? $this->t('is disabled because there is no available view modes. Please enable one.') : NULL,
       ];
 
       $rendering = $entities[$type][$bundle_id]['rendering'];
       $title = empty($view_modes) ? NULL : $this->t('Do you want to include the result of any of the following view mode(s)?');
       $default_value = (empty($view_modes) || empty($rendering)) ? array() : $rendering;
+      $first_element = array(
+        key($view_modes) => key($view_modes),
+      );
       $form[$bundle_id]['rendering'] = array(
         '#type' => 'select',
         '#options' => $view_modes,
         '#multiple' => TRUE,
         '#title' => $title,
-        '#default_value' => $default_value,
+        '#default_value' => empty($default_value) ? $first_element : $default_value,
         '#states' => [
           'visible' => [
-            ':input[name="entities[' . $type . '][' . $bundle_id . '][enabled]"]' => ['checked' => TRUE],
+            ':input[name="entities[' . $type . '][' . $bundle_id . '][enable_viewmodes]"]' => ['checked' => TRUE],
           ],
         ],
         '#description' => $this->t('You can hold ctrl (or cmd) key to select multiple view mode(s). Including any of these view modes is usually done in combination with Acquia Lift. Please read the documentation for more information.'),
@@ -223,7 +254,8 @@ class EntityConfigSettingsForm extends ConfigFormBase {
 
     $entity_types = array();
     foreach ($types as $type => $entity) {
-      // Only support ContentEntityTypes.
+      // We only support content entity types at the moment, since config
+      // entities don't implement \Drupal\Core\TypedData\ComplexDataInterface.
       if ($entity instanceof ContentEntityType) {
         $bundles = $this->entityTypeBundleInfoManager->getBundleInfo($type);
 

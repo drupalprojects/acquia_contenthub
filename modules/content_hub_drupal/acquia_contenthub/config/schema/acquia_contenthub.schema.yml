@@ -39,12 +39,15 @@ acquia_contenthub.entity_config:
           type: mapping
           label: 'A specific entity bundle configuration'
           mapping:
-            enabled:
+            enable_index:
               type: integer
-              label: 'Defines if this is being sent to Content Hub or not'
+              label: 'Defines if this is being sent to Content Hub.'
+            enable_viewmodes:
+              type: integer
+              label: 'Defines if we want to index view modes to Content Hub.'
             rendering:
               type: sequence
-              label: 'Defines which view modes are enabled for this entity bundle'
+              label: 'Defines which view modes are enabled for this entity bundle.'
               sequence:
                 type: string
                 label: 'An enabled view mode'

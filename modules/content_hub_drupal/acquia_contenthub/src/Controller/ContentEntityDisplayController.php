@@ -9,7 +9,7 @@ namespace Drupal\acquia_contenthub\Controller;
 
 use Drupal\acquia_contenthub\Normalizer\ContentEntityViewModesExtractor;
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\node\NodeInterface;
+use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Render\HtmlResponse;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -55,18 +55,18 @@ class ContentEntityDisplayController extends ControllerBase {
   }
 
   /**
-   * View node by view node name.
+   * View entity view mode, given entity and view mode name.
    *
-   * @param \Drupal\node\NodeInterface $node
-   *   The node.
+   * @param \Drupal\Core\Entity\ContentEntityInterface $entity
+   *   The Drupal Entity.
    * @param string $view_mode_name
    *   The view mode's name.
    *
    * @return string
    *   The html page that is being viewed in given view mode.
    */
-  public function viewNode(NodeInterface $node, $view_mode_name = 'teaser') {
-    $html = $this->contentEntityViewModesExtractor->getViewModeMinimalHtml($node, $view_mode_name);
+  public function viewEntityViewMode(ContentEntityInterface $entity, $view_mode_name = 'teaser') {
+    $html = $this->contentEntityViewModesExtractor->getViewModeMinimalHtml($entity, $view_mode_name);
     // Map the rendered render array to a HtmlResponse.
     $response = new HtmlResponse();
     $response->setContent($html);

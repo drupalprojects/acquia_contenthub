@@ -38,12 +38,12 @@ acquia_contenthub.acquia_contenthub_cdf.entity:
   requirements:
     _access: 'TRUE'
 
-
-acquia_contenthub.content_entity_display.node:
-  path: '/acquia-contenthub/display/node/{node}/{view_mode_name}'
+acquia_contenthub.content_entity_display.entity:
+  path: '/acquia-contenthub/display/{entity_type}/{entity}/{view_mode_name}'
   defaults:
-    _controller: '\Drupal\acquia_contenthub\Controller\ContentEntityDisplayController::viewNode'
+    _controller: '\Drupal\acquia_contenthub\Controller\ContentEntityDisplayController::viewEntityViewMode'
   requirements:
     _access: 'TRUE'
-    node: \d+
+    entity_type: \w+
+    entity: \d+
     view_mode_name: \w+
