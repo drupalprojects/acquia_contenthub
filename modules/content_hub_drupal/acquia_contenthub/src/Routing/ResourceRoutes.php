@@ -5,11 +5,9 @@ namespace Drupal\acquia_contenthub\Routing;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Routing\RouteSubscriberBase;
 use Drupal\rest\Plugin\Type\ResourcePluginManager;
-use Symfony\Component\Routing\Route;
+use Drupal\acquia_contenthub\EntityManager;
 use Symfony\Component\Routing\RouteCollection;
-use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
-use Drupal\Core\Entity\ContentEntityType;
+
 
 /**
  * Subscriber for REST-style routes.
@@ -31,18 +29,11 @@ class ResourceRoutes extends RouteSubscriberBase {
   protected $manager;
 
   /**
-   * The entity manager.
+   * The content hub entity manager.
    *
-   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   * @var \Drupal\acquia_contenthub\EntityManager
    */
-  protected $entityTypeManager;
-
-  /**
-   * The entity manager.
-   *
-   * @var \Drupal\Core\Entity\EntityTypeBundleInfoInterface
-   */
-  protected $entityTypeBundleInfoManager;
+  protected $entity_manager;
 
   /**
    * Constructs a RouteSubscriber object.
@@ -51,12 +42,13 @@ class ResourceRoutes extends RouteSubscriberBase {
    *   The resource plugin manager.
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config
    *   The configuration factory holding resource settings.
+   * @param \Drupal\acquia_contenthub\EntityManager $entity_manager
+   *   The entity manager for Content Hub.
    */
-  public function __construct(ResourcePluginManager $manager, ConfigFactoryInterface $config, EntityTypeManagerInterface $entity_manager, EntityTypeBundleInfoInterface $entity_type_bundle_info_manager ) {
+  public function __construct(ResourcePluginManager $manager, ConfigFactoryInterface $config, EntityManager $entity_manager) {
     $this->config = $config;
     $this->manager = $manager;
-    $this->entityTypeManager = $entity_manager;
-    $this->entityTypeBundleInfoManager = $entity_type_bundle_info_manager;
+    $this->entityManager = $entity_manager;
   }
 
   /**
@@ -68,84 +60,42 @@ class ResourceRoutes extends RouteSubscriberBase {
    */
   protected function alterRoutes(RouteCollection $collection) {
 
-    // Possible entity types: do
-    // var_dump(array_keys($this->manager->getDefinitions())); and then drush cr
-    // It will list all entity types supported by REST.
-    // @todo -> iterate over possible types and only support the ContentEntity
-    // derivatives.
-    $excluded_types = array(
-      'comment' => 'comment',
-      'user' => 'user',
-      'contact_message' => 'contact_message',
-      'shortcut' => 'shortcut',
-      'menu_link_content' => 'menu_link_content',
-      'user' => 'user',
-    );
-
-    $entity_types = $this->getEntityTypes();
+    $allowed_entity_types = $this->entityManager->getAllowedEntityTypes();
     //ResourcePluginManager $manager
 
+    /* @var \Drupal\rest\Plugin\ResourceInterface[] $resources */
     $resources = $this->manager->getDefinitions();
-    // Filter out the ones we do not support.
-    foreach ($excluded_types as $entity_type) {
-      unset($resources['entity:' . $entity_type]);
-    }
-
-    /*// @todo do this smarter and narrow it down more
-    foreach ($entity_types as $entity_type) {
-      foreach ($resources as $resource) {
-        if (in_array('entity:' . $entity_type, $resources)) {
-          $accepted_resources['entity:' . $entity_type] = $resource;
-        }
-      }
-    }*/
 
     // Iterate over all enabled resource plugins.
     foreach ($resources as $id => $enabled_methods) {
+      /* @var \Drupal\rest\Plugin\rest\resource\EntityResource $plugin */
       $plugin = $this->manager->getInstance(array('id' => $id));
+
+      // Check if we care about the entity type.
+      if (!in_array($plugin->getDerivativeId(), array_keys($allowed_entity_types))) {
+        continue;
+      }
+
 
       /* @var \Symfony\Component\Routing\Route $route */
       foreach ($plugin->routes() as $name => $route) {
         // @todo: Are multiple methods possible here?
         $methods = $route->getMethods();
-
         // Only expose routes where the method is GET
         if ($methods[0] != "GET") {
           continue;
         }
+        // We have a couple of GET's in the list (XML, JSON, and potentially
+        // content_hubOnly add it once, so filter on the JSON one to make sure
+        // we only add it once.
+        if ($route->getRequirement('_format') !== 'json') {
+          continue;
+        }
+
         $route->setRequirement('_format', 'acquia_contenthub_cdf');
         $route->setRequirement('_access', 'TRUE');
         $collection->add("acquia_contenthub.content_hub_cdf.$name", $route);
       }
     }
-  }
-
-  /**
-   * Obtains the list of entity types.
-   */
-  public function getEntityTypes() {
-    $types = $this->entityTypeManager->getDefinitions();
-
-    $entity_types = array();
-    foreach ($types as $type => $entity) {
-      // We only support content entity types at the moment, since config
-      // entities don't implement \Drupal\Core\TypedData\ComplexDataInterface.
-      if ($entity instanceof ContentEntityType) {
-        $bundles = $this->entityTypeBundleInfoManager->getBundleInfo($type);
-
-        // Here we need to load all the different bundles?
-        if (isset($bundles) && count($bundles) > 0) {
-          foreach ($bundles as $key => $bundle) {
-            $entity_types[$type][$key] = $bundle['label'];
-          }
-        }
-        else {
-          // In cases where there are no bundles, but the entity can be
-          // selected.
-          $entity_types[$type][$type] = $entity->getLabel();
-        }
-      }
-    }
-    return $entity_types;
   }
 }

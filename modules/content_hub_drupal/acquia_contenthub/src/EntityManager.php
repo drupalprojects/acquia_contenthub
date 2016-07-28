@@ -2,18 +2,22 @@
 
 /**
  * @file
- * Contains \Drupal\acquia_contenthub/EntityManager.
+ * Contains \Drupal\acquia_contenthub\EntityManager.
  */
 
 namespace Drupal\acquia_contenthub;
 
 use Drupal\Component\Render\FormattableMarkup;
 use Drupal\acquia_contenthub\Client\ClientManagerInterface;
+use Drupal\Core\Entity\ContentEntityType;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\Core\Url;
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\acquia_contenthub\ContentHubImportedEntities;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
+
 
 /**
  * Provides a service for managing entity actions for Content Hub.
@@ -55,6 +59,20 @@ class EntityManager {
    */
   protected $contentHubImportedEntities;
 
+  /**
+   * The entity manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
+
+  /**
+   * The entity manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeBundleInfoInterface
+   */
+  protected $entityTypeBundleInfoManager;
+
 
   /**
    * Constructs an ContentEntityNormalizer object.
@@ -66,13 +84,16 @@ class EntityManager {
    * @param \Drupal\acquia_contenthub\Client\ClientManagerInterface $client_manager
    *    The client manager.
    */
-  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager, ContentHubImportedEntities $acquia_contenthub_imported_entities) {
+  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager, ContentHubImportedEntities $acquia_contenthub_imported_entities, EntityTypeManagerInterface $entity_manager, EntityTypeBundleInfoInterface $entity_type_bundle_info_manager) {
     global $base_root;
     $this->baseRoot = $base_root;
     $this->loggerFactory = $logger_factory;
     $this->configFactory = $config_factory;
     $this->clientManager = $client_manager;
     $this->contentHubImportedEntities = $acquia_contenthub_imported_entities;
+    $this->entityTypeManager = $entity_manager;
+    $this->entityTypeBundleInfoManager = $entity_type_bundle_info_manager;
+
   }
 
   /**
@@ -270,6 +291,60 @@ class EntityManager {
     }
 
     return $contenthub_entity;
+  }
+
+  /**
+   * Obtains the list of entity types.
+   */
+  public function getAllowedEntityTypes() {
+    $entities_config = $this->configFactory->get('acquia_contenthub.entity_config')->get('entities');
+
+    $excluded_types = [
+      'comment',
+      'user',
+      'contact_message',
+      'shortcut',
+      'menu_link_content',
+      'user'
+    ];
+
+    // @todo Fix this
+    foreach ($entities_config as $entity_config) {
+      foreach ($entity_config as $entity_id => $bundle_config) {
+        if ($bundle_config['enable_index'] == FALSE) {
+          $excluded_types[] = $entity_id;
+        }
+      }
+    }
+
+    var_dump($excluded_types);
+    $types = $this->entityTypeManager->getDefinitions();
+
+    $entity_types = array();
+    foreach ($types as $type => $entity) {
+      // We only support content entity types at the moment, since config
+      // entities don't implement \Drupal\Core\TypedData\ComplexDataInterface.
+      if ($entity instanceof ContentEntityType) {
+        // Skip excluded types
+        if (in_array($type, $excluded_types)) {
+          continue;
+        }
+        $bundles = $this->entityTypeBundleInfoManager->getBundleInfo($type);
+
+        // Here we need to load all the different bundles?
+        if (isset($bundles) && count($bundles) > 0) {
+          foreach ($bundles as $key => $bundle) {
+            $entity_types[$type][$key] = $bundle['label'];
+          }
+        }
+        else {
+          // In cases where there are no bundles, but the entity can be
+          // selected.
+          $entity_types[$type][$type] = $entity->getLabel();
+        }
+      }
+    }
+    return $entity_types;
   }
 
 }

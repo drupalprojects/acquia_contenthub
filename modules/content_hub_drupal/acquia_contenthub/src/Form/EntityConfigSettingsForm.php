@@ -66,6 +66,7 @@ class EntityConfigSettingsForm extends ConfigFormBase {
     $this->entityTypeBundleInfoManager = $entity_type_bundle_info_manager;
     $this->entityDisplayRepository = $entity_display_repository;
     $this->cacheTagsInvalidator = $cache_tags_invalidator;
+    $this->entityManager = $entity_manager;
   }
 
   /**
@@ -114,17 +115,6 @@ class EntityConfigSettingsForm extends ConfigFormBase {
       '#tree' => TRUE,
     );
     $entity_types = $this->getEntityTypes();
-    //ResourcePluginManager $manager
-    $excluded_types = array(
-      'comment' => 'comment',
-      'user' => 'user',
-      'contact_message' => 'contact_message',
-      'shortcut' => 'shortcut',
-      'menu_link_content' => 'menu_link_content',
-      'user' => 'user',
-    );
-    $entity_types = array_diff_key($entity_types, $excluded_types);
-
     foreach ($entity_types as $type => $bundle) {
       $form[$type] = array(
         '#title' => $type,
@@ -170,7 +160,7 @@ class EntityConfigSettingsForm extends ConfigFormBase {
       $rendering = array();
       if (array_key_exists($bundle_id, $entities[$type])) {
         $enable_viewmodes = array_key_exists('enable_viewmodes', $entities[$type][$bundle_id]) ? $entities[$type][$bundle_id]['enable_viewmodes'] : 0;
-        $enable_index = array_key_exists('enable_index', $entities[$type][$bundle_id]) ? $entities[$type]['enable_index'] : 0;
+        $enable_index = array_key_exists('enable_index', $entities[$type][$bundle_id]) ? $entities[$type][$bundle_id]['enable_index'] : 0;
         $rendering = array_key_exists('rendering', $entities[$type][$bundle_id]) ? $entities[$type][$bundle_id]['rendering'] : FALSE;
       }
 
