@@ -66,7 +66,6 @@ class EntityConfigSettingsForm extends ConfigFormBase {
     $this->entityTypeBundleInfoManager = $entity_type_bundle_info_manager;
     $this->entityDisplayRepository = $entity_display_repository;
     $this->cacheTagsInvalidator = $cache_tags_invalidator;
-    $this->entityManager = $entity_manager;
   }
 
   /**

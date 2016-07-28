@@ -309,15 +309,19 @@ class EntityManager {
     ];
 
     // @todo Fix this
-    foreach ($entities_config as $entity_config) {
+    foreach ($entities_config as $type => $entity_config) {
+      $included = FALSE;
       foreach ($entity_config as $entity_id => $bundle_config) {
-        if ($bundle_config['enable_index'] == FALSE) {
-          $excluded_types[] = $entity_id;
+        if (!empty($bundle_config['enable_index'])) {
+          $included = TRUE;
         }
+      }
+      // Check if any of the bundles were included
+      if (!$included) {
+        $excluded_types[] = $type;
       }
     }
 
-    var_dump($excluded_types);
     $types = $this->entityTypeManager->getDefinitions();
 
     $entity_types = array();

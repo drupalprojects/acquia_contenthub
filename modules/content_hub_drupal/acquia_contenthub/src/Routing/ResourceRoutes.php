@@ -71,12 +71,6 @@ class ResourceRoutes extends RouteSubscriberBase {
       /* @var \Drupal\rest\Plugin\rest\resource\EntityResource $plugin */
       $plugin = $this->manager->getInstance(array('id' => $id));
 
-      // Check if we care about the entity type.
-      if (!in_array($plugin->getDerivativeId(), array_keys($allowed_entity_types))) {
-        continue;
-      }
-
-
       /* @var \Symfony\Component\Routing\Route $route */
       foreach ($plugin->routes() as $name => $route) {
         // @todo: Are multiple methods possible here?
@@ -89,6 +83,11 @@ class ResourceRoutes extends RouteSubscriberBase {
         // content_hubOnly add it once, so filter on the JSON one to make sure
         // we only add it once.
         if ($route->getRequirement('_format') !== 'json') {
+          continue;
+        }
+        // Unset routes that are not in our list
+        if (!in_array($plugin->getDerivativeId(), array_keys($allowed_entity_types))) {
+          $collection->remove("acquia_contenthub.content_hub_cdf.$name");
           continue;
         }
 
