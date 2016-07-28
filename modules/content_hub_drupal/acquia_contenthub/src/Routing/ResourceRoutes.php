@@ -4,6 +4,7 @@ namespace Drupal\acquia_contenthub\Routing;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Routing\RouteSubscriberBase;
+use Drupal\rest\Plugin\Type\ResourcePluginManager;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
 
@@ -20,15 +21,23 @@ class ResourceRoutes extends RouteSubscriberBase {
   protected $config;
 
   /**
+   * The plugin manager for REST plugins.
+   *
+   * @var \Drupal\rest\Plugin\Type\ResourcePluginManager
+   */
+  protected $manager;
+
+  /**
    * Constructs a RouteSubscriber object.
    *
+   * @param \Drupal\rest\Plugin\Type\ResourcePluginManager $manager
+   *   The resource plugin manager.
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config
    *   The configuration factory holding resource settings.
-   * @param \Psr\Log\LoggerInterface $logger
-   *   A logger instance.
    */
-  public function __construct( ConfigFactoryInterface $config) {
+  public function __construct(ResourcePluginManager $manager, ConfigFactoryInterface $config) {
     $this->config = $config;
+    $this->manager = $manager;
   }
 
   /**
@@ -39,52 +48,42 @@ class ResourceRoutes extends RouteSubscriberBase {
    * @return array
    */
   protected function alterRoutes(RouteCollection $collection) {
-    $enabled_resources = ['node' => 'node/{node}', 'block_content' => 'block/{block_content}'];
+
+    // Possible entity types: do
+    // var_dump(array_keys($this->manager->getDefinitions())); and then drush cr
+    // It will list all entity types supported by REST.
+    // @todo -> iterate over possible types and only support the ContentEntity
+    // derivatives.
+    $supported_entity_types = array(
+      'entity:block_content',
+      'entity:node',
+      'entity:comment',
+      'entity:user'
+    );
+
+    $enabled_resources = array_intersect_key(array_flip($supported_entity_types), $this->manager->getDefinitions());
+
+    if (count($supported_entity_types) != count($enabled_resources)) {
+      trigger_error('rest.settings lists resources relying on the following missing plugins: ' . implode(', ', array_keys(array_diff_key($supported_entity_types, $enabled_resources))));
+    }
 
     // Iterate over all enabled resource plugins.
-    foreach ($enabled_resources as $name => $path) {
-      $route_info = array(
-        'path' => $path,
-        'defaults' => array(
-          '_controller' => 'Drupal\rest\RequestHandler::handle',
-          '_plugin' => 'entity:' . $name,
-        ),
-        'requirements' => array(
-          '_method' => 'GET',
-          '_format' => 'acquia_contenthub_cdf',
-          # This is fine as the rest module will check if the account has permissions
-          # to view the node.
-          # @see EntityResource::get()
-          '_access' => 'TRUE'
-        ),
-        'options' => array(
-          'parameters' => array(
-            $name => array(
-              'type' => 'entity:' . $name,
-              'converter' => 'paramconverter.entity'
-            )
-          ),
-          'compiler_class' => '\Drupal\Core\Routing\RouteCompiler',
-          '_route_filters' => array(
-            'request_format_route_filter',
-            'content_type_header_matcher',
-          ),
-          '_route_enhancers' => array(
-            'route_enhancer.param_conversion',
-          ),
-          '_access_checks' => array(
-            'access_check.default',
-          )
-        ),
-        'host' => NULL,
-        'schemes' => array(),
-        'methods' => array('GET'),
-        'condition' => '',
-      );
+    foreach ($enabled_resources as $id => $enabled_methods) {
+      $plugin = $this->manager->getInstance(array('id' => $id));
 
-      $route = new Route($route_info['path'], $route_info['defaults'], $route_info['requirements'], $route_info['options'], $route_info['host'], $route_info['schemes'], $route_info['methods'], $route_info['condition']);
-      $collection->add("acquia_contenthub.content_hub_cdf.$name", $route);
+      /* @var \Symfony\Component\Routing\Route $route */
+      foreach ($plugin->routes() as $name => $route) {
+        // @todo: Are multiple methods possible here?
+        $methods = $route->getMethods();
+
+        // Only expose routes where the method is GET
+        if ($methods[0] != "GET") {
+          continue;
+        }
+        $route->setRequirement('_format', 'acquia_contenthub_cdf');
+        $route->setRequirement('_access', 'TRUE');
+        $collection->add("acquia_contenthub.content_hub_cdf.$name", $route);
+      }
     }
   }
-
 }

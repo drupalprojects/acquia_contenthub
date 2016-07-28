@@ -59,6 +59,6 @@ services:
 
   acquia_contenthub.resource_routes:
     class: Drupal\acquia_contenthub\Routing\ResourceRoutes
-    arguments: ['@config.factory']
+    arguments: ['@plugin.manager.rest', '@config.factory']
     tags:
       - { name: 'event_subscriber' }
