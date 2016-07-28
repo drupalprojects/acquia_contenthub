@@ -29,25 +29,6 @@ acquia_contenthub.entity_config:
   requirements:
     _permission: 'administer acquia content hub'
 
-acquia_contenthub.acquia_contenthub_cdf.node:
-  path: '/node/{node}'
-  methods:
-    - GET
-  defaults:
-    _controller: 'Drupal\rest\RequestHandler::handle'
-    _plugin: 'entity:node'
-  requirements:
-    _method: GET
-    _format: acquia_contenthub_cdf
-    # This is fine as the rest module will check if the account has permissions
-    # to view the node.
-    # @see EntityResource::get()
-    _access: 'TRUE'
-  options:
-    parameters:
-      node:
-        type: 'entity:node'
-
 acquia_contenthub.acquia_contenthub_cdf.entity:
   path: '/acquia-contenthub/{uuid}'
   methods:
@@ -56,25 +37,6 @@ acquia_contenthub.acquia_contenthub_cdf.entity:
     _controller: 'Drupal\acquia_contenthub\Controller\ContentHubEntityImportController::saveDrupalEntity'
   requirements:
     _access: 'TRUE'
-
-acquia_contenthub.content_hub_cdf.block_content:
-  path: '/block/{block_content}'
-  methods:
-    - GET
-  defaults:
-    _controller: 'Drupal\rest\RequestHandler::handle'
-    _plugin: 'entity:block_content'
-  requirements:
-    _method: GET
-    _format: content_hub_cdf
-    # This is fine as the rest module will check if the account has permissions
-    # to view the node.
-    # @see EntityResource::get()
-    _access: 'TRUE'
-  options:
-    parameters:
-      block_content:
-        type: 'entity:block_content'
 
 
 acquia_contenthub.content_entity_display.node:

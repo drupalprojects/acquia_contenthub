@@ -56,3 +56,9 @@ services:
       - { name: cache.bin }
     factory: cache_factory:get
     arguments: [acquia_contenthub]
+
+  acquia_contenthub.resource_routes:
+    class: Drupal\acquia_contenthub\Routing\ResourceRoutes
+    arguments: ['@config.factory']
+    tags:
+      - { name: 'event_subscriber' }
