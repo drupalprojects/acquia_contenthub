@@ -226,7 +226,8 @@ class EntityManager {
     $url_options = array(
       'entity_type' => $entity_type_id,
       $entity_type_id => $entity->id(),
-      '_format' => 'acquia_contenthub_cdf');
+      '_format' => 'acquia_contenthub_cdf',
+    );
 
     $url = Url::fromRoute($route_name, $url_options);
     $path = $url->toString();
@@ -308,7 +309,7 @@ class EntityManager {
       'contact_message',
       'shortcut',
       'menu_link_content',
-      'user'
+      'user',
     ];
 
     $types = $this->entityTypeManager->getDefinitions();
@@ -318,7 +319,7 @@ class EntityManager {
       // We only support content entity types at the moment, since config
       // entities don't implement \Drupal\Core\TypedData\ComplexDataInterface.
       if ($entity instanceof ContentEntityType) {
-        // Skip excluded types
+        // Skip excluded types.
         if (in_array($type, $excluded_types)) {
           continue;
         }

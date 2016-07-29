@@ -48,7 +48,7 @@ class EntityConfigSettingsForm extends ConfigFormBase {
    *
    * @var \Drupal\acquia_contenthub\EntityManager
    */
-  protected $entity_manager;
+  protected $entityManager;
 
   /**
    * {@inheritdoc}

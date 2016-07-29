@@ -9,7 +9,6 @@ namespace Drupal\acquia_contenthub\Controller;
 
 use Drupal\acquia_contenthub\Normalizer\ContentEntityViewModesExtractor;
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Render\HtmlResponse;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -67,8 +66,10 @@ class ContentEntityDisplayController extends ControllerBase {
   /**
    * View entity view mode, given entity and view mode name.
    *
-   * @param \Drupal\Core\Entity\ContentEntityInterface $entity
-   *   The Drupal Entity.
+   * @param string $entity_type
+   *   The Drupal Entity Type.
+   * @param int $entity_id
+   *   The Drupal Entity Id.
    * @param string $view_mode_name
    *   The view mode's name.
    *

@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * @file
+ * Subscriber for REST-style routes.
+ */
+
 namespace Drupal\acquia_contenthub\Routing;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -33,7 +38,7 @@ class ResourceRoutes extends RouteSubscriberBase {
    *
    * @var \Drupal\acquia_contenthub\EntityManager
    */
-  protected $entity_manager;
+  protected $entityManager;
 
   /**
    * Constructs a RouteSubscriber object.
@@ -56,13 +61,11 @@ class ResourceRoutes extends RouteSubscriberBase {
    *
    * @param \Symfony\Component\Routing\RouteCollection $collection
    *   The route collection for adding routes.
-   * @return array
    */
   protected function alterRoutes(RouteCollection $collection) {
 
     $allowed_entity_types = $this->entityManager->getAllowedEntityTypes();
-    //ResourcePluginManager $manager
-
+    // ResourcePluginManager $manager.
     /* @var \Drupal\rest\Plugin\ResourceInterface[] $resources */
     $resources = $this->manager->getDefinitions();
 
@@ -75,7 +78,7 @@ class ResourceRoutes extends RouteSubscriberBase {
       foreach ($plugin->routes() as $name => $route) {
         // @todo: Are multiple methods possible here?
         $methods = $route->getMethods();
-        // Only expose routes where the method is GET
+        // Only expose routes where the method is GET.
         if ($methods[0] != "GET") {
           continue;
         }
@@ -85,7 +88,7 @@ class ResourceRoutes extends RouteSubscriberBase {
         if ($route->getRequirement('_format') !== 'json') {
           continue;
         }
-        // Unset routes that are not in our list
+        // Unset routes that are not in our list.
         if (!in_array($plugin->getDerivativeId(), array_keys($allowed_entity_types))) {
           $route_name = 'acquia_contenthub.entity.' . $plugin->getDerivativeId() . '.GET.acquia_contenthub_cdf';
           $collection->remove($route_name);
@@ -105,4 +108,5 @@ class ResourceRoutes extends RouteSubscriberBase {
       }
     }
   }
+
 }
