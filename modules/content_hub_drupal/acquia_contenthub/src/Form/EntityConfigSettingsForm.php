@@ -177,6 +177,12 @@ class EntityConfigSettingsForm extends ConfigFormBase {
         '#disabled' => empty($view_modes),
         '#default_value' => empty($view_modes) ? FALSE : $enable_viewmodes,
         '#description' => empty($view_modes) ? $this->t('is disabled because there is no available view modes. Please enable one.') : NULL,
+        '#states' => array(
+          // Only show this field when the 'enable_index' checkbox is enabled.
+          'visible' => array(
+            ':input[name="entities[' . $type . '][' . $bundle_id . '][enable_index]"]' => array('checked' => TRUE),
+          ),
+        ),
       ];
 
       $rendering = $entities[$type][$bundle_id]['rendering'];
