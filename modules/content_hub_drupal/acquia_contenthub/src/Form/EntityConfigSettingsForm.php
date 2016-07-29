@@ -176,7 +176,7 @@ class EntityConfigSettingsForm extends ConfigFormBase {
         '#title' => $this->t('Publish View modes'),
         '#disabled' => empty($view_modes),
         '#default_value' => empty($view_modes) ? FALSE : $enable_viewmodes,
-        '#description' => empty($view_modes) ? $this->t('is disabled because there is no available view modes. Please enable one.') : NULL,
+        '#description' => empty($view_modes) ? $this->t('It is disabled because there are no available view modes. Please enable at least one.') : NULL,
         '#states' => array(
           // Only show this field when the 'enable_index' checkbox is enabled.
           'visible' => array(
