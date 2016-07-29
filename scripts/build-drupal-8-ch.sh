@@ -50,7 +50,7 @@ fi
 # setup the content-hub-d8 module and change branch if needed
 if [ ! -d web/modules/contrib/content-hub-d8 ]; then
   echo "> composer update for content-hub-d8"
-  composer require acquia/content-hub-d8:dev-develop --profile
+  composer require acquia/content-hub-d8:dev-$branch --profile
   echo "> removing composer remote"
   cd web/modules/contrib/content-hub-d8
   git remote rm composer
