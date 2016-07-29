@@ -15,6 +15,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Entity\EntityDisplayRepository;
 use Drupal\Core\Cache\CacheTagsInvalidator;
+use Drupal\acquia_contenthub\EntityManager;
 
 /**
  * Defines the form to configure the entity types and bundles to be exported.
@@ -43,6 +44,13 @@ class EntityConfigSettingsForm extends ConfigFormBase {
   protected $entityDisplayRepository;
 
   /**
+   * The content hub entity manager.
+   *
+   * @var \Drupal\acquia_contenthub\EntityManager
+   */
+  protected $entity_manager;
+
+  /**
    * {@inheritdoc}
    */
   public function getFormId() {
@@ -60,12 +68,15 @@ class EntityConfigSettingsForm extends ConfigFormBase {
    *   The entity display repository.
    * @param \Drupal\Core\Cache\CacheTagsInvalidator $cache_tags_invalidator
    *   A cache tag invalidator.
+   * @param \Drupal\acquia_contenthub\EntityManager $entity_manager
+   *   The entity manager for Content Hub.
    */
-  public function __construct(EntityTypeManagerInterface $entity_type_manager, EntityTypeBundleInfoInterface $entity_type_bundle_info_manager, EntityDisplayRepository $entity_display_repository, CacheTagsInvalidator $cache_tags_invalidator) {
+  public function __construct(EntityTypeManagerInterface $entity_type_manager, EntityTypeBundleInfoInterface $entity_type_bundle_info_manager, EntityDisplayRepository $entity_display_repository, CacheTagsInvalidator $cache_tags_invalidator, EntityManager $entity_manager) {
     $this->entityTypeManager = $entity_type_manager;
     $this->entityTypeBundleInfoManager = $entity_type_bundle_info_manager;
     $this->entityDisplayRepository = $entity_display_repository;
     $this->cacheTagsInvalidator = $cache_tags_invalidator;
+    $this->entityManager = $entity_manager;
   }
 
   /**
@@ -76,7 +87,8 @@ class EntityConfigSettingsForm extends ConfigFormBase {
     $entity_type_manager = $container->get('entity_type.manager');
     $entity_display_repository = $container->get('entity_display.repository');
     $cache_tags_invalidator = $container->get('cache_tags.invalidator');
-    return new static($entity_type_manager, $entity_type_bundle_info_manager, $entity_display_repository, $cache_tags_invalidator);
+    $entity_manager = $container->get('acquia_contenthub.entity_manager');
+    return new static($entity_type_manager, $entity_type_bundle_info_manager, $entity_display_repository, $cache_tags_invalidator, $entity_manager);
   }
 
   /**
@@ -113,7 +125,7 @@ class EntityConfigSettingsForm extends ConfigFormBase {
       '#title' => t('Entities'),
       '#tree' => TRUE,
     );
-    $entity_types = $this->getEntityTypes();
+    $entity_types = $this->entityManager->getAllowedEntityTypes();
     foreach ($entity_types as $type => $bundle) {
       $form[$type] = array(
         '#title' => $type,
@@ -142,9 +154,7 @@ class EntityConfigSettingsForm extends ConfigFormBase {
     $entities = $this->config('acquia_contenthub.entity_config')->get('entities');
     $form = array();
     foreach ($bundle as $bundle_id => $bundle_name) {
-      $view_modes_per_bundle = $this->entityDisplayRepository->getViewModeOptionsByBundle($type, $bundle_id);
-      $view_modes = $this->entityDisplayRepository->getViewModeOptions($type);
-      $view_modes = array_merge($view_modes, $view_modes_per_bundle);
+      $view_modes = $this->entityDisplayRepository->getViewModeOptionsByBundle($type, $bundle_id);
       // Remove default view mode from the options, as it cannot be rendered.
       // entityDisplayRepository->getViewModes doesn't return the default mode.
       unset($view_modes['default']);

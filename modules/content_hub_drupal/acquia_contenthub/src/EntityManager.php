@@ -298,9 +298,11 @@ class EntityManager {
    * Obtains the list of entity types.
    */
   public function getAllowedEntityTypes() {
-    $entities_config = $this->configFactory->get('acquia_contenthub.entity_config')->get('entities');
-
+    // List of entities that are excluded from displaying on
+    // entity configuration page and will not be pushed to Content Hub.
+    // @Todo Support Blocks in future.
     $excluded_types = [
+      'block_content',
       'comment',
       'user',
       'contact_message',
@@ -308,20 +310,6 @@ class EntityManager {
       'menu_link_content',
       'user'
     ];
-
-    // @todo Fix this
-    foreach ($entities_config as $type => $entity_config) {
-      $included = FALSE;
-      foreach ($entity_config as $entity_id => $bundle_config) {
-        if (!empty($bundle_config['enable_index'])) {
-          $included = TRUE;
-        }
-      }
-      // Check if any of the bundles were included
-      if (!$included) {
-        $excluded_types[] = $type;
-      }
-    }
 
     $types = $this->entityTypeManager->getDefinitions();
 
@@ -349,6 +337,7 @@ class EntityManager {
         }
       }
     }
+    $entity_types = array_diff_key($entity_types, $excluded_types);
     return $entity_types;
   }
 
