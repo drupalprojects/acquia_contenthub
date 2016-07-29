@@ -168,7 +168,7 @@ class EntityConfigSettingsForm extends ConfigFormBase {
       $enable_viewmodes = 0;
       $enable_index = 0;
       $rendering = array();
-      if (array_key_exists($bundle_id, $entities[$type])) {
+      if (is_array($entities[$type]) && array_key_exists($bundle_id, $entities[$type])) {
         $enable_viewmodes = array_key_exists('enable_viewmodes', $entities[$type][$bundle_id]) ? $entities[$type][$bundle_id]['enable_viewmodes'] : 0;
         $enable_index = array_key_exists('enable_index', $entities[$type][$bundle_id]) ? $entities[$type][$bundle_id]['enable_index'] : 0;
         $rendering = array_key_exists('rendering', $entities[$type][$bundle_id]) ? $entities[$type][$bundle_id]['rendering'] : FALSE;
