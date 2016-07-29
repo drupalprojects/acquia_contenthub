@@ -24,7 +24,6 @@ if [ ! -d $PROJECT_NAME ]; then
 fi
 
 cd $PROJECT_NAME/web
-pwd
 
 # MySQL has trouble with dashes in database names.
 DB_URL="$DRUPAL_DB_URL${PROJECT_NAME//-/_}"
