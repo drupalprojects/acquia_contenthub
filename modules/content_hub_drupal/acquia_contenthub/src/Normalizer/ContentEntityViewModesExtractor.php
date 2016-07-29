@@ -144,10 +144,9 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
     $entity_type_id = $object->getEntityTypeId();
     $entity_bundle_id = $object->bundle();
     $config = $this->entityConfig->get('entities.' . $entity_type_id . '.' . $entity_bundle_id);
-    if (!isset($config['enabled']) && !isset($config['rendering'])) {
+    if (!isset($config['enable_viewmodes']) && !isset($config['rendering'])) {
       return NULL;
     }
-
     // Normalize.
     $view_modes = $this->entityDisplayRepository->getViewModes($entity_type_id);
 
@@ -160,8 +159,8 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
       // and the content shown to any user is 100% the same.
       $url = Url::fromRoute('acquia_contenthub.content_entity_display.entity', [
         'entity_type' => $object->getEntityTypeId(),
-        'entity' => $object->id(),
-        'view_mode_name' => $view_mode_id
+        'entity_id' => $object->id(),
+        'view_mode_name' => $view_mode_id,
       ])->toString();
       $request = Request::create($url);
 

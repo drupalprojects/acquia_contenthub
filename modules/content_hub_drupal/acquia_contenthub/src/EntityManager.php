@@ -111,7 +111,6 @@ class EntityManager {
       unset($entity->__contenthub_synchronized);
       return;
     }
-
     // Entity has not been sync'ed, then proceed with it.
     if ($this->isEligibleEntity($entity)) {
       // @todo In Drupal 7 this used the shutdown function
@@ -218,28 +217,30 @@ class EntityManager {
    *   The absolute resource URL, if it can be generated, FALSE otherwise.
    */
   public function getResourceUrl(EntityInterface $entity) {
+    // Check if there are link templates defined for the entity type and
+    // use the path from the route instead of the default.
+    $entity_type = $entity->getEntityType();
+    $entity_type_id = $entity->getEntityTypeId();
+
+    $route_name = 'acquia_contenthub.entity.' . $entity_type_id . '.GET.acquia_contenthub_cdf';
+    $url_options = array(
+      'entity_type' => $entity_type_id,
+      $entity_type_id => $entity->id(),
+      '_format' => 'acquia_contenthub_cdf');
+
+    $url = Url::fromRoute($route_name, $url_options);
+    $path = $url->toString();
+
     // Get the content hub config settings.
-    $config = $this->configFactory->get('acquia_contenthub.admin_settings');
-    $rewrite_localdomain = $config->get('rewrite_domain');
-
-    if ($entity->uuid()) {
-      //var_dump($entity->uriRelationships());
-    }
-
-    switch ($entity->getEntityTypeId()) {
-      case 'node':
-        $path = 'node/' . $entity->id() . '?_format=acquia_contenthub_cdf';
-        break;
-
-      default:
-        return FALSE;
-    }
+    $rewrite_localdomain = $this->configFactory
+      ->get('acquia_contenthub.admin_settings')
+      ->get('rewrite_domain');
 
     if ($rewrite_localdomain) {
-      $url = Url::fromUri($rewrite_localdomain . '/' . $path);
+      $url = Url::fromUri($rewrite_localdomain . $path);
     }
     else {
-      $url = Url::fromUri($this->baseRoot . '/' . $path);
+      $url = Url::fromUri($this->baseRoot . $path);
     }
     return $url->toUriString();
   }
@@ -257,7 +258,7 @@ class EntityManager {
   protected function isEligibleEntity(EntityInterface $entity) {
     $entity_type_config = $this->configFactory->get('acquia_contenthub.entity_config')->get('entities.' . $entity->getEntityTypeId());
     $bundle_id = $entity->bundle();
-    if (empty($entity_type_config) || empty($entity_type_config[$bundle_id]) || empty($entity_type_config[$bundle_id]['enabled'])) {
+    if (empty($entity_type_config) || empty($entity_type_config[$bundle_id]) || empty($entity_type_config[$bundle_id]['enable_index'])) {
       return FALSE;
     }
 

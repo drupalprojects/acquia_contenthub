@@ -142,12 +142,13 @@ class EntityConfigSettingsForm extends ConfigFormBase {
     $entities = $this->config('acquia_contenthub.entity_config')->get('entities');
     $form = array();
     foreach ($bundle as $bundle_id => $bundle_name) {
-      $view_modes = $this->entityDisplayRepository->getViewModeOptionsByBundle($type, $bundle_id);
+      $view_modes_per_bundle = $this->entityDisplayRepository->getViewModeOptionsByBundle($type, $bundle_id);
+      $view_modes = $this->entityDisplayRepository->getViewModeOptions($type);
+      $view_modes = array_merge($view_modes, $view_modes_per_bundle);
       // Remove default view mode from the options, as it cannot be rendered.
       // entityDisplayRepository->getViewModes doesn't return the default mode.
-      if (count($view_modes) > 1) {
-        unset($view_modes['default']);
-      }
+      unset($view_modes['default']);
+
       $entity_type_label = $this->entityTypeManager->getDefinition($type)->getLabel();
       $form[$bundle_id] = array(
         '#type' => 'fieldset',

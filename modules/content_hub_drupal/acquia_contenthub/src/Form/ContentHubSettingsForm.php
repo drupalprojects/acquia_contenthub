@@ -144,11 +144,13 @@ class ContentHubSettingsForm extends ConfigFormBase {
     }
 
     $api = NULL;
-    if (Uuid::isValid($form_state->getValue('api_key'))) {
+    // Important. This should never validate if it is an UUID. Lift 3 does not
+    // use UUIDs for the api_key but they are valid for Content Hub.
+    if ($form_state->getValue('api_key')) {
       $api = $form_state->getValue('api_key');
     }
     else {
-      return $form_state->setErrorByName('api_key', $this->t('Please insert a valid API Key.'));
+      return $form_state->setErrorByName('api_key', $this->t('Please insert an API Key.'));
     }
 
     $secret = NULL;

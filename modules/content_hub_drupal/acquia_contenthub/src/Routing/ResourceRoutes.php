@@ -87,13 +87,21 @@ class ResourceRoutes extends RouteSubscriberBase {
         }
         // Unset routes that are not in our list
         if (!in_array($plugin->getDerivativeId(), array_keys($allowed_entity_types))) {
-          $collection->remove("acquia_contenthub.content_hub_cdf.$name");
+          $route_name = 'acquia_contenthub.entity.' . $plugin->getDerivativeId() . '.GET.acquia_contenthub_cdf';
+          $collection->remove($route_name);
           continue;
         }
 
         $route->setRequirement('_format', 'acquia_contenthub_cdf');
         $route->setRequirement('_access', 'TRUE');
-        $collection->add("acquia_contenthub.content_hub_cdf.$name", $route);
+        // Remove the permission required. Open for all and controlled by
+        // entity_access.
+        $requirements = $route->getRequirements();
+        unset($requirements['_permission']);
+        $route->setRequirements($requirements);
+
+        $route_name = 'acquia_contenthub.entity.' . $plugin->getDerivativeId() . '.GET.acquia_contenthub_cdf';
+        $collection->add($route_name, $route);
       }
     }
   }

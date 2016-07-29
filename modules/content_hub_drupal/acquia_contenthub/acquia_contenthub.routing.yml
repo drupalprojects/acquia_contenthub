@@ -39,11 +39,11 @@ acquia_contenthub.acquia_contenthub_cdf.entity:
     _access: 'TRUE'
 
 acquia_contenthub.content_entity_display.entity:
-  path: '/acquia-contenthub/display/{entity_type}/{entity}/{view_mode_name}'
+  path: '/acquia-contenthub/display/{entity_type}/{entity_id}/{view_mode_name}'
   defaults:
     _controller: '\Drupal\acquia_contenthub\Controller\ContentEntityDisplayController::viewEntityViewMode'
   requirements:
     _access: 'TRUE'
-    entity_type: \w+
-    entity: \d+
-    view_mode_name: \w+
+    entity_type: \w+ #word
+    entity_id: \d+ #digit
+    view_mode_name: \w+ #word

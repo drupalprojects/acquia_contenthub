@@ -10,6 +10,7 @@ namespace Drupal\acquia_contenthub\Controller;
 use Drupal\acquia_contenthub\Normalizer\ContentEntityViewModesExtractor;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Render\HtmlResponse;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -36,13 +37,21 @@ class ContentEntityDisplayController extends ControllerBase {
   protected $contentEntityViewModesExtractor;
 
   /**
+   * Entity manager which performs the upcasting in the end.
+   *
+   * @var \Drupal\Core\Entity\EntityManagerInterface
+   */
+  protected $entityManager;
+
+  /**
    * Constructs a new ContentEntityDisplayController object.
    *
    * @param \Drupal\acquia_contenthub\Normalizer\ContentEntityViewModesExtractor $content_entity_view_modes_extractor
    *   The view modes extractor.
    */
-  public function __construct(ContentEntityViewModesExtractor $content_entity_view_modes_extractor) {
+  public function __construct(ContentEntityViewModesExtractor $content_entity_view_modes_extractor, EntityManagerInterface $entity_manager) {
     $this->contentEntityViewModesExtractor = $content_entity_view_modes_extractor;
+    $this->entityManager = $entity_manager;
   }
 
   /**
@@ -50,7 +59,8 @@ class ContentEntityDisplayController extends ControllerBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('acquia_contenthub.normalizer.content_entity_view_modes_extractor')
+      $container->get('acquia_contenthub.normalizer.content_entity_view_modes_extractor'),
+      $container->get('entity.manager')
     );
   }
 
@@ -65,7 +75,8 @@ class ContentEntityDisplayController extends ControllerBase {
    * @return string
    *   The html page that is being viewed in given view mode.
    */
-  public function viewEntityViewMode(ContentEntityInterface $entity, $view_mode_name = 'teaser') {
+  public function viewEntityViewMode($entity_type, $entity_id, $view_mode_name = 'teaser') {
+    $entity = $this->entityManager->getStorage($entity_type)->load($entity_id);
     $html = $this->contentEntityViewModesExtractor->getViewModeMinimalHtml($entity, $view_mode_name);
     // Map the rendered render array to a HtmlResponse.
     $response = new HtmlResponse();
