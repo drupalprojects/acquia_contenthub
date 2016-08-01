@@ -312,8 +312,14 @@ class EntityManager {
       'user',
     ];
 
-    $types = $this->entityTypeManager->getDefinitions();
+    // If the config "acquia_contenthub.entity_config.block_content_support"
+    // is set to TRUE, then enable support for block content.
+    if ((bool) $this->configFactory->get('acquia_contenthub.entity_config')->get('block_content_support')) {
+      // Unset block_content.
+      unset($excluded_types[0]);
+    }
 
+    $types = $this->entityTypeManager->getDefinitions();
     $entity_types = array();
     foreach ($types as $type => $entity) {
       // We only support content entity types at the moment, since config
