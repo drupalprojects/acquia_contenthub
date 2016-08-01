@@ -132,7 +132,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     $origin = $this->contentHubAdminConfig->get('origin');
 
     // Required Created field.
-    if ($entity->get('created')) {
+    if ($entity->hasField('created') && $entity->get('created')) {
       $created = date('c', $entity->get('created')->getValue()[0]['value']);
     }
     else {

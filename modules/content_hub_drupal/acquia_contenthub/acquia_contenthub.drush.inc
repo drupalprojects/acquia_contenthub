@@ -182,13 +182,9 @@ function drush_acquia_contenthub_local($entity_type, $entity_id) {
  */
 function drush_acquia_contenthub_remote($uuid) {
   if (Uuid::isValid($uuid)) {
-    return drush_set_error(dt("Argument provided is not a UUID."));
-  }
-  else {
     /** @var \Drupal\acquia_contenthub\Client\ClientManager $client_manager */
     $client_manager = \Drupal::service('acquia_contenthub.client_manager');
-    $client = $client_manager->getClient();
-    if ($entity = $client->readEntity($uuid)) {
+    if ($entity = $client_manager->createRequest('readEntity', array($uuid))) {
       return (array) $entity;
     }
     else {
@@ -196,6 +192,9 @@ function drush_acquia_contenthub_remote($uuid) {
         '@uuid' => $uuid,
       )));
     }
+  }
+  else {
+    return drush_set_error(dt("Argument provided is not a UUID."));
   }
   return FALSE;
 }
@@ -232,7 +231,7 @@ function drush_acquia_contenthub_compare($entity_type, $uuid) {
 
   /** @var \Drupal\acquia_contenthub\Client\ClientManager $client_manager */
   $client_manager = \Drupal::service('acquia_contenthub.client_manager');
-  $client = $client_manager->getClient();
+  $client = $client_manager->getConnection();
 
   // Get our local CDF version.
   $local_entity = $entity_repository->loadEntityByUuid($entity_type, $uuid);
@@ -264,7 +263,7 @@ function drush_acquia_contenthub_compare($entity_type, $uuid) {
 function drush_acquia_contenthub_list() {
   /** @var \Drupal\acquia_contenthub\Client\ClientManager $client_manager */
   $client_manager = \Drupal::service('acquia_contenthub.client_manager');
-  $client = $client_manager->getClient();
+  $client = $client_manager->getConnection();
 
   $options = array();
 
@@ -360,7 +359,7 @@ function drush_acquia_contenthub_delete($uuid) {
     if (drush_confirm(dt('Are you sure you want to delete the entity with uuid = @uuid from the Content Hub? There is no way back from this action!', array(
       '@uuid' => $uuid,
     )))) {
-      $client = $client_manager->getClient();
+      $client = $client_manager->getConnection();
       if ($client->deleteEntity($uuid)) {
         drush_print(dt("Entity with UUID = @uuid has been successfully deleted from the Content Hub.", array(
           '@uuid' => $uuid,
@@ -391,7 +390,7 @@ function drush_acquia_contenthub_purge() {
 function drush_acquia_contenthub_regenerate_secret() {
   /** @var \Drupal\acquia_contenthub\Client\ClientManager $client_manager */
   $client_manager = \Drupal::service('acquia_contenthub.client_manager');
-  $client = $client_manager->getClient();
+  $client = $client_manager->getConnection();
 
   $warning_message = "Are you sure you want to REGENERATE your shared-secret in the Content Hub?\n" .
     "*************************************************************************************\n" .

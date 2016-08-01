@@ -1,7 +1,7 @@
 services:
   acquia_contenthub.entity_manager:
     class: Drupal\acquia_contenthub\EntityManager
-    arguments: ['@logger.factory', '@config.factory', '@acquia_contenthub.client_manager', '@acquia_contenthub.acquia_contenthub_imported_entities']
+    arguments: ['@logger.factory', '@config.factory', '@acquia_contenthub.client_manager', '@acquia_contenthub.acquia_contenthub_imported_entities', '@entity_type.manager', '@entity_type.bundle.info']
 
   acquia_contenthub.acquia_contenthub_cdf.import_entity:
     class: Drupal\acquia_contenthub\Controller\ContentHubEntityImportController
@@ -56,3 +56,9 @@ services:
       - { name: cache.bin }
     factory: cache_factory:get
     arguments: [acquia_contenthub]
+
+  acquia_contenthub.resource_routes:
+    class: Drupal\acquia_contenthub\Routing\ResourceRoutes
+    arguments: ['@plugin.manager.rest', '@config.factory', '@acquia_contenthub.entity_manager']
+    tags:
+      - { name: 'event_subscriber' }

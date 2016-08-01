@@ -2,7 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\acquia_contenthub\ContentHubServiceProvider.
+ * Contains \Drupal\acquia_contenthub\AcquiaContentHubServiceProvider.
+ *
+ * Filename MUST be CamelCase modulename (AcquiaContentHub) + ServiceProvider
+ * for it to have any effect.
  */
 
 namespace Drupal\acquia_contenthub;
@@ -13,7 +16,7 @@ use Drupal\Core\DependencyInjection\ServiceModifierInterface;
 /**
  * Make sure it exposes the acquia_contenthub_cdf format as json.
  */
-class ContentHubServiceProvider implements ServiceModifierInterface {
+class AcquiaContentHubServiceProvider implements ServiceModifierInterface {
 
   /**
    * {@inheritdoc}

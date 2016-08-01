@@ -29,25 +29,6 @@ acquia_contenthub.entity_config:
   requirements:
     _permission: 'administer acquia content hub'
 
-acquia_contenthub.acquia_contenthub_cdf.node:
-  path: '/node/{node}'
-  methods:
-    - GET
-  defaults:
-    _controller: 'Drupal\rest\RequestHandler::handle'
-    _plugin: 'entity:node'
-  requirements:
-    _method: GET
-    _format: acquia_contenthub_cdf
-    # This is fine as the rest module will check if the account has permissions
-    # to view the node.
-    # @see EntityResource::get()
-    _access: 'TRUE'
-  options:
-    parameters:
-      node:
-        type: 'entity:node'
-
 acquia_contenthub.acquia_contenthub_cdf.entity:
   path: '/acquia-contenthub/{uuid}'
   methods:
@@ -57,11 +38,12 @@ acquia_contenthub.acquia_contenthub_cdf.entity:
   requirements:
     _access: 'TRUE'
 
-acquia_contenthub.content_entity_display.node:
-  path: '/acquia-contenthub/display/node/{node}/{view_mode_name}'
+acquia_contenthub.content_entity_display.entity:
+  path: '/acquia-contenthub/display/{entity_type}/{entity_id}/{view_mode_name}'
   defaults:
-    _controller: '\Drupal\acquia_contenthub\Controller\ContentEntityDisplayController::viewNode'
+    _controller: '\Drupal\acquia_contenthub\Controller\ContentEntityDisplayController::viewEntityViewMode'
   requirements:
     _access: 'TRUE'
-    node: \d+
-    view_mode_name: \w+
+    entity_type: \w+ #word
+    entity_id: \d+ #digit
+    view_mode_name: \w+ #word
