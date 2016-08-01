@@ -272,6 +272,10 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
           $keys = array_keys($item);
           if (count($keys) == 1 && isset($item['value'])) {
             $value = $item['value'];
+            // When type is uri, create a web-accessible URL.
+            if ($field_type == 'uri') {
+              $value = file_create_url($value);
+            }
           }
           else {
             $value = json_encode($item, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
