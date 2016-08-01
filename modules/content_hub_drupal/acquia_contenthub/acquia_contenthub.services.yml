@@ -39,6 +39,16 @@ services:
     tags:
       - { name: event_subscriber }
 
+  acquia_contenthub.encoder.acquia_contenthub_cdf_list:
+    class: Drupal\acquia_contenthub\Encoder\ContentHubCdfListEncoder
+    tags:
+      - { name: encoder, priority: 10, format: acquia_contenthub_cdf_list }
+
+  acquia_contenthub.exception.acquia_contenthub_cdf_list:
+    class: Drupal\acquia_contenthub\EventSubscriber\ExceptionCdfListJsonSubscriber
+    tags:
+      - { name: event_subscriber }
+
   acquia_contenthub.config_cache_tag:
     class: Drupal\acquia_contenthub\EventSubscriber\ConfigCacheTag
     arguments: ['@cache_tags.invalidator']

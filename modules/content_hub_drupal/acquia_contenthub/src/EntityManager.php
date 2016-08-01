@@ -93,7 +93,8 @@ class EntityManager {
     $this->contentHubImportedEntities = $acquia_contenthub_imported_entities;
     $this->entityTypeManager = $entity_manager;
     $this->entityTypeBundleInfoManager = $entity_type_bundle_info_manager;
-
+    // Get the content hub config settings.
+    $this->config = $this->configFactory->get('acquia_contenthub.admin_settings');
   }
 
   /**
@@ -104,23 +105,179 @@ class EntityManager {
    * @param string $action
    *   The action to perform on that entity: 'INSERT', 'UPDATE', 'DELETE'.
    */
-  public function entityAction($entity, $action) {
+  public function entityAction($entity, $action, $include_dependencies = TRUE) {
+    $type = $entity->getEntityTypeId();
     // Checking if the entity has already been synchronized so not to generate
     // an endless loop.
     if (isset($entity->__contenthub_synchronized)) {
       unset($entity->__contenthub_synchronized);
       return;
     }
+
+    // Comparing entity's origin with site's origin.
+    $origin = $this->config->get('origin');
+    if (isset($entity->__content_hub_origin) && $entity->__content_hub_origin !== $origin) {
+      unset($entity->__content_hub_origin);
+      return;
+    }
+
     // Entity has not been sync'ed, then proceed with it.
     if ($this->isEligibleEntity($entity)) {
       // @todo In Drupal 7 this used the shutdown function
       // drupal_register_shutdown_function(array($this, 'entityActionSend',
       // $action, $entity));
       // figure out if we really need to do this?
-      $this->entityActionSend($entity, $action);
+      if ($type == 'node') {
+        switch ($action) {
+          case 'INSERT':
+            break;
+
+          case 'UPDATE':
+            break;
+
+          case 'DELETE':
+            // Do nothing, proceed with deletion.
+            break;
+        }
+      }
+
+      // Store entity to be processed later.
+      if ($action !== 'DELETE') {
+        $item = array(
+          'uuid' => $entity->uuid(),
+          'type' => $type,
+          'action' => $action,
+          'entity' => $entity,
+        );
+        $this->collectExportEntities($item);
+
+        $this->sendEntities($include_dependencies);
+      }
+      else {
+        $this->entityActionSend($entity, $action);
+      }
+    }
+    else {
+      // Entity has not been sync'ed, then proceed with it.
+      // Is this an entity that does not belong to this site? Has it been
+      // previously imported from Content Hub? Or was this entity type selected in
+      // the Entity Configuration page?
+      $uuid = $entity->uuid();
+      // We cannot bulk upload this entity because it does not belong to this
+      // site or it wasn't selected in the Entity Configuration Page.
+      // Add it to the pool of failed entities.
+      if (isset($uuid)) {
+        $this->entityFailures(1);
+        $args = array(
+          '%type' => $type,
+          '%uuid' => $entity->uuid(),
+        );
+        // We can use this pool of failed entities to display a message to the
+        // user about the entities that failed to export.
+        $message = new FormattableMarkup('Cannot export %type entity with UUID = %uuid to Content Hub because it was previously imported (did not originate from this site) or it wasn\'t selected in the Entity Configuration Page.', $args);
+        $this->loggerFactory->get('acquia_contenthub')->error($message);
+        return;
+      }
     }
   }
 
+  /**
+   * Gathers all entities that will be exported.
+   *
+   * @param object|null $entity
+   *   The Entity that will be exported.
+   *
+   * @return array
+   *   The array of entities to export.
+   */
+  function collectExportEntities($entity = NULL) {
+    $entities = &drupal_static(__FUNCTION__);
+    if (!isset($entities)) {
+      $entities = array();
+    }
+    if (is_array($entity)) {
+      $uuids = array_column($entities, 'uuid');
+      if (!in_array($entity['uuid'], $uuids)) {
+        $entities[] = $entity;
+      }
+    }
+    return $entities;
+  }
+
+  /**
+   * Sends all collected entities to Content Hub.
+   *
+   * This function collects all entities that have been created/modified through
+   * the entity hooks: hook_entity_insert, hook_entity_update. It also collects
+   * the dependencies of those entities and groups everything together in a
+   * single bulk upload request.
+   * Note that some dependencies are also send even if they were not modified
+   * through this action. However, because some other entities depend on them then
+   * they will be part of the bulk upload.
+   * Runs as a registered shutdown function.
+   *
+   * @param bool $include_dependencies
+   *   TRUE if we should include dependencies, FALSE otherwise.
+   *
+   * @TODO: In order to make this more efficient we will have to start tracking
+   * exported entities at some point.
+   */
+  function sendEntities($include_dependencies = TRUE) {
+    // Collect all entities that have been modified through entity hooks.
+    $entities = $this->collectExportEntities();
+
+    $failed_entities = array();
+
+//    // For each of those entities, add them to the bulk upload pool, including
+//    // their dependencies.
+//    $contenthub_entities = new ContentHubEntities();
+//    foreach ($entities as $entity) {
+//      $contenthub_entity = new \Drupal\acquia_contenthub\ContentHubEntity();
+//      if ($contenthub_entity->loadDrupalEntity($entity['type'], $entity['entity'])) {
+//        $failed = $contenthub_entities->addEntity($contenthub_entity, $include_dependencies);
+//        $failed_entities = array_merge($failed_entities, $failed);
+//      }
+//    }
+//
+//    // Send all the collected entities as one bulk upload request.
+//    $contenthub_entities->send();
+
+    // Notify the user about the dependencies that failed to upload.
+    if (count($failed_entities) > 0) {
+      $items = array();
+      foreach ($failed_entities as $failed_entity) {
+        $items[] = t('UUID = !uuid, type = !type', array(
+          '!uuid' => $failed_entity->getUuid(),
+          '!type' => $failed_entity->getDrupalEntityType(),
+        ));
+      }
+
+      $message = new FormattableMarkup('The following dependencies failed to export to Content Hub (They were not selected in the Entity Configuration Page or did not originate from this site): !list', array(
+        '!list' => theme('item_list', array('items' => $items)),
+      ));
+      $this->loggerFactory->get('acquia_contenthub')->error($message);
+    }
+  }
+
+  /**
+   * Tracks the number of entities that fail to bulk upload.
+   *
+   * @param string $num
+   *   Number of failed entities added to the pool.
+   *
+   * @return string $total
+   *   The total number of entities that failed to bulk upload.
+   */
+  function entityFailures($num = NULL) {
+    $total = &drupal_static(__FUNCTION__);
+    if (!isset($total)) {
+      $total = is_int($num) ? $num : 0;
+    }
+    else {
+      $total = is_int($num) ? $total + $num : $total;
+    }
+    return $total;
+  }
 
   /**
    * Sends the request to the Content Hub for a single entity.
@@ -256,7 +413,7 @@ class EntityManager {
    *   True if it can be parsed, False if it not a suitable entity for sending
    *   to content hub.
    */
-  protected function isEligibleEntity(EntityInterface $entity) {
+  public function isEligibleEntity(EntityInterface $entity) {
     $entity_type_config = $this->configFactory->get('acquia_contenthub.entity_config')->get('entities.' . $entity->getEntityTypeId());
     $bundle_id = $entity->bundle();
     if (empty($entity_type_config) || empty($entity_type_config[$bundle_id]) || empty($entity_type_config[$bundle_id]['enable_index'])) {
