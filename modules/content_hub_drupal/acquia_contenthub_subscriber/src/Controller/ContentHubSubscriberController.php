@@ -42,7 +42,7 @@ class ContentHubSubscriberController extends ControllerBase {
    */
   public function loadDiscovery() {
     $config = \Drupal::config('acquia_contenthub.admin_settings');
-    $ember_endpoint = $config->get('ember_app') . '/entity';
+    $ember_endpoint = $config->get('ember_app') . '/';
 
     // Set Client User Agent.
     $module_info = system_get_info('module', 'acquia_contenthub');
