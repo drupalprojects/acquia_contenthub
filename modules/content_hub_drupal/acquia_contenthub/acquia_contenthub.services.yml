@@ -1,0 +1,64 @@
+services:
+  acquia_contenthub.entity_manager:
+    class: Drupal\acquia_contenthub\EntityManager
+    arguments: ['@logger.factory', '@config.factory', '@acquia_contenthub.client_manager', '@acquia_contenthub.acquia_contenthub_imported_entities', '@entity_type.manager', '@entity_type.bundle.info']
+
+  acquia_contenthub.acquia_contenthub_cdf.import_entity:
+    class: Drupal\acquia_contenthub\Controller\ContentHubEntityImportController
+    arguments: ['@database', '@logger.factory', '@acquia_contenthub.entity_manager', '@serializer', '@acquia_contenthub.acquia_contenthub_imported_entities']
+
+  acquia_contenthub.acquia_contenthub_imported_entities:
+    class: Drupal\acquia_contenthub\ContentHubImportedEntities
+    arguments: ['@database', '@config.factory']
+
+  acquia_contenthub.acquia_contenthub_subscription:
+    class: Drupal\acquia_contenthub\ContentHubSubscription
+    arguments: ['@logger.factory', '@config.factory', '@acquia_contenthub.client_manager']
+
+  acquia_contenthub.client_manager:
+    class: Drupal\acquia_contenthub\Client\ClientManager
+    arguments: ['@logger.factory', '@config.factory']
+
+  acquia_contenthub.normalizer.entity.acquia_contenthub_cdf:
+    class: Drupal\acquia_contenthub\Normalizer\ContentEntityCdfNormalizer
+    arguments: ['@config.factory', '@acquia_contenthub.normalizer.content_entity_view_modes_extractor', '@module_handler', '@entity.repository']
+    tags:
+      - { name: normalizer, priority: 10 }
+
+  acquia_contenthub.normalizer.content_entity_view_modes_extractor:
+    class: Drupal\acquia_contenthub\Normalizer\ContentEntityViewModesExtractor
+    arguments: ['@current_user', '@config.factory', '@entity_display.repository', '@entity_type.manager', '@renderer', '@http_kernel.basic', '@account_switcher']
+
+  acquia_contenthub.encoder.acquia_contenthub_cdf:
+    class: Drupal\acquia_contenthub\Encoder\ContentHubCdfEncoder
+    tags:
+      - { name: encoder, priority: 10, format: acquia_contenthub_cdf }
+
+  acquia_contenthub.exception.acquia_contenthub_cdf:
+    class: Drupal\acquia_contenthub\EventSubscriber\ExceptionCdfJsonSubscriber
+    tags:
+      - { name: event_subscriber }
+
+  acquia_contenthub.config_cache_tag:
+    class: Drupal\acquia_contenthub\EventSubscriber\ConfigCacheTag
+    arguments: ['@cache_tags.invalidator']
+    tags:
+      - { name: event_subscriber }
+
+  acquia_contenthub.acquia_contenthub_event:
+    class: Drupal\acquia_contenthub\EventSubscriber\ContentHubEvent
+    tags:
+      - { name: event_subscriber }
+
+  cache.acquia_contenthub:
+    class: Drupal\Core\Cache\CacheBackendInterface
+    tags:
+      - { name: cache.bin }
+    factory: cache_factory:get
+    arguments: [acquia_contenthub]
+
+  acquia_contenthub.resource_routes:
+    class: Drupal\acquia_contenthub\Routing\ResourceRoutes
+    arguments: ['@plugin.manager.rest', '@config.factory', '@acquia_contenthub.entity_manager']
+    tags:
+      - { name: 'event_subscriber' }

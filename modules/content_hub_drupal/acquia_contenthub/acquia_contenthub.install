@@ -1,0 +1,59 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions for the acquia_contenthub module.
+ */
+
+/**
+ * Implements hook_schema().
+ *
+ * Defines the database tables used by this module.
+ *
+ * @see hook_schema()
+ *
+ * @ingroup acquia_contenthub
+ */
+function acquia_contenthub_schema() {
+  $schema['acquia_contenthub_imported_entities'] = array(
+    'fields' => array(
+      'entity_type' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'entity_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'entity_uuid' => array(
+        'type' => 'char',
+        'length' => 36,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'auto_update' => array(
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'default' => 'ENABLED',
+      ),
+      'origin' => array(
+        'type' => 'char',
+        'length' => 36,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+    'indexes' => array(
+      'origin' => array('origin'),
+    ),
+    'unique keys' => array(
+      'entity' => array('entity_type', 'entity_id'),
+      'entity_uuid' => array('entity_uuid'),
+    ),
+  );
+  return $schema;
+}

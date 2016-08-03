@@ -23,7 +23,7 @@ if [ "$FILES" == "" ]; then
     exit 0
 fi
 
-OUTPUT=$(phpcs --standard=Drupal --extensions='php,module,inc,install,test,profile,theme,js,css,info,txt' content_hub_connector )
+OUTPUT=$(phpcs --standard=Drupal --extensions='php,module,inc,install,test,profile,theme,js,css,info,txt' acquia_contenthub )
 
 if [ "$OUTPUT" != "" ]; then
   echo "$OUTPUT"

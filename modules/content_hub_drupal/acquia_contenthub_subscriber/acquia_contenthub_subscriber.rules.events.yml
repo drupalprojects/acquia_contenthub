@@ -1,0 +1,7 @@
+rules_acquia_contenthub_subscriber:
+  label: 'A content update notification arrives through a webhook'
+  category: 'Content Hub'
+  context:
+    account:
+      type: 'webhook'
+      label: 'Content Hub webhook'

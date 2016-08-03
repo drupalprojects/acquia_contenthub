@@ -1,0 +1,48 @@
+<?php
+/**
+ * @file
+ * Contains acquia_contenthub.module.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_help().
+ */
+function acquia_contenthub_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'help.page.acquia_contenthub':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Some info about Acquia Content Hub') . '</p>';
+      return $output;
+  }
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function acquia_contenthub_entity_insert(EntityInterface $entity) {
+  /** @var \Drupal\acquia_contenthub\EntityManager $entity_manager */
+  $entity_manager = \Drupal::service('acquia_contenthub.entity_manager');
+  $entity_manager->entityAction($entity, 'INSERT');
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function acquia_contenthub_entity_update(EntityInterface $entity) {
+  /** @var \Drupal\acquia_contenthub\EntityManager $entity_manager */
+  $entity_manager = \Drupal::service('acquia_contenthub.entity_manager');
+  $entity_manager->entityAction($entity, 'UPDATE');
+}
+
+/**
+ * Implements hook_entity_delete().
+ */
+function acquia_contenthub_entity_delete(EntityInterface $entity) {
+  /** @var \Drupal\acquia_contenthub\EntityManager $entity_manager */
+  $entity_manager = \Drupal::service('acquia_contenthub.entity_manager');
+  $entity_manager->entityAction($entity, 'DELETE');
+}
