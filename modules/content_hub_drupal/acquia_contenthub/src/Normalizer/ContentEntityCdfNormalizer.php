@@ -148,8 +148,12 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     if (!$this->supportsNormalization($entity, $format)) {
       return NULL;
     }
-    $cache_context = ['#cache' => ['contexts' => ['url.query_args:include_references']]];
-    \Drupal::service('renderer')->addCacheableDependency($cache_context);
+
+    // By executing the rendering here with this cache contexts, we are bubbling
+    // it up to the dynamic page cache so that it varies by the query param
+    // include_references. Do not remove.
+    $cache = ['#cache' => ['contexts' => ['url.query_args:include_references']]];
+    $this->renderer->render($cache);
 
     // Add query params to the context
     $current_uri = \Drupal::request()->getRequestUri();
