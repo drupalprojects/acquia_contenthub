@@ -148,7 +148,8 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     if (!$this->supportsNormalization($entity, $format)) {
       return NULL;
     }
-    \Drupal::requestStack()->getCurrentRequest()->
+    $cache_context = ['#cache' => ['contexts' => ['url.query_args:include_references']]];
+    \Drupal::service('renderer')->addCacheableDependency($cache_context);
 
     // Add query params to the context
     $current_uri = \Drupal::request()->getRequestUri();
