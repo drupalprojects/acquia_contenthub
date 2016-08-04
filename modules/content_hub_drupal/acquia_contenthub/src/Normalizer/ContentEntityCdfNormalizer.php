@@ -14,6 +14,7 @@ use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Acquia\ContentHubClient\Entity as ContentHubEntity;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Entity\EntityRepository;
 use Drupal\Core\Render\Renderer;
@@ -21,6 +22,7 @@ use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Drupal\Core\Url;
 use Symfony\Component\HttpFoundation\Request;
 use Drupal\Component\Serialization\Json;
+use Drupal\acquia_contenthub\EntityManager as EntityManager;
 
 /**
  * Converts the Drupal entity object to a Acquia Content Hub CDF array.
@@ -90,6 +92,35 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    */
   protected $renderer;
 
+  /**
+   * The entity manager.
+   *
+   * @var \Drupal\acquia_contenthub\EntityManager
+   */
+  protected $entityManager;
+
+  /**
+   * The entity type manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('config.factory'),
+      $container->get('acquia_contenthub.normalizer.content_entity_view_modes_extractor'),
+      $container->get('module_handler'),
+      $container->get('entity.repository'),
+      $container->get('http_kernel.basic'),
+      $container->get('renderer'),
+      $container->get('acquia_contenthub.entity_manager'),
+      $container->get('entity_type.manager')
+    );
+  }
 
   /**
    * Constructs an ContentEntityNormalizer object.
@@ -102,14 +133,20 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    *   The module handler to create alter hooks.
    * @param \Drupal\Core\Entity\EntityRepository $entity_repository
    *   The entity repository.
+   * @param \Drupal\acquia_contenthub\EntityManager $entity_manager
+   *   The entity manager.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, ContentEntityViewModesExtractorInterface $content_entity_view_modes_normalizer, ModuleHandlerInterface $module_handler, EntityRepository $entity_repository, HttpKernelInterface $kernel, Renderer $renderer) {
+  public function __construct(ConfigFactoryInterface $config_factory, ContentEntityViewModesExtractorInterface $content_entity_view_modes_normalizer, ModuleHandlerInterface $module_handler, EntityRepository $entity_repository, HttpKernelInterface $kernel, Renderer $renderer, EntityManager $entity_manager, EntityTypeManagerInterface $entity_type_manager) {
     $this->contentHubAdminConfig = $config_factory->get('acquia_contenthub.admin_settings');
     $this->contentEntityViewModesNormalizer = $content_entity_view_modes_normalizer;
     $this->moduleHandler = $module_handler;
     $this->entityRepository = $entity_repository;
     $this->kernel = $kernel;
     $this->renderer = $renderer;
+    $this->entityManager = $entity_manager;
+    $this->entityTypeManager = $entity_type_manager;
   }
 
   /**
@@ -218,28 +255,32 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     if (!empty($context['query_params']['include_references']) && $context['query_params']['include_references'] == 'true') {
       $referenced_entities = $this->getReferencedFields($entity, $context);
       foreach ($referenced_entities as $entity) {
-        // Generate our URL where the isolated rendered view mode lives.
-        // This is the best way to really make sure the content in Content Hub
-        // and the content shown to any user is 100% the same.
-        try {
-          $url = Url::fromRoute('acquia_contenthub.entity.' . $entity->getEntityTypeId() . '.GET.acquia_contenthub_cdf', [
-            'entity_type' => $entity->getEntityTypeId(),
-            'entity_id' => $entity->id(),
-            'taxonomy_term' => $entity->id(),
-            'file' => $entity->id(),
-            '_format' => 'acquia_contenthub_cdf'
-          ])->toString();
-          $request = Request::create($url);
-          /** @var \Drupal\Core\Render\HtmlResponse $response */
-          $response = $this->kernel->handle($request, HttpKernelInterface::SUB_REQUEST);
-          $referenced_entity_cdf_json = $response->getContent();
-          $referenced_entity_list_cdf = Json::decode($referenced_entity_cdf_json);
-          $referenced_entity_list_cdf = array_pop($referenced_entity_list_cdf);
-          foreach ($referenced_entity_list_cdf as $referenced_entity_cdf) {
-            $normalized['entities'][] = $referenced_entity_cdf;
+        // Check if entity is a valid entity to be pushed to HUB.
+        if ($this->entityManager->isEligibleEntity($entity)) {
+          // Generate our URL where the isolated rendered view mode lives.
+          // This is the best way to really make sure the content in Content Hub
+          // and the content shown to any user is 100% the same.
+          try {
+            $url = Url::fromRoute('acquia_contenthub.entity.' . $entity->getEntityTypeId() . '.GET.acquia_contenthub_cdf', [
+              'entity_type' => $entity->getEntityTypeId(),
+              'entity_id' => $entity->id(),
+              $entity->getEntityTypeId() => $entity->id(),
+              '_format' => 'acquia_contenthub_cdf'
+            ])->toString();
+            $request = Request::create($url);
+            /** @var \Drupal\Core\Render\HtmlResponse $response */
+            $response = $this->kernel->handle($request, HttpKernelInterface::SUB_REQUEST);
+            $referenced_entity_cdf_json = $response->getContent();
+            $referenced_entity_list_cdf = Json::decode($referenced_entity_cdf_json);
+            $referenced_entity_list_cdf = array_pop($referenced_entity_list_cdf);
+            if (is_array($referenced_entity_list_cdf)) {
+              foreach ($referenced_entity_list_cdf as $referenced_entity_cdf) {
+                $normalized['entities'][] = $referenced_entity_cdf;
+              }
+            }
+          } catch (\Exception $e) {
+            // do nothing, route does not exist.
           }
-         } catch (\Exception $e) {
-          // do nothing, route does not exist.
         }
       }
     }
@@ -401,7 +442,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    * @return \Drupal\Core\Entity\ContentEntityInterface[] $referenced_entities
    *   All referenced entities.
    */
-  protected function getReferencedFields(\Drupal\Core\Entity\ContentEntityInterface $entity, array $context = array()) {
+  protected function getReferencedFields(ContentEntityInterface $entity, array $context = array()) {
     /** @var \Drupal\Core\Field\FieldItemListInterface[] $fields */
     $fields = $entity->getFields();
     $referenced_entities = [];
@@ -660,9 +701,6 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     $bundle = reset($contenthub_entity->getAttribute('type')['value']);
     $langcodes = $contenthub_entity->getAttribute('langcode')['value'];
 
-    // @TODO: Fix this. It should be using dependency injection.
-    $entity_manager = \Drupal::entityTypeManager();
-
     // Does this entity exist in this site already?
     $entity = $this->entityRepository->loadEntityByUuid($entity_type, $contenthub_entity->getUuid());
     if ($entity == NULL) {
@@ -678,7 +716,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         $values['status'] = 0;
       }
 
-      $entity = $entity_manager->getStorage($entity_type)->create($values);
+      $entity = $this->entityTypeManager->getStorage($entity_type)->create($values);
     }
 
     // Assigning langcodes.
