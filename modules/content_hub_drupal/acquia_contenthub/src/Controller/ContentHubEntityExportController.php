@@ -104,6 +104,7 @@ class ContentHubEntityExportController extends ControllerBase {
    * Collects all Drupal Entities that needs to be sent to Hub.
    */
   public function getDrupalEntities() {
+    global $base_path;
     $normalized = [
       'entities' => []
     ];
@@ -116,8 +117,10 @@ class ContentHubEntityExportController extends ControllerBase {
             'entity_type' => $entity,
             'entity_id' => $id,
             $entity => $id,
-            '_format' => 'acquia_contenthub_cdf'
+            '_format' => 'acquia_contenthub_cdf',
+            'include_references' => 'true',
           ])->toString();
+          $url = str_replace($base_path, '/', $url);
           $request = Request::create($url);
           /** @var \Drupal\Core\Render\HtmlResponse $response */
           $response = $this->kernel->handle($request, HttpKernelInterface::SUB_REQUEST);

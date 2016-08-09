@@ -246,6 +246,7 @@ class EntityManager {
    *   The action to execute for bulk upload: 'INSERT' or 'UPDATE'.
    */
   public function entityActionSend(EntityInterface $entity, $action) {
+    global $base_path;
     if ($action !== 'DELETE') {
       $entities = $this->collectExportEntities();
       $bulk_url = &drupal_static(__FUNCTION__);
@@ -262,6 +263,7 @@ class EntityManager {
             $entity_type => $entity_id,
             '_format' => 'acquia_contenthub_cdf'
           ])->toString();
+          $url = str_replace($base_path, '/', $url);
           Request::create($url);
         } catch (\Exception $e) {
           // do nothing, route does not exist.
