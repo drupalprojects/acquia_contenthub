@@ -46,3 +46,10 @@ function acquia_contenthub_entity_delete(EntityInterface $entity) {
   $entity_manager = \Drupal::service('acquia_contenthub.entity_manager');
   $entity_manager->entityAction($entity, 'DELETE');
 }
+
+/**
+ * Sends entities to Content Hub using Bulk Upload.
+ */
+function acquia_contenthub_send_entities() {
+
+}

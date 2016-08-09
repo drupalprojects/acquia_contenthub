@@ -173,7 +173,13 @@ class EntityManager {
           'entity' => $entity,
         );
         $this->collectExportEntities($item);
-        $this->entityActionSend($entity, $action);
+
+        // Registering shutdown function to send entities to Acquia Content Hub.
+        $acquia_contenthub_shutdown_function = 'acquia_contenthub_send_entities';
+        $callbacks = drupal_register_shutdown_function();
+        if (!in_array($acquia_contenthub_shutdown_function, $callbacks)) {
+          drupal_register_shutdown_function($acquia_contenthub_shutdown_function);
+        }
       }
       else {
         $this->entityActionSend($entity, $action);
