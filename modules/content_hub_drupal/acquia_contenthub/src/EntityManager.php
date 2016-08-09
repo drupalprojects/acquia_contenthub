@@ -173,10 +173,10 @@ class EntityManager {
           'entity' => $entity,
         );
         $this->collectExportEntities($item);
-        $this->entityActionSend($action);
+        $this->entityActionSend($entity, $action);
       }
       else {
-        $this->entityActionSend($action);
+        $this->entityActionSend($entity, $action);
       }
     }
     else {
