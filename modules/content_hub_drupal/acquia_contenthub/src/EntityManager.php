@@ -394,8 +394,7 @@ class EntityManager {
    */
   public function getBulkResourceUrl($params) {
 
-    $route_name = 'acquia-contenthub/bulk-upload';
-
+    $route_name = 'acquia_contenthub.acquia_contenthub_bulk_cdf';
     $url = Url::fromRoute($route_name, $params);
     $path = $url->toString();
 

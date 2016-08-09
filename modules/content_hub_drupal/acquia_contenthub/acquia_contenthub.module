@@ -62,7 +62,7 @@ function acquia_contenthub_send_entities() {
     $entity = $en['entity'];
     $entity_type = $entity->getEntityTypeId();
     $entity_id = $entity->id();
-    $bulk_url_array[$entity_type][] = $entity_id;
+    $bulk_url_array[$entity_type][$entity_id] = $entity_id;
     try {
       $url = Url::fromRoute('acquia_contenthub.entity.' . $entity_type . '.GET.acquia_contenthub_cdf', [
         'entity_type' => $entity_type,
@@ -76,7 +76,11 @@ function acquia_contenthub_send_entities() {
       // do nothing, route does not exist.
     }
   }
-  $bulk_url = http_build_query($bulk_url_array);
-  $resource_url = $entity_manager->getBulkResourceUrl($bulk_url);
+
+  // Now implode parameters.
+  foreach ($bulk_url_array as $entity_type => $entities) {
+    $bulk_url_array[$entity_type] = implode(',', $entities);
+  }
+  $resource_url = $entity_manager->getBulkResourceUrl($bulk_url_array);
   $entity_manager->updateRemoteEntities($resource_url);
 }
