@@ -6,6 +6,8 @@
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Url;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Implements hook_help().
@@ -51,5 +53,30 @@ function acquia_contenthub_entity_delete(EntityInterface $entity) {
  * Sends entities to Content Hub using Bulk Upload.
  */
 function acquia_contenthub_send_entities() {
-
+  global $base_path;
+  /** @var \Drupal\acquia_contenthub\EntityManager $entity_manager */
+  $entity_manager = \Drupal::service('acquia_contenthub.entity_manager');
+  $entities = $entity_manager->collectExportEntities();
+  $bulk_url_array = [];
+  foreach ($entities as $en) {
+    $entity = $en['entity'];
+    $entity_type = $entity->getEntityTypeId();
+    $entity_id = $entity->id();
+    $bulk_url_array[$entity_type][] = $entity_id;
+    try {
+      $url = Url::fromRoute('acquia_contenthub.entity.' . $entity_type . '.GET.acquia_contenthub_cdf', [
+        'entity_type' => $entity_type,
+        'entity_id' => $entity_id,
+        $entity_type => $entity_id,
+        '_format' => 'acquia_contenthub_cdf'
+      ])->toString();
+      $url = str_replace($base_path, '/', $url);
+      Request::create($url);
+    } catch (\Exception $e) {
+      // do nothing, route does not exist.
+    }
+  }
+  $bulk_url = http_build_query($bulk_url_array);
+  $resource_url = $entity_manager->getBulkResourceUrl($bulk_url);
+  $entity_manager->updateRemoteEntities($resource_url);
 }
