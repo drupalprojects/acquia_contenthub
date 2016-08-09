@@ -129,12 +129,13 @@ class ContentHubEntityExportController extends ControllerBase {
               $normalized['entities'][] = $cdf;
             }
           }
+
         } catch (\Exception $e) {
           // do nothing, route does not exist.
         }
       }
     }
-    return $normalized;
+    return JsonResponse::create($normalized);
   }
 
 }
