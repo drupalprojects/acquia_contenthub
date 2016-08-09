@@ -280,7 +280,7 @@ class ContentHubEntities {
    * @return array
    *   The dependencies that could NOT be added to the bulk upload pool.
    */
-  public function addEntity(ContentHubEntity $contenthub_entity, $include_dependencies = TRUE) {
+  public function addEntity($contenthub_entity, $include_references = TRUE) {
     $entities = $this->getEntities();
     $failed_entities = array();
 
@@ -288,7 +288,7 @@ class ContentHubEntities {
     if (!in_array($contenthub_entity->getUuid(), array_keys($entities))) {
 
       // Should we add dependencies?
-      if ($include_dependencies) {
+      if ($include_references) {
         $dependencies = array();
         $dependencies = $contenthub_entity->getAllLocalDependencies($dependencies, TRUE);
 

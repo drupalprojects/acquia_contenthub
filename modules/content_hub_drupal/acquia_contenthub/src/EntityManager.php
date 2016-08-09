@@ -17,7 +17,8 @@ use Drupal\Core\Config\ConfigFactory;
 use Drupal\acquia_contenthub\ContentHubImportedEntities;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
-
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\HttpKernelInterface;
 
 /**
  * Provides a service for managing entity actions for Content Hub.
@@ -73,6 +74,27 @@ class EntityManager {
    */
   protected $entityTypeBundleInfoManager;
 
+  /**
+   * The Basic HTTP Kernel to make requests.
+   *
+   * @var \Symfony\Component\HttpKernel\HttpKernelInterface
+   */
+  protected $kernel;
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('logger.factory'),
+      $container->get('config.factory'),
+      $container->get('acquia_contenthub.client_manager'),
+      $container->get('acquia_contenthub.acquia_contenthub_imported_entities'),
+      $container->get('acquia_contenthub.entity_manager'),
+      $container->get('entity_type.bundle.info'),
+      $container->get('http_kernel.basic')
+    );
+  }
 
   /**
    * Constructs an ContentEntityNormalizer object.
@@ -84,7 +106,7 @@ class EntityManager {
    * @param \Drupal\acquia_contenthub\Client\ClientManagerInterface $client_manager
    *    The client manager.
    */
-  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager, ContentHubImportedEntities $acquia_contenthub_imported_entities, EntityTypeManagerInterface $entity_manager, EntityTypeBundleInfoInterface $entity_type_bundle_info_manager) {
+  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager, ContentHubImportedEntities $acquia_contenthub_imported_entities, EntityTypeManagerInterface $entity_manager, EntityTypeBundleInfoInterface $entity_type_bundle_info_manager, HttpKernelInterface $kernel) {
     global $base_root;
     $this->baseRoot = $base_root;
     $this->loggerFactory = $logger_factory;
@@ -93,6 +115,7 @@ class EntityManager {
     $this->contentHubImportedEntities = $acquia_contenthub_imported_entities;
     $this->entityTypeManager = $entity_manager;
     $this->entityTypeBundleInfoManager = $entity_type_bundle_info_manager;
+    $this->kernel = $kernel;
     // Get the content hub config settings.
     $this->config = $this->configFactory->get('acquia_contenthub.admin_settings');
   }
@@ -142,10 +165,18 @@ class EntityManager {
       }
 
       if ($action !== 'DELETE') {
-        $this->entityActionSend($entity, $action);
+        // Collect all entities and make internal page request.
+        $item = array(
+          'uuid' => $entity->uuid,
+          'type' => $type,
+          'action' => $action,
+          'entity' => $entity,
+        );
+        $this->collectExportEntities($item);
+        $this->entityActionSend($action);
       }
       else {
-        $this->entityActionSend($entity, $action, FALSE);
+        $this->entityActionSend($action);
       }
     }
     else {
@@ -170,6 +201,20 @@ class EntityManager {
         return;
       }
     }
+  }
+
+  function collectExportEntities($entity = NULL) {
+    $entities = &drupal_static(__FUNCTION__);
+    if (!isset($entities)) {
+      $entities = array();
+    }
+    if (is_array($entity)) {
+      $uuids = array_column($entities, 'uuid');
+      if (!in_array($entity['uuid'], $uuids)) {
+        $entities[] = $entity;
+      }
+    }
+    return $entities;
   }
 
   /**
@@ -200,82 +245,100 @@ class EntityManager {
    * @param string $action
    *   The action to execute for bulk upload: 'INSERT' or 'UPDATE'.
    */
-  public function entityActionSend(EntityInterface $entity, $action, $include_references = true) {
-    /** @var \Drupal\acquia_contenthub\Client\ClientManagerInterface $client_manager */
-    try {
-      $client = $this->clientManager->getConnection();
+  public function entityActionSend(EntityInterface $entity, $action) {
+    if ($action !== 'DELETE') {
+      $entities = $this->collectExportEntities();
+      $bulk_url = &drupal_static(__FUNCTION__);
+      $failed_entities = array();
+      foreach ($entities as $en) {
+        $entity = $en['entity'];
+        $entity_type = $entity->getEntityTypeId();
+        $entity_id = $entity->id();
+        $bulk_url .= $entity_type . '=' . $entity_id;
+        try {
+          $url = Url::fromRoute('acquia_contenthub.entity.' . $entity_type . '.GET.acquia_contenthub_cdf', [
+            'entity_type' => $entity_type,
+            'entity_id' => $entity_id,
+            $entity_type => $entity_id,
+            '_format' => 'acquia_contenthub_cdf'
+          ])->toString();
+          Request::create($url);
+        } catch (\Exception $e) {
+          // do nothing, route does not exist.
+        }
+      }
+      // $params = 'node=1,2&file=2,4';
+      // $resource_url = $this->getBulkResourceUrl($params);
     }
-    catch (ContentHubException $e) {
-      $this->loggerFactory->get('acquia_contenthub')->error($e->getMessage());
-      return;
-    }
+    else {
+      /** @var \Drupal\acquia_contenthub\Client\ClientManagerInterface $client_manager */
+      try {
+        $client = $this->clientManager->getConnection();
+      } catch (ContentHubException $e) {
+        $this->loggerFactory->get('acquia_contenthub')->error($e->getMessage());
+        return;
+      }
 
-    $resource_url = $this->getResourceUrl($entity);
-    if (!$include_references) {
-      $resource_url = $this->getResourceUrl($entity, 'false');
-    }
-    if (!$resource_url) {
+      $resource_url = $this->getResourceUrl($entity);
+      if (!$resource_url) {
+        $args = array(
+          '%type' => $entity->getEntityTypeId(),
+          '%uuid' => $entity->uuid(),
+          '%id' => $entity->id(),
+        );
+        $message = new FormattableMarkup('Error trying to form a unique resource Url for %type with uuid %uuid and id %id', $args);
+        $this->loggerFactory->get('acquia_contenthub')->error($message);
+        return;
+      }
+
+      $response = NULL;
       $args = array(
         '%type' => $entity->getEntityTypeId(),
         '%uuid' => $entity->uuid(),
         '%id' => $entity->id(),
       );
-      $message = new FormattableMarkup('Error trying to form a unique resource Url for %type with uuid %uuid and id %id', $args);
-      $this->loggerFactory->get('acquia_contenthub')->error($message);
-      return;
+      $message_string = 'Error trying to post the resource url for %type with uuid %uuid and id %id with a response from the API: %error';
+
+      switch ($action) {
+        case 'INSERT':
+          try {
+            $response = $client->createEntities($resource_url);
+          } catch (\GuzzleHttp\Exception\RequestException $e) {
+            $args['%error'] = $e->getMessage();
+            $message = new FormattableMarkup($message_string, $args);
+            $this->loggerFactory->get('acquia_contenthub')->error($message);
+            return;
+          }
+          break;
+
+        case 'UPDATE':
+          try {
+            $response = $client->updateEntity($resource_url, $entity->uuid());
+          } catch (\GuzzleHttp\Exception\RequestException $e) {
+            $args['%error'] = $e->getMessage();
+            $message = new FormattableMarkup($message_string, $args);
+            $this->loggerFactory->get('acquia_contenthub')->error($message);
+            return;
+          }
+          break;
+
+        case 'DELETE':
+          try {
+            $response = $client->deleteEntity($entity->uuid());
+          } catch (\GuzzleHttp\Exception\RequestException $e) {
+            $args['%error'] = $e->getMessage();
+            $message = new FormattableMarkup($message_string, $args);
+            $this->loggerFactory->get('acquia_contenthub')->error($message);
+            return;
+          }
+          break;
+      }
+      // Make sure it is within the 2XX range. Expected response is a 202.
+      if ($response->getStatusCode()[0] == '2' && $response->getStatusCode()[1] == '0') {
+        $message = new FormattableMarkup($message_string, $args);
+        $this->loggerFactory->get('acquia_contenthub')->error($message);
+      }
     }
-
-    $response = NULL;
-    $args = array(
-      '%type' => $entity->getEntityTypeId(),
-      '%uuid' => $entity->uuid(),
-      '%id' => $entity->id(),
-    );
-    $message_string = 'Error trying to post the resource url for %type with uuid %uuid and id %id with a response from the API: %error';
-
-    switch ($action) {
-      case 'INSERT':
-        try {
-          $response = $client->createEntities($resource_url);
-        }
-        catch (\GuzzleHttp\Exception\RequestException $e) {
-          $args['%error'] = $e->getMessage();
-          $message = new FormattableMarkup($message_string, $args);
-          $this->loggerFactory->get('acquia_contenthub')->error($message);
-          return;
-        }
-        break;
-
-      case 'UPDATE':
-        try {
-          $response = $client->updateEntity($resource_url, $entity->uuid());
-        }
-        catch (\GuzzleHttp\Exception\RequestException $e) {
-          $args['%error'] = $e->getMessage();
-          $message = new FormattableMarkup($message_string, $args);
-          $this->loggerFactory->get('acquia_contenthub')->error($message);
-          return;
-        }
-        break;
-
-      case 'DELETE':
-        try {
-          $response = $client->deleteEntity($entity->uuid());
-        }
-        catch (\GuzzleHttp\Exception\RequestException $e) {
-          $args['%error'] = $e->getMessage();
-          $message = new FormattableMarkup($message_string, $args);
-          $this->loggerFactory->get('acquia_contenthub')->error($message);
-          return;
-        }
-        break;
-    }
-    // Make sure it is within the 2XX range. Expected response is a 202.
-    if ($response->getStatusCode()[0] == '2' && $response->getStatusCode()[1] == '0') {
-      $message = new FormattableMarkup($message_string, $args);
-      $this->loggerFactory->get('acquia_contenthub')->error($message);
-    }
-
   }
 
   /**
@@ -304,6 +367,27 @@ class EntityManager {
     );
 
     $url = Url::fromRoute($route_name, $url_options);
+    $path = $url->toString();
+
+    // Get the content hub config settings.
+    $rewrite_localdomain = $this->configFactory
+      ->get('acquia_contenthub.admin_settings')
+      ->get('rewrite_domain');
+
+    if ($rewrite_localdomain) {
+      $url = Url::fromUri($rewrite_localdomain . $path);
+    }
+    else {
+      $url = Url::fromUri($this->baseRoot . $path);
+    }
+    return $url->toUriString();
+  }
+
+  public function getBulkResourceUrl($params) {
+
+    $route_name = 'acquia-contenthub/bulk-upload';
+
+    $url = Url::fromRoute($route_name, $params);
     $path = $url->toString();
 
     // Get the content hub config settings.
