@@ -167,7 +167,7 @@ class EntityManager {
       if ($action !== 'DELETE') {
         // Collect all entities and make internal page request.
         $item = array(
-          'uuid' => $entity->uuid,
+          'uuid' => $entity->uuid(),
           'type' => $type,
           'action' => $action,
           'entity' => $entity,
@@ -253,7 +253,7 @@ class EntityManager {
    * Sends the entities for update to Content Hub.
    */
   public function updateRemoteEntities($resource_url) {
-    if ($response = $this->clientManager->createRequest('updateEntities', $resource_url)) {
+    if ($response = $this->clientManager->createRequest('updateEntities', array($resource_url))) {
       $response = $response->json();
     }
     return empty($response['success']) ? FALSE : TRUE;
