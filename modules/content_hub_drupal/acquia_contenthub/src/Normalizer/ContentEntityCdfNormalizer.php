@@ -192,7 +192,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     $cache = ['#cache' => ['contexts' => ['url.query_args:include_references']]];
     $this->renderer->render($cache);
 
-    // Add query params to the context
+    // Add query params to the context.
     $current_uri = \Drupal::request()->getRequestUri();
     $uri = UrlHelper::parse($current_uri);
     $context += ['query_params' => $uri['query']];
@@ -248,10 +248,10 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
 
     // Create the array of normalized fields, starting with the URI.
     $normalized = [
-      'entities' => [$contenthub_entity]
+      'entities' => [$contenthub_entity],
     ];
 
-    // Add all references to it if the include_references is true
+    // Add all references to it if the include_references is true.
     if (!empty($context['query_params']['include_references']) && $context['query_params']['include_references'] == 'true') {
       $referenced_entities = $this->getReferencedFields($entity, $context);
       foreach ($referenced_entities as $entity) {
@@ -265,7 +265,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
               'entity_type' => $entity->getEntityTypeId(),
               'entity_id' => $entity->id(),
               $entity->getEntityTypeId() => $entity->id(),
-              '_format' => 'acquia_contenthub_cdf'
+              '_format' => 'acquia_contenthub_cdf',
             ])->toString();
             $request = Request::create($url);
             /** @var \Drupal\Core\Render\HtmlResponse $response */
@@ -278,13 +278,13 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
                 $normalized['entities'][] = $referenced_entity_cdf;
               }
             }
-          } catch (\Exception $e) {
-            // do nothing, route does not exist.
+          }
+          catch (\Exception $e) {
+            // Do nothing, route does not exist.
           }
         }
       }
     }
-
 
     return $normalized;
 
@@ -429,7 +429,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
   }
 
   /**
-   * Get entity reference fields
+   * Get entity reference fields.
    *
    * Get the fields from a given entity and add them to the given content hub
    * entity object.

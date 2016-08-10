@@ -67,7 +67,7 @@ function acquia_contenthub_send_entities() {
   $uuids = array_keys($entities);
   foreach ($entities as $en) {
     $entity = $en['entity'];
-    // Get referenced entities
+    // Get referenced entities.
     $referenced_entities = $acquia_contenthub_normalizer->getReferencedFields($entity);
 
     // If entities are included as references then delete them from the
@@ -96,8 +96,9 @@ function acquia_contenthub_send_entities() {
       ])->toString();
       $url = str_replace($base_path, '/', $url);
       Request::create($url);
-    } catch (\Exception $e) {
-      // do nothing, route does not exist.
+    }
+    catch (\Exception $e) {
+      // Do nothing, route does not exist.
     }
   }
 

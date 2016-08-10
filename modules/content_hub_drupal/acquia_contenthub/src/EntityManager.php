@@ -17,7 +17,6 @@ use Drupal\Core\Config\ConfigFactory;
 use Drupal\acquia_contenthub\ContentHubImportedEntities;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 
 /**
@@ -189,8 +188,8 @@ class EntityManager {
     else {
       // Entity has not been sync'ed, then proceed with it.
       // Is this an entity that does not belong to this site? Has it been
-      // previously imported from Content Hub? Or was this entity type selected in
-      // the Entity Configuration page?
+      // previously imported from Content Hub? Or was this entity type selected
+      // in the Entity Configuration page?
       $uuid = $entity->uuid();
       // We cannot bulk upload this entity because it does not belong to this
       // site or it wasn't selected in the Entity Configuration Page.
@@ -211,12 +210,15 @@ class EntityManager {
   }
 
   /**
-   * Collect all entities.
+   * Gathers all entities that will be exported.
    *
-   * @param null $entity
+   * @param object|null $entity
+   *   The Entity that will be exported.
+   *
    * @return array
+   *   The array of entities to export.
    */
-  function collectExportEntities($entity = NULL) {
+  public function collectExportEntities($entity = NULL) {
     $entities = &drupal_static(__FUNCTION__);
     if (!isset($entities)) {
       $entities = array();
@@ -239,7 +241,7 @@ class EntityManager {
    * @return string $total
    *   The total number of entities that failed to bulk upload.
    */
-  function entityFailures($num = NULL) {
+  public function entityFailures($num = NULL) {
     $total = &drupal_static(__FUNCTION__);
     if (!isset($total)) {
       $total = is_int($num) ? $num : 0;
@@ -252,6 +254,12 @@ class EntityManager {
 
   /**
    * Sends the entities for update to Content Hub.
+   *
+   * @param string $resource_url
+   *   The Resource Url.
+   *
+   * @return bool
+   *   Returns the response.
    */
   public function updateRemoteEntities($resource_url) {
     if ($response = $this->clientManager->createRequest('updateEntities', array($resource_url))) {
@@ -364,7 +372,7 @@ class EntityManager {
       'entity_type' => $entity_type_id,
       $entity_type_id => $entity->id(),
       '_format' => 'acquia_contenthub_cdf',
-      'include_references' => $include_references
+      'include_references' => $include_references,
     );
 
     $url = Url::fromRoute($route_name, $url_options);
@@ -387,8 +395,8 @@ class EntityManager {
   /**
    * Builds the bulk-upload url to make a single request.
    *
-   * @param $params
-   *   query params.
+   * @param string $params
+   *   Bulk-upload Url query params.
    *
    * @return string
    *   returns URL.
