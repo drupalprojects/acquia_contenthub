@@ -253,7 +253,7 @@ class EntityManager {
    * Sends the entities for update to Content Hub.
    */
   public function updateRemoteEntities($resource_url) {
-    if ($response = $this->createRequest('updateEntities', $resource_url)) {
+    if ($response = $this->clientManager->createRequest('updateEntities', $resource_url)) {
       $response = $response->json();
     }
     return empty($response['success']) ? FALSE : TRUE;
