@@ -254,7 +254,7 @@ class EntityManager {
    */
   public function updateRemoteEntities($resource_url) {
     if ($response = $this->clientManager->createRequest('updateEntities', array($resource_url))) {
-      $response = $response->json();
+      $response = json_decode($response->getBody(), TRUE);
     }
     return empty($response['success']) ? FALSE : TRUE;
   }
