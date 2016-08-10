@@ -177,7 +177,8 @@ class EntityManager {
         // Registering shutdown function to send entities to Acquia Content Hub.
         $acquia_contenthub_shutdown_function = 'acquia_contenthub_send_entities';
         $callbacks = drupal_register_shutdown_function();
-        if (!in_array($acquia_contenthub_shutdown_function, $callbacks)) {
+        $callback_functions = array_column($callbacks, 'callback');
+        if (!in_array($acquia_contenthub_shutdown_function, $callback_functions)) {
           drupal_register_shutdown_function($acquia_contenthub_shutdown_function);
         }
       }
