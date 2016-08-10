@@ -223,7 +223,7 @@ class EntityManager {
     if (is_array($entity)) {
       $uuids = array_column($entities, 'uuid');
       if (!in_array($entity['uuid'], $uuids)) {
-        $entities[] = $entity;
+        $entities[$entity['uuid']] = $entity;
       }
     }
     return $entities;

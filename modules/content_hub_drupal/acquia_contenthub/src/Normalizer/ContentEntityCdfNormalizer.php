@@ -442,7 +442,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    * @return \Drupal\Core\Entity\ContentEntityInterface[] $referenced_entities
    *   All referenced entities.
    */
-  protected function getReferencedFields(ContentEntityInterface $entity, array $context = array()) {
+  public function getReferencedFields(ContentEntityInterface $entity, array $context = array()) {
     /** @var \Drupal\Core\Field\FieldItemListInterface[] $fields */
     $fields = $entity->getFields();
     $referenced_entities = [];
