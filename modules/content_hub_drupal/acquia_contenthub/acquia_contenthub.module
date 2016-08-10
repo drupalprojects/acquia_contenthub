@@ -68,7 +68,8 @@ function acquia_contenthub_send_entities() {
         'entity_type' => $entity_type,
         'entity_id' => $entity_id,
         $entity_type => $entity_id,
-        '_format' => 'acquia_contenthub_cdf'
+        '_format' => 'acquia_contenthub_cdf',
+        'include_references' => 'true',
       ])->toString();
       $url = str_replace($base_path, '/', $url);
       Request::create($url);
