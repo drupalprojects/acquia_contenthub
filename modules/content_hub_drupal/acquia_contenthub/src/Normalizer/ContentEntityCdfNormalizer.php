@@ -7,6 +7,7 @@
 
 namespace Drupal\acquia_contenthub\Normalizer;
 
+use Acquia\ContentHubClient\Asset;
 use Acquia\ContentHubClient\Attribute;
 use Drupal\Component\Render\FormattableMarkup;
 use Drupal\acquia_contenthub\ContentHubException;
@@ -364,11 +365,31 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
          * The return value could be anything that is compatible with TypedData.
          */
         foreach ($referenced_entities as $referenced_entity) {
+          // In the case of images/files, etc... we need to add the assets.
+          $file_types = array(
+            'image',
+            'file',
+            'video',
+            'pdf',
+            'doc',
+          );
 
           // Special case for type as we do not want the reference for the
           // bundle.
           if ($name === 'type') {
             $values[$langcode][] = $referenced_entity->id();
+          }
+          elseif (in_array($field_type,  $file_types)) {
+            // If this is a file type, then add the asset to the CDF.
+            $uuid_token = '[' . $referenced_entity->uuid() . ']';
+            $asset_url = file_create_url($entity->field_image->entity->getFileUri());
+            $asset = new Asset();
+            $asset->setUrl($asset_url);
+            $asset->setReplaceToken($uuid_token);
+            $contenthub_entity->addAsset($asset);
+
+            // Now add the value.
+            $values[$langcode][] = $uuid_token;
           }
           else {
             $values[$langcode][] = $referenced_entity->uuid();
@@ -589,8 +610,6 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       // Types we know about but want/have to ignore.
       NULL => array(
         'password',
-        'file',
-        'image',
       ),
       'array<boolean>' => array(
         'boolean',
