@@ -452,7 +452,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     foreach ($fields as $name => $field) {
       // Continue if this is an excluded field or the current user does not
       // have access to view it.
-      if (in_array($field->getFieldDefinition()->getName(), $excluded_fields) || !$field->access('view', $context['account'])) {
+      if (in_array($field->getFieldDefinition()->getName(), $excluded_fields) || !$field->access('view', $context['account']) || $name == 'type') {
         continue;
       }
 
