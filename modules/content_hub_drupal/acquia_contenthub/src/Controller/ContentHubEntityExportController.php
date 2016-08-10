@@ -129,7 +129,10 @@ class ContentHubEntityExportController extends ControllerBase {
           $bulk_cdf = array_pop($bulk_cdf);
           if (is_array($bulk_cdf)) {
             foreach ($bulk_cdf as $cdf) {
-              $normalized['entities'][] = $cdf;
+              $uuids = array_column($normalized['entities'], 'uuid');
+              if (!in_array($cdf['uuid'], $uuids)) {
+                $normalized['entities'][] = $cdf;
+              }
             }
           }
 
