@@ -364,7 +364,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
          * I think we need to make sure it is also an entity that we support?
          * The return value could be anything that is compatible with TypedData.
          */
-        foreach ($referenced_entities as $referenced_entity) {
+        foreach ($referenced_entities as $key => $referenced_entity) {
           // In the case of images/files, etc... we need to add the assets.
           $file_types = array(
             'image',
@@ -382,7 +382,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
           elseif (in_array($field_type,  $file_types)) {
             // If this is a file type, then add the asset to the CDF.
             $uuid_token = '[' . $referenced_entity->uuid() . ']';
-            $asset_url = file_create_url($entity->field_image->entity->getFileUri());
+            $asset_url = file_create_url($entity->{$name}[$key]->entity->getFileUri());
             $asset = new Asset();
             $asset->setUrl($asset_url);
             $asset->setReplaceToken($uuid_token);
