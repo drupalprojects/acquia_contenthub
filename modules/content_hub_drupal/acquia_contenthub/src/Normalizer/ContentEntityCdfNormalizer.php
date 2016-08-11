@@ -454,6 +454,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
 
     // Adds the entity URL to CDF.
     if (empty($contenthub_entity->getAttribute('url'))) {
+      global $base_path;
       switch ($entity->getEntityTypeId()) {
         case 'file':
           $value = file_create_url($entity->getFileUri());
@@ -464,6 +465,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
           $route_name = $entity->toUrl()->getRouteName();
           $route_params = $entity->toUrl()->getRouteParameters();
           $value = Url::fromRoute($route_name, $route_params)->toString();
+          $value = str_replace($base_path, '/', $value);
           $value = Url::fromUri($this->baseUrl . $value)->toUriString();
           break;
       }
