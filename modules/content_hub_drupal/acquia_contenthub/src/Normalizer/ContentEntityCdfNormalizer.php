@@ -370,8 +370,6 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
             'image',
             'file',
             'video',
-            'pdf',
-            'doc',
           );
 
           // Special case for type as we do not want the reference for the
