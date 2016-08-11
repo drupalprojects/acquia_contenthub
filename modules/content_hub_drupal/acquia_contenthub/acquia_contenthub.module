@@ -88,8 +88,6 @@ function acquia_contenthub_send_entities() {
     $bulk_url_array[$entity_type][$entity_id] = $entity_id;
     try {
       $url = Url::fromRoute('acquia_contenthub.entity.' . $entity_type . '.GET.acquia_contenthub_cdf', [
-        'entity_type' => $entity_type,
-        'entity_id' => $entity_id,
         $entity_type => $entity_id,
         '_format' => 'acquia_contenthub_cdf',
         'include_references' => 'true',

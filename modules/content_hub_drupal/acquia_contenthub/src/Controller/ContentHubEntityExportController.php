@@ -61,8 +61,6 @@ class ContentHubEntityExportController extends ControllerBase {
       foreach ($ids as $id) {
         try {
           $url = Url::fromRoute('acquia_contenthub.entity.' . $entity . '.GET.acquia_contenthub_cdf', [
-            'entity_type' => $entity,
-            'entity_id' => $id,
             $entity => $id,
             '_format' => 'acquia_contenthub_cdf',
             'include_references' => 'true',
@@ -76,7 +74,7 @@ class ContentHubEntityExportController extends ControllerBase {
           $bulk_cdf = array_pop($bulk_cdf);
           if (is_array($bulk_cdf)) {
             foreach ($bulk_cdf as $cdf) {
-              $uuids = array_keys($normalized['entities']);
+              $uuids = array_column($normalized['entities'], 'uuid');
               if (!in_array($cdf['uuid'], $uuids)) {
                 $normalized['entities'][] = $cdf;
               }
