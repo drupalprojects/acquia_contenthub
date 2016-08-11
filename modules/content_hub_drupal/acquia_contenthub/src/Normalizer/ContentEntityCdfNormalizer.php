@@ -38,6 +38,13 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
   protected $format = 'acquia_contenthub_cdf';
 
   /**
+   * Base url.
+   *
+   * @var string
+   */
+  protected $baseUrl;
+
+  /**
    * The interface or class that this Normalizer supports.
    *
    * @var string
@@ -140,6 +147,8 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    *   The entity type manager.
    */
   public function __construct(ConfigFactoryInterface $config_factory, ContentEntityViewModesExtractorInterface $content_entity_view_modes_normalizer, ModuleHandlerInterface $module_handler, EntityRepository $entity_repository, HttpKernelInterface $kernel, Renderer $renderer, EntityManager $entity_manager, EntityTypeManagerInterface $entity_type_manager) {
+    global $base_url;
+    $this->baseUrl = $base_url;
     $this->contentHubAdminConfig = $config_factory->get('acquia_contenthub.admin_settings');
     $this->contentEntityViewModesNormalizer = $content_entity_view_modes_normalizer;
     $this->moduleHandler = $module_handler;
@@ -347,8 +356,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       $type = $type_mapping['fallback'];
       if (isset($type_mapping[$name])) {
         $type = $type_mapping[$name];
-      }
-      elseif (isset($type_mapping[$field_type])) {
+      } elseif (isset($type_mapping[$field_type])) {
         // Set it to the fallback type which is string.
         $type = $type_mapping[$field_type];
       }
@@ -379,8 +387,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
           // bundle.
           if ($name === 'type') {
             $values[$langcode][] = $referenced_entity->id();
-          }
-          elseif (in_array($field_type,  $file_types)) {
+          } elseif (in_array($field_type, $file_types)) {
             // If this is a file type, then add the asset to the CDF.
             $uuid_token = '[' . $referenced_entity->uuid() . ']';
             $asset_url = file_create_url($entity->{$name}[$key]->entity->getFileUri());
@@ -391,24 +398,17 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
 
             // Now add the value.
             $values[$langcode][] = $uuid_token;
-          }
-          else {
+          } else {
             $values[$langcode][] = $referenced_entity->uuid();
           }
         }
-      }
-      else {
+      } else {
         // Loop over the items to get the values for each field.
         foreach ($items as $item) {
           $keys = array_keys($item);
           if (count($keys) == 1 && isset($item['value'])) {
             $value = $item['value'];
-            // When type is uri, create a web-accessible URL.
-            if ($field_type == 'uri') {
-              $value = file_create_url($value);
-            }
-          }
-          else {
+          } else {
             $value = json_encode($item, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
           }
           $values[$langcode][] = $value;
@@ -416,8 +416,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       }
       try {
         $attribute = new \Acquia\ContentHubClient\Attribute($type);
-      }
-      catch (\Exception $e) {
+      } catch (\Exception $e) {
         $args['%type'] = $type;
         $message = new FormattableMarkup('No type could be registered for %type.', $args);
         throw new ContentHubException($message);
@@ -425,8 +424,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
 
       if (strstr($type, 'array')) {
         $attribute->setValues($values);
-      }
-      else {
+      } else {
         $value = array_pop($values[$langcode]);
         $attribute->setValue($value, $langcode);
       }
@@ -447,7 +445,26 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     $context['langcode'] = $langcode;
     $this->moduleHandler->alter('acquia_contenthub_cdf', $contenthub_entity, $context);
 
-    return $contenthub_entity;
+    // Adds the entity URL to CDF.
+    if (empty($contenthub_entity->getAttribute('url'))) {
+      switch ($entity->getEntityTypeId()) {
+        case 'file':
+          $value = file_create_url($entity->getFileUri());
+          break;
+
+        default:
+          // Get entity URL fromRoute.
+          $route_name = $entity->toUrl()->getRouteName();
+          $route_params = $entity->toUrl()->getRouteParameters();
+          $value = Url::fromRoute($route_name, $route_params)->toString();
+          $value = Url::fromUri($this->baseUrl . $value)->toUriString();
+          break;
+      }
+      $att = new \Acquia\ContentHubClient\Attribute('string');
+      $contenthub_entity->setAttribute('url', $att->setValue($value, $langcode));
+
+      return $contenthub_entity;
+    }
   }
 
   /**
@@ -692,6 +709,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       'uuid',
       'created',
       'changed',
+      'uri',
 
       // Getting rid of workflow fields.
       'status',
