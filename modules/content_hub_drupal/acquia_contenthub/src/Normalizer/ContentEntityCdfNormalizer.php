@@ -254,7 +254,10 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
 
     // Add all references to it if the include_references is true.
     if (!empty($context['query_params']['include_references']) && $context['query_params']['include_references'] == 'true') {
-      $referenced_entities = $this->getReferencedFields($entity, $context);
+
+      $referenced_entities = [];
+      $referenced_entities = $this->getMultilevelReferencedFields($entity, $context, $referenced_entities);
+
       foreach ($referenced_entities as $entity) {
         // Check if entity is a valid entity to be pushed to HUB.
         if ($this->entityManager->isEligibleEntity($entity)) {
@@ -483,6 +486,43 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     }
 
     return $referenced_entities;
+  }
+
+  /**
+   * Get multilevel entity reference fields.
+   *
+   * Get the fields from a given entity and add them to the given content hub
+   * entity object. This also includes dependencies of the dependencies.
+   *
+   * @param \Drupal\Core\Entity\ContentEntityInterface $entity
+   *   The Drupal Entity.
+   * @param array $context
+   *   Additional Context such as the account.
+   * @param array $referenced_entities
+   *   The list of Multilevel referenced entities. This must be passed as an
+   *   initialized array.
+   *
+   * @return \Drupal\Core\Entity\ContentEntityInterface[] $referenced_entities
+   *   All referenced entities.
+   */
+  public function getMultilevelReferencedFields(ContentEntityInterface $entity, array $context = array(), &$referenced_entities) {
+    // Collecting all referenced_entities UUIDs.
+    $uuids = [];
+    foreach ($referenced_entities as $entity) {
+      $uuids[] = $entity->uuid();
+    }
+
+    // Obtaining all the referenced entities for the current entity.
+    $ref_entities = $this->getReferencedFields($entity, $context);
+    foreach ($ref_entities as $key => $entity) {
+      if (!in_array($entity->uuid(), $uuids)) {
+        $referenced_entities[] = $entity;
+        $this->getMultilevelReferencedFields($entity, $context, $referenced_entities);
+      }
+    }
+
+    return $referenced_entities;
+
   }
 
   /**
