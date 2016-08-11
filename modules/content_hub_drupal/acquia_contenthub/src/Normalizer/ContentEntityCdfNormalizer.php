@@ -265,7 +265,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     if (!empty($context['query_params']['include_references']) && $context['query_params']['include_references'] == 'true') {
 
       $referenced_entities = [];
-      $referenced_entities = $this->getMultilevelReferencedFields($entity, $context, $referenced_entities);
+      $referenced_entities = $this->getMultilevelReferencedFields($entity, $referenced_entities, $context);
 
       foreach ($referenced_entities as $entity) {
         // Check if entity is a valid entity to be pushed to HUB.
@@ -356,7 +356,8 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       $type = $type_mapping['fallback'];
       if (isset($type_mapping[$name])) {
         $type = $type_mapping[$name];
-      } elseif (isset($type_mapping[$field_type])) {
+      }
+      elseif (isset($type_mapping[$field_type])) {
         // Set it to the fallback type which is string.
         $type = $type_mapping[$field_type];
       }
@@ -387,7 +388,8 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
           // bundle.
           if ($name === 'type') {
             $values[$langcode][] = $referenced_entity->id();
-          } elseif (in_array($field_type, $file_types)) {
+          }
+          elseif (in_array($field_type, $file_types)) {
             // If this is a file type, then add the asset to the CDF.
             $uuid_token = '[' . $referenced_entity->uuid() . ']';
             $asset_url = file_create_url($entity->{$name}[$key]->entity->getFileUri());
@@ -398,17 +400,20 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
 
             // Now add the value.
             $values[$langcode][] = $uuid_token;
-          } else {
+          }
+          else {
             $values[$langcode][] = $referenced_entity->uuid();
           }
         }
-      } else {
+      }
+      else {
         // Loop over the items to get the values for each field.
         foreach ($items as $item) {
           $keys = array_keys($item);
           if (count($keys) == 1 && isset($item['value'])) {
             $value = $item['value'];
-          } else {
+          }
+          else {
             $value = json_encode($item, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
           }
           $values[$langcode][] = $value;
@@ -416,7 +421,8 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       }
       try {
         $attribute = new \Acquia\ContentHubClient\Attribute($type);
-      } catch (\Exception $e) {
+      }
+      catch (\Exception $e) {
         $args['%type'] = $type;
         $message = new FormattableMarkup('No type could be registered for %type.', $args);
         throw new ContentHubException($message);
@@ -424,7 +430,8 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
 
       if (strstr($type, 'array')) {
         $attribute->setValues($values);
-      } else {
+      }
+      else {
         $value = array_pop($values[$langcode]);
         $attribute->setValue($value, $langcode);
       }
@@ -513,16 +520,16 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    *
    * @param \Drupal\Core\Entity\ContentEntityInterface $entity
    *   The Drupal Entity.
-   * @param array $context
-   *   Additional Context such as the account.
    * @param array $referenced_entities
    *   The list of Multilevel referenced entities. This must be passed as an
    *   initialized array.
+   * @param array $context
+   *   Additional Context such as the account.
    *
    * @return \Drupal\Core\Entity\ContentEntityInterface[] $referenced_entities
    *   All referenced entities.
    */
-  public function getMultilevelReferencedFields(ContentEntityInterface $entity, array $context = array(), &$referenced_entities) {
+  public function getMultilevelReferencedFields(ContentEntityInterface $entity, &$referenced_entities, array $context = array()) {
     // Collecting all referenced_entities UUIDs.
     $uuids = [];
     foreach ($referenced_entities as $entity) {
@@ -534,7 +541,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     foreach ($ref_entities as $key => $entity) {
       if (!in_array($entity->uuid(), $uuids)) {
         $referenced_entities[] = $entity;
-        $this->getMultilevelReferencedFields($entity, $context, $referenced_entities);
+        $this->getMultilevelReferencedFields($entity, $referenced_entities, $context);
       }
     }
 
