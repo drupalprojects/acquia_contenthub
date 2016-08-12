@@ -145,10 +145,6 @@ class EntityManager {
 
     // Entity has not been sync'ed, then proceed with it.
     if ($this->isEligibleEntity($entity)) {
-      // @todo In Drupal 7 this used the shutdown function
-      // drupal_register_shutdown_function(array($this, 'entityActionSend',
-      // $action, $entity));
-      // figure out if we really need to do this?
       if ($type == 'node') {
         switch ($action) {
           case 'INSERT':
