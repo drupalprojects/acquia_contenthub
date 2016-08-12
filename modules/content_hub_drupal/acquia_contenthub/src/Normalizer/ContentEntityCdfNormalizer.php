@@ -589,20 +589,22 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       }
 
       $field = $fields[$name];
-      // Try to map it to a known field type.
-      $field_type = $field->getFieldDefinition()->getType();
+      if (isset($field)) {
+        // Try to map it to a known field type.
+        $field_type = $field->getFieldDefinition()->getType();
 
-      $value = $attribute['value'][$langcode];
-      $output = [];
+        $value = $attribute['value'][$langcode];
+        $output = [];
 
-      if (strpos($type_mapping[$field_type], 'array') !== FALSE) {
-        foreach ($value as $item) {
-          $output = json_decode($item, TRUE);
+        if (strpos($type_mapping[$field_type], 'array') !== FALSE) {
+          foreach ($value as $item) {
+            $output = json_decode($item, TRUE);
+          }
+          $value = $output;
         }
-        $value = $output;
-      }
 
-      $entity->$name = $value;
+        $entity->$name = $value;
+      }
     }
 
     return $entity;
