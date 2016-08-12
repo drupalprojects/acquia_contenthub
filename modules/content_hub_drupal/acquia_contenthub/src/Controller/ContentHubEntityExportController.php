@@ -61,6 +61,8 @@ class ContentHubEntityExportController extends ControllerBase {
       foreach ($ids as $id) {
         try {
           $url = Url::fromRoute('acquia_contenthub.entity.' . $entity . '.GET.acquia_contenthub_cdf', [
+            'entity_type' => $entity,
+            'entity_id' => $id,
             $entity => $id,
             '_format' => 'acquia_contenthub_cdf',
             'include_references' => 'true',
