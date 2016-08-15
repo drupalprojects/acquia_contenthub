@@ -17,7 +17,7 @@ use Drupal\Core\Config\ConfigFactory;
 use Drupal\acquia_contenthub\ContentHubImportedEntities;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
-
+use Symfony\Component\HttpKernel\HttpKernelInterface;
 
 /**
  * Provides a service for managing entity actions for Content Hub.
@@ -73,6 +73,27 @@ class EntityManager {
    */
   protected $entityTypeBundleInfoManager;
 
+  /**
+   * The Basic HTTP Kernel to make requests.
+   *
+   * @var \Symfony\Component\HttpKernel\HttpKernelInterface
+   */
+  protected $kernel;
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('logger.factory'),
+      $container->get('config.factory'),
+      $container->get('acquia_contenthub.client_manager'),
+      $container->get('acquia_contenthub.acquia_contenthub_imported_entities'),
+      $container->get('acquia_contenthub.entity_manager'),
+      $container->get('entity_type.bundle.info'),
+      $container->get('http_kernel.basic')
+    );
+  }
 
   /**
    * Constructs an ContentEntityNormalizer object.
@@ -84,7 +105,7 @@ class EntityManager {
    * @param \Drupal\acquia_contenthub\Client\ClientManagerInterface $client_manager
    *    The client manager.
    */
-  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager, ContentHubImportedEntities $acquia_contenthub_imported_entities, EntityTypeManagerInterface $entity_manager, EntityTypeBundleInfoInterface $entity_type_bundle_info_manager) {
+  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager, ContentHubImportedEntities $acquia_contenthub_imported_entities, EntityTypeManagerInterface $entity_manager, EntityTypeBundleInfoInterface $entity_type_bundle_info_manager, HttpKernelInterface $kernel) {
     global $base_root;
     $this->baseRoot = $base_root;
     $this->loggerFactory = $logger_factory;
@@ -93,7 +114,9 @@ class EntityManager {
     $this->contentHubImportedEntities = $acquia_contenthub_imported_entities;
     $this->entityTypeManager = $entity_manager;
     $this->entityTypeBundleInfoManager = $entity_type_bundle_info_manager;
-
+    $this->kernel = $kernel;
+    // Get the content hub config settings.
+    $this->config = $this->configFactory->get('acquia_contenthub.admin_settings');
   }
 
   /**
@@ -105,22 +128,141 @@ class EntityManager {
    *   The action to perform on that entity: 'INSERT', 'UPDATE', 'DELETE'.
    */
   public function entityAction($entity, $action) {
+    $type = $entity->getEntityTypeId();
     // Checking if the entity has already been synchronized so not to generate
     // an endless loop.
     if (isset($entity->__contenthub_synchronized)) {
       unset($entity->__contenthub_synchronized);
       return;
     }
+
+    // Comparing entity's origin with site's origin.
+    $origin = $this->config->get('origin');
+    if (isset($entity->__content_hub_origin) && $entity->__content_hub_origin !== $origin) {
+      unset($entity->__content_hub_origin);
+      return;
+    }
+
     // Entity has not been sync'ed, then proceed with it.
     if ($this->isEligibleEntity($entity)) {
-      // @todo In Drupal 7 this used the shutdown function
-      // drupal_register_shutdown_function(array($this, 'entityActionSend',
-      // $action, $entity));
-      // figure out if we really need to do this?
-      $this->entityActionSend($entity, $action);
+      if ($type == 'node') {
+        switch ($action) {
+          case 'INSERT':
+            break;
+
+          case 'UPDATE':
+            break;
+
+          case 'DELETE':
+            // Do nothing, proceed with deletion.
+            break;
+        }
+      }
+
+      if ($action !== 'DELETE') {
+        // Collect all entities and make internal page request.
+        $item = array(
+          'uuid' => $entity->uuid(),
+          'type' => $type,
+          'action' => $action,
+          'entity' => $entity,
+        );
+        $this->collectExportEntities($item);
+
+        // Registering shutdown function to send entities to Acquia Content Hub.
+        $acquia_contenthub_shutdown_function = 'acquia_contenthub_send_entities';
+        $callbacks = drupal_register_shutdown_function();
+        $callback_functions = array_column($callbacks, 'callback');
+        if (!in_array($acquia_contenthub_shutdown_function, $callback_functions)) {
+          drupal_register_shutdown_function($acquia_contenthub_shutdown_function);
+        }
+      }
+      else {
+        $this->entityActionSend($entity, $action);
+      }
+    }
+    else {
+      // Entity has not been sync'ed, then proceed with it.
+      // Is this an entity that does not belong to this site? Has it been
+      // previously imported from Content Hub? Or was this entity type selected
+      // in the Entity Configuration page?
+      $uuid = $entity->uuid();
+      // We cannot bulk upload this entity because it does not belong to this
+      // site or it wasn't selected in the Entity Configuration Page.
+      // Add it to the pool of failed entities.
+      if (isset($uuid)) {
+        $this->entityFailures(1);
+        $args = array(
+          '%type' => $type,
+          '%uuid' => $entity->uuid(),
+        );
+        // We can use this pool of failed entities to display a message to the
+        // user about the entities that failed to export.
+        $message = new FormattableMarkup('Cannot export %type entity with UUID = %uuid to Content Hub because it was previously imported (did not originate from this site) or it wasn\'t selected in the Entity Configuration Page.', $args);
+        $this->loggerFactory->get('acquia_contenthub')->error($message);
+        return;
+      }
     }
   }
 
+  /**
+   * Gathers all entities that will be exported.
+   *
+   * @param object|null $entity
+   *   The Entity that will be exported.
+   *
+   * @return array
+   *   The array of entities to export.
+   */
+  public function collectExportEntities($entity = NULL) {
+    $entities = &drupal_static(__FUNCTION__);
+    if (!isset($entities)) {
+      $entities = array();
+    }
+    if (is_array($entity)) {
+      $uuids = array_column($entities, 'uuid');
+      if (!in_array($entity['uuid'], $uuids)) {
+        $entities[$entity['uuid']] = $entity;
+      }
+    }
+    return $entities;
+  }
+
+  /**
+   * Tracks the number of entities that fail to bulk upload.
+   *
+   * @param string $num
+   *   Number of failed entities added to the pool.
+   *
+   * @return string $total
+   *   The total number of entities that failed to bulk upload.
+   */
+  public function entityFailures($num = NULL) {
+    $total = &drupal_static(__FUNCTION__);
+    if (!isset($total)) {
+      $total = is_int($num) ? $num : 0;
+    }
+    else {
+      $total = is_int($num) ? $total + $num : $total;
+    }
+    return $total;
+  }
+
+  /**
+   * Sends the entities for update to Content Hub.
+   *
+   * @param string $resource_url
+   *   The Resource Url.
+   *
+   * @return bool
+   *   Returns the response.
+   */
+  public function updateRemoteEntities($resource_url) {
+    if ($response = $this->clientManager->createRequest('updateEntities', array($resource_url))) {
+      $response = json_decode($response->getBody(), TRUE);
+    }
+    return empty($response['success']) ? FALSE : TRUE;
+  }
 
   /**
    * Sends the request to the Content Hub for a single entity.
@@ -202,7 +344,6 @@ class EntityManager {
       $message = new FormattableMarkup($message_string, $args);
       $this->loggerFactory->get('acquia_contenthub')->error($message);
     }
-
   }
 
   /**
@@ -216,7 +357,7 @@ class EntityManager {
    * @return string|bool
    *   The absolute resource URL, if it can be generated, FALSE otherwise.
    */
-  public function getResourceUrl(EntityInterface $entity) {
+  public function getResourceUrl(EntityInterface $entity, $include_references = 'true') {
     // Check if there are link templates defined for the entity type and
     // use the path from the route instead of the default.
     $entity_type = $entity->getEntityType();
@@ -227,9 +368,39 @@ class EntityManager {
       'entity_type' => $entity_type_id,
       $entity_type_id => $entity->id(),
       '_format' => 'acquia_contenthub_cdf',
+      'include_references' => $include_references,
     );
 
     $url = Url::fromRoute($route_name, $url_options);
+    $path = $url->toString();
+
+    // Get the content hub config settings.
+    $rewrite_localdomain = $this->configFactory
+      ->get('acquia_contenthub.admin_settings')
+      ->get('rewrite_domain');
+
+    if ($rewrite_localdomain) {
+      $url = Url::fromUri($rewrite_localdomain . $path);
+    }
+    else {
+      $url = Url::fromUri($this->baseRoot . $path);
+    }
+    return $url->toUriString();
+  }
+
+  /**
+   * Builds the bulk-upload url to make a single request.
+   *
+   * @param string $params
+   *   Bulk-upload Url query params.
+   *
+   * @return string
+   *   returns URL.
+   */
+  public function getBulkResourceUrl($params) {
+
+    $route_name = 'acquia_contenthub.acquia_contenthub_bulk_cdf';
+    $url = Url::fromRoute($route_name, $params);
     $path = $url->toString();
 
     // Get the content hub config settings.
@@ -256,7 +427,7 @@ class EntityManager {
    *   True if it can be parsed, False if it not a suitable entity for sending
    *   to content hub.
    */
-  protected function isEligibleEntity(EntityInterface $entity) {
+  public function isEligibleEntity(EntityInterface $entity) {
     $entity_type_config = $this->configFactory->get('acquia_contenthub.entity_config')->get('entities.' . $entity->getEntityTypeId());
     $bundle_id = $entity->bundle();
     if (empty($entity_type_config) || empty($entity_type_config[$bundle_id]) || empty($entity_type_config[$bundle_id]['enable_index'])) {

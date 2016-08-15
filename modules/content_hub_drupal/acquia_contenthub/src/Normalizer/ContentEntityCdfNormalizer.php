@@ -7,14 +7,23 @@
 
 namespace Drupal\acquia_contenthub\Normalizer;
 
+use Acquia\ContentHubClient\Asset;
 use Acquia\ContentHubClient\Attribute;
 use Drupal\Component\Render\FormattableMarkup;
 use Drupal\acquia_contenthub\ContentHubException;
+use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Acquia\ContentHubClient\Entity as ContentHubEntity;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Entity\EntityRepository;
+use Drupal\Core\Render\Renderer;
+use Symfony\Component\HttpKernel\HttpKernelInterface;
+use Drupal\Core\Url;
+use Symfony\Component\HttpFoundation\Request;
+use Drupal\Component\Serialization\Json;
+use Drupal\acquia_contenthub\EntityManager as EntityManager;
 
 /**
  * Converts the Drupal entity object to a Acquia Content Hub CDF array.
@@ -27,6 +36,13 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    * @var string
    */
   protected $format = 'acquia_contenthub_cdf';
+
+  /**
+   * Base url.
+   *
+   * @var string
+   */
+  protected $baseUrl;
 
   /**
    * The interface or class that this Normalizer supports.
@@ -71,6 +87,50 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
   protected $baseRoot;
 
   /**
+   * The Basic HTTP Kernel to make requests.
+   *
+   * @var \Symfony\Component\HttpKernel\HttpKernelInterface
+   */
+  protected $kernel;
+
+  /**
+   * The renderer.
+   *
+   * @var \Drupal\Core\Render\Renderer
+   */
+  protected $renderer;
+
+  /**
+   * The entity manager.
+   *
+   * @var \Drupal\acquia_contenthub\EntityManager
+   */
+  protected $entityManager;
+
+  /**
+   * The entity type manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('config.factory'),
+      $container->get('acquia_contenthub.normalizer.content_entity_view_modes_extractor'),
+      $container->get('module_handler'),
+      $container->get('entity.repository'),
+      $container->get('http_kernel.basic'),
+      $container->get('renderer'),
+      $container->get('acquia_contenthub.entity_manager'),
+      $container->get('entity_type.manager')
+    );
+  }
+
+  /**
    * Constructs an ContentEntityNormalizer object.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
@@ -81,12 +141,22 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    *   The module handler to create alter hooks.
    * @param \Drupal\Core\Entity\EntityRepository $entity_repository
    *   The entity repository.
+   * @param \Drupal\acquia_contenthub\EntityManager $entity_manager
+   *   The entity manager.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, ContentEntityViewModesExtractorInterface $content_entity_view_modes_normalizer, ModuleHandlerInterface $module_handler, EntityRepository $entity_repository) {
+  public function __construct(ConfigFactoryInterface $config_factory, ContentEntityViewModesExtractorInterface $content_entity_view_modes_normalizer, ModuleHandlerInterface $module_handler, EntityRepository $entity_repository, HttpKernelInterface $kernel, Renderer $renderer, EntityManager $entity_manager, EntityTypeManagerInterface $entity_type_manager) {
+    global $base_url;
+    $this->baseUrl = $base_url;
     $this->contentHubAdminConfig = $config_factory->get('acquia_contenthub.admin_settings');
     $this->contentEntityViewModesNormalizer = $content_entity_view_modes_normalizer;
     $this->moduleHandler = $module_handler;
     $this->entityRepository = $entity_repository;
+    $this->kernel = $kernel;
+    $this->renderer = $renderer;
+    $this->entityManager = $entity_manager;
+    $this->entityTypeManager = $entity_type_manager;
   }
 
   /**
@@ -125,6 +195,17 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     if (!$this->supportsNormalization($entity, $format)) {
       return NULL;
     }
+
+    // By executing the rendering here with this cache contexts, we are bubbling
+    // it up to the dynamic page cache so that it varies by the query param
+    // include_references. Do not remove.
+    $cache = ['#cache' => ['contexts' => ['url.query_args:include_references']]];
+    $this->renderer->render($cache);
+
+    // Add query params to the context.
+    $current_uri = \Drupal::request()->getRequestUri();
+    $uri = UrlHelper::parse($current_uri);
+    $context += ['query_params' => $uri['query']];
 
     // Set our required CDF properties.
     $entity_type_id = $context['entity_type'] = $entity->getEntityTypeId();
@@ -176,9 +257,50 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     }
 
     // Create the array of normalized fields, starting with the URI.
-    $normalized = ['entities' => [$contenthub_entity]];
+    $normalized = [
+      'entities' => [$contenthub_entity],
+    ];
+
+    // Add all references to it if the include_references is true.
+    if (!empty($context['query_params']['include_references']) && $context['query_params']['include_references'] == 'true') {
+
+      $referenced_entities = [];
+      $referenced_entities = $this->getMultilevelReferencedFields($entity, $referenced_entities, $context);
+
+      foreach ($referenced_entities as $entity) {
+        // Check if entity is a valid entity to be pushed to HUB.
+        if ($this->entityManager->isEligibleEntity($entity)) {
+          // Generate our URL where the isolated rendered view mode lives.
+          // This is the best way to really make sure the content in Content Hub
+          // and the content shown to any user is 100% the same.
+          try {
+            $url = Url::fromRoute('acquia_contenthub.entity.' . $entity->getEntityTypeId() . '.GET.acquia_contenthub_cdf', [
+              'entity_type' => $entity->getEntityTypeId(),
+              'entity_id' => $entity->id(),
+              $entity->getEntityTypeId() => $entity->id(),
+              '_format' => 'acquia_contenthub_cdf',
+            ])->toString();
+            $request = Request::create($url);
+            /** @var \Drupal\Core\Render\HtmlResponse $response */
+            $response = $this->kernel->handle($request, HttpKernelInterface::SUB_REQUEST);
+            $referenced_entity_cdf_json = $response->getContent();
+            $referenced_entity_list_cdf = Json::decode($referenced_entity_cdf_json);
+            $referenced_entity_list_cdf = array_pop($referenced_entity_list_cdf);
+            if (is_array($referenced_entity_list_cdf)) {
+              foreach ($referenced_entity_list_cdf as $referenced_entity_cdf) {
+                $normalized['entities'][] = $referenced_entity_cdf;
+              }
+            }
+          }
+          catch (\Exception $e) {
+            // Do nothing, route does not exist.
+          }
+        }
+      }
+    }
 
     return $normalized;
+
   }
 
   /**
@@ -254,12 +376,30 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
          * I think we need to make sure it is also an entity that we support?
          * The return value could be anything that is compatible with TypedData.
          */
-        foreach ($referenced_entities as $referenced_entity) {
+        foreach ($referenced_entities as $key => $referenced_entity) {
+          // In the case of images/files, etc... we need to add the assets.
+          $file_types = array(
+            'image',
+            'file',
+            'video',
+          );
 
           // Special case for type as we do not want the reference for the
           // bundle.
           if ($name === 'type') {
             $values[$langcode][] = $referenced_entity->id();
+          }
+          elseif (in_array($field_type, $file_types)) {
+            // If this is a file type, then add the asset to the CDF.
+            $uuid_token = '[' . $referenced_entity->uuid() . ']';
+            $asset_url = file_create_url($entity->{$name}[$key]->entity->getFileUri());
+            $asset = new Asset();
+            $asset->setUrl($asset_url);
+            $asset->setReplaceToken($uuid_token);
+            $contenthub_entity->addAsset($asset);
+
+            // Now add the value.
+            $values[$langcode][] = $uuid_token;
           }
           else {
             $values[$langcode][] = $referenced_entity->uuid();
@@ -312,7 +452,103 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     $context['langcode'] = $langcode;
     $this->moduleHandler->alter('acquia_contenthub_cdf', $contenthub_entity, $context);
 
-    return $contenthub_entity;
+    // Adds the entity URL to CDF.
+    if (empty($contenthub_entity->getAttribute('url'))) {
+      global $base_path;
+      switch ($entity->getEntityTypeId()) {
+        case 'file':
+          $value = file_create_url($entity->getFileUri());
+          break;
+
+        default:
+          // Get entity URL fromRoute.
+          $route_name = $entity->toUrl()->getRouteName();
+          $route_params = $entity->toUrl()->getRouteParameters();
+          $value = Url::fromRoute($route_name, $route_params)->toString();
+          $value = str_replace($base_path, '/', $value);
+          $value = Url::fromUri($this->baseUrl . $value)->toUriString();
+          break;
+      }
+      $att = new \Acquia\ContentHubClient\Attribute('string');
+      $contenthub_entity->setAttribute('url', $att->setValue($value, $langcode));
+
+      return $contenthub_entity;
+    }
+  }
+
+  /**
+   * Get entity reference fields.
+   *
+   * Get the fields from a given entity and add them to the given content hub
+   * entity object.
+   *
+   * @param \Drupal\Core\Entity\ContentEntityInterface $entity
+   *   The Drupal Entity.
+   * @param array $context
+   *   Additional Context such as the account.
+   *
+   * @return \Drupal\Core\Entity\ContentEntityInterface[] $referenced_entities
+   *   All referenced entities.
+   */
+  public function getReferencedFields(ContentEntityInterface $entity, array $context = array()) {
+    /** @var \Drupal\Core\Field\FieldItemListInterface[] $fields */
+    $fields = $entity->getFields();
+    $referenced_entities = [];
+    // Ignore the entity ID and revision ID.
+    // Excluded comes here.
+    $excluded_fields = $this->excludedProperties($entity);
+    foreach ($fields as $name => $field) {
+      // Continue if this is an excluded field or the current user does not
+      // have access to view it.
+      if (in_array($field->getFieldDefinition()->getName(), $excluded_fields) || !$field->access('view', $context['account']) || $name == 'type') {
+        continue;
+      }
+
+      if ($field instanceof \Drupal\Core\Field\EntityReferenceFieldItemListInterface) {
+
+        /** @var \Drupal\Core\Entity\EntityInterface[] $referenced_entities */
+        $referenced_entities = array_merge($field->referencedEntities(), $referenced_entities);
+      }
+    }
+
+    return $referenced_entities;
+  }
+
+  /**
+   * Get multilevel entity reference fields.
+   *
+   * Get the fields from a given entity and add them to the given content hub
+   * entity object. This also includes dependencies of the dependencies.
+   *
+   * @param \Drupal\Core\Entity\ContentEntityInterface $entity
+   *   The Drupal Entity.
+   * @param array $referenced_entities
+   *   The list of Multilevel referenced entities. This must be passed as an
+   *   initialized array.
+   * @param array $context
+   *   Additional Context such as the account.
+   *
+   * @return \Drupal\Core\Entity\ContentEntityInterface[] $referenced_entities
+   *   All referenced entities.
+   */
+  public function getMultilevelReferencedFields(ContentEntityInterface $entity, &$referenced_entities, array $context = array()) {
+    // Collecting all referenced_entities UUIDs.
+    $uuids = [];
+    foreach ($referenced_entities as $entity) {
+      $uuids[] = $entity->uuid();
+    }
+
+    // Obtaining all the referenced entities for the current entity.
+    $ref_entities = $this->getReferencedFields($entity, $context);
+    foreach ($ref_entities as $key => $entity) {
+      if (!in_array($entity->uuid(), $uuids)) {
+        $referenced_entities[] = $entity;
+        $this->getMultilevelReferencedFields($entity, $referenced_entities, $context);
+      }
+    }
+
+    return $referenced_entities;
+
   }
 
   /**
@@ -353,20 +589,22 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       }
 
       $field = $fields[$name];
-      // Try to map it to a known field type.
-      $field_type = $field->getFieldDefinition()->getType();
+      if (isset($field)) {
+        // Try to map it to a known field type.
+        $field_type = $field->getFieldDefinition()->getType();
 
-      $value = $attribute['value'][$langcode];
-      $output = [];
+        $value = $attribute['value'][$langcode];
+        $output = [];
 
-      if (strpos($type_mapping[$field_type], 'array') !== FALSE) {
-        foreach ($value as $item) {
-          $output = json_decode($item, TRUE);
+        if (strpos($type_mapping[$field_type], 'array') !== FALSE) {
+          foreach ($value as $item) {
+            $output = json_decode($item, TRUE);
+          }
+          $value = $output;
         }
-        $value = $output;
-      }
 
-      $entity->$name = $value;
+        $entity->$name = $value;
+      }
     }
 
     return $entity;
@@ -438,8 +676,6 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       // Types we know about but want/have to ignore.
       NULL => array(
         'password',
-        'file',
-        'image',
       ),
       'array<boolean>' => array(
         'boolean',
@@ -484,6 +720,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       'uuid',
       'created',
       'changed',
+      'uri',
 
       // Getting rid of workflow fields.
       'status',
@@ -550,9 +787,6 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     $bundle = reset($contenthub_entity->getAttribute('type')['value']);
     $langcodes = $contenthub_entity->getAttribute('langcode')['value'];
 
-    // @TODO: Fix this. It should be using dependency injection.
-    $entity_manager = \Drupal::entityTypeManager();
-
     // Does this entity exist in this site already?
     $entity = $this->entityRepository->loadEntityByUuid($entity_type, $contenthub_entity->getUuid());
     if ($entity == NULL) {
@@ -568,7 +802,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         $values['status'] = 0;
       }
 
-      $entity = $entity_manager->getStorage($entity_type)->create($values);
+      $entity = $this->entityTypeManager->getStorage($entity_type)->create($values);
     }
 
     // Assigning langcodes.

@@ -47,3 +47,12 @@ acquia_contenthub.content_entity_display.entity:
     entity_type: \w+ #word
     entity_id: \d+ #digit
     view_mode_name: \w+ #word
+
+acquia_contenthub.acquia_contenthub_bulk_cdf:
+  path: '/acquia-contenthub/bulk-upload'
+  methods:
+    - GET
+  defaults:
+    _controller: 'Drupal\acquia_contenthub\Controller\ContentHubEntityExportController::getDrupalEntities'
+  requirements:
+    _access: 'TRUE'

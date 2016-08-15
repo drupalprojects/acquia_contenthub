@@ -6,6 +6,8 @@
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Url;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Implements hook_help().
@@ -45,4 +47,65 @@ function acquia_contenthub_entity_delete(EntityInterface $entity) {
   /** @var \Drupal\acquia_contenthub\EntityManager $entity_manager */
   $entity_manager = \Drupal::service('acquia_contenthub.entity_manager');
   $entity_manager->entityAction($entity, 'DELETE');
+}
+
+/**
+ * Sends entities to Content Hub using Bulk Upload.
+ */
+function acquia_contenthub_send_entities() {
+  global $base_path;
+  /** @var \Drupal\acquia_contenthub\EntityManager $entity_manager */
+  $entity_manager = \Drupal::service('acquia_contenthub.entity_manager');
+
+  /** @var \Drupal\acquia_contenthub\Normalizer\ContentEntityCdfNormalizer $acquia_contenthub_normalizer */
+  $acquia_contenthub_normalizer = \Drupal::service('acquia_contenthub.normalizer.entity.acquia_contenthub_cdf');
+
+  $entities = $entity_manager->collectExportEntities();
+
+  // Verify that the collected entities are not already included within the
+  // the references of other collected entities.
+  $uuids = array_keys($entities);
+  foreach ($entities as $en) {
+    $entity = $en['entity'];
+    // Get referenced entities.
+    $referenced_entities = $acquia_contenthub_normalizer->getReferencedFields($entity);
+
+    // If entities are included as references then delete them from the
+    // collected entities array.
+    foreach ($referenced_entities as $key => $ref_entity) {
+      if (in_array($ref_entity->uuid(), $uuids)) {
+        unset($entities[$ref_entity->uuid()]);
+      }
+    }
+  }
+
+  // The collected entities are clean now and should all be processed.
+  $bulk_url_array = [];
+  foreach ($entities as $en) {
+    $entity = $en['entity'];
+    $entity_type = $entity->getEntityTypeId();
+    $entity_id = $entity->id();
+    $bulk_url_array[$entity_type][$entity_id] = $entity_id;
+    try {
+      $url = Url::fromRoute('acquia_contenthub.entity.' . $entity_type . '.GET.acquia_contenthub_cdf', [
+        'entity_type' => $entity_type,
+        'entity_id' => $entity_id,
+        $entity_type => $entity_id,
+        '_format' => 'acquia_contenthub_cdf',
+        'include_references' => 'true',
+      ])->toString();
+      $url = str_replace($base_path, '/', $url);
+      Request::create($url);
+    }
+    catch (\Exception $e) {
+      // Do nothing, route does not exist.
+    }
+  }
+
+  // Now implode parameters.
+  foreach ($bulk_url_array as $entity_type => $entities) {
+    $bulk_url_array[$entity_type] = implode(',', $entities);
+  }
+  $resource_url = $entity_manager->getBulkResourceUrl($bulk_url_array);
+  $entity_manager->updateRemoteEntities($resource_url);
 }

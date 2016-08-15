@@ -1,7 +1,7 @@
 services:
   acquia_contenthub.entity_manager:
     class: Drupal\acquia_contenthub\EntityManager
-    arguments: ['@logger.factory', '@config.factory', '@acquia_contenthub.client_manager', '@acquia_contenthub.acquia_contenthub_imported_entities', '@entity_type.manager', '@entity_type.bundle.info']
+    arguments: ['@logger.factory', '@config.factory', '@acquia_contenthub.client_manager', '@acquia_contenthub.acquia_contenthub_imported_entities', '@entity_type.manager', '@entity_type.bundle.info', '@http_kernel.basic']
 
   acquia_contenthub.acquia_contenthub_cdf.import_entity:
     class: Drupal\acquia_contenthub\Controller\ContentHubEntityImportController
@@ -21,7 +21,7 @@ services:
 
   acquia_contenthub.normalizer.entity.acquia_contenthub_cdf:
     class: Drupal\acquia_contenthub\Normalizer\ContentEntityCdfNormalizer
-    arguments: ['@config.factory', '@acquia_contenthub.normalizer.content_entity_view_modes_extractor', '@module_handler', '@entity.repository']
+    arguments: ['@config.factory', '@acquia_contenthub.normalizer.content_entity_view_modes_extractor', '@module_handler', '@entity.repository', '@http_kernel.basic', '@renderer', '@acquia_contenthub.entity_manager', '@entity_type.manager']
     tags:
       - { name: normalizer, priority: 10 }
 
