@@ -472,9 +472,7 @@ class EntityManager {
   public function getAllowedEntityTypes() {
     // List of entities that are excluded from displaying on
     // entity configuration page and will not be pushed to Content Hub.
-    // @Todo Support Blocks in future.
     $excluded_types = [
-      'block_content',
       'comment',
       'user',
       'contact_message',
@@ -482,13 +480,6 @@ class EntityManager {
       'menu_link_content',
       'user',
     ];
-
-    // If the config "acquia_contenthub.entity_config.block_content_support"
-    // is set to TRUE, then enable support for block content.
-    if ((bool) $this->configFactory->get('acquia_contenthub.entity_config')->get('block_content_support')) {
-      // Unset block_content.
-      unset($excluded_types[0]);
-    }
 
     $types = $this->entityTypeManager->getDefinitions();
     $entity_types = array();
