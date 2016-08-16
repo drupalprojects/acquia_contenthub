@@ -62,3 +62,10 @@ services:
     arguments: ['@plugin.manager.rest', '@config.factory', '@acquia_contenthub.entity_manager']
     tags:
       - { name: 'event_subscriber' }
+
+  acquia_contenthub.contenthub_access_checker:
+    class: Drupal\acquia_contenthub\Access\ContentHubAccessCheck
+    arguments: ['@current_user']
+    tags:
+      - { name: contenthub_access_check, applies_to: _contenthub_access_check }
+    arguments: ['@logger.factory', '@acquia_contenthub.client_manager', '@acquia_contenthub.acquia_contenthub_subscription']
