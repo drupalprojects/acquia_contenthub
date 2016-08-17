@@ -63,7 +63,7 @@ services:
     tags:
       - { name: 'event_subscriber' }
 
-  acquia_contenthub.contenthub_access_check:
+  access_check.acquia_contenthub.contenthub_access_check:
     class: Drupal\acquia_contenthub\Access\ContentHubAccessCheck
     tags:
       - { name: access_check, applies_to: _contenthub_access_check }

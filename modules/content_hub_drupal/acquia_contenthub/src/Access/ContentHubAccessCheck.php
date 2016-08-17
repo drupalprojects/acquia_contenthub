@@ -6,7 +6,10 @@
  * https://github.com/acquia/http-hmac-spec/tree/1.0
  */
 
+namespace Drupal\acquia_contenthub\Access;
+
 use Drupal\Core\Routing\Access\AccessInterface;
+use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Session\AccountInterface;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\HttpFoundation\Request;
@@ -70,7 +73,7 @@ class ContentHubAccessCheck implements AccessInterface {
     if ($account->hasPermission(('Administer Acquia Content Hub'))) {
       // If this is a logged user with 'Administer Acquia Content Hub'
       // permission then grant access.
-      return TRUE;
+      return AccessResult::allowed();
     }
     else {
       // If this user has no permission, then validate Signature request.
@@ -82,7 +85,7 @@ class ContentHubAccessCheck implements AccessInterface {
       $signature = $this->clientManager->getRequestSignature($request, $shared_secret);
       $authorization = 'Acquia ContentHub:' . $signature;
 
-      return (bool) ($authorization === $authorization_header);
+      return AccessResult::allowedIf($authorization === $authorization_header);
     }
   }
 
