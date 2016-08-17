@@ -58,7 +58,10 @@ class ContentHubAccessCheck implements AccessInterface {
 
 
   /**
-   * HTTP HMAC Access Check.
+   * Checks access to Entity CDF.
+   *
+   * Only grants access to logged in users with 'Administer Acquia Content Hub'
+   * permission or if the request verifies its HMAC signature.
    *
    * @param \Drupal\Core\Session\AccountInterface $account
    *   Run access checks for this account.
@@ -71,13 +74,12 @@ class ContentHubAccessCheck implements AccessInterface {
     // parameters from the route and/or request as needed.
 
     if ($account->hasPermission(('Administer Acquia Content Hub'))) {
-      // If this is a logged user with 'Administer Acquia Content Hub'
+      // If this is a logged in user with 'Administer Acquia Content Hub'
       // permission then grant access.
       return AccessResult::allowed();
     }
     else {
-      // If this user has no permission, then validate Signature request.
-//      $request = Request::createFromGlobals();
+      // If this user has no permission, then validate Request Signature.
       $headers = array_map('current', $request->headers->all());
       $authorization_header = isset($headers['authorization']) ? $headers['authorization'] : '';
 
@@ -85,6 +87,7 @@ class ContentHubAccessCheck implements AccessInterface {
       $signature = $this->clientManager->getRequestSignature($request, $shared_secret);
       $authorization = 'Acquia ContentHub:' . $signature;
 
+      // Only allow access if the Signature validates.
       return AccessResult::allowedIf($authorization === $authorization_header);
     }
   }
