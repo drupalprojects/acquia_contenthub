@@ -84,8 +84,6 @@ class ContentHubAccessCheck implements AccessInterface {
 
       return (bool) ($authorization === $authorization_header);
     }
-
-    return FALSE;
   }
 
 }
