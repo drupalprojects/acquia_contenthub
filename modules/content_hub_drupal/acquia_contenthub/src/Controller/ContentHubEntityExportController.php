@@ -73,34 +73,40 @@ class ContentHubEntityExportController extends ControllerBase {
    */
   public function getEntityCDFByInternalRequest($entity_type, $entity_id) {
     global $base_path;
-    $url = Url::fromRoute('acquia_contenthub.entity.' . $entity_type . '.GET.acquia_contenthub_cdf', [
-      'entity_type' => $entity_type,
-      'entity_id' => $entity_id,
-      $entity_type => $entity_id,
-      '_format' => 'acquia_contenthub_cdf',
-      'include_references' => 'true',
-    ])->toString();
-    $url = str_replace($base_path, '/', $url);
+    try {
+      $url = Url::fromRoute('acquia_contenthub.entity.' . $entity_type . '.GET.acquia_contenthub_cdf', [
+        'entity_type' => $entity_type,
+        'entity_id' => $entity_id,
+        $entity_type => $entity_id,
+        '_format' => 'acquia_contenthub_cdf',
+        'include_references' => 'true',
+      ])->toString();
+      $url = str_replace($base_path, '/', $url);
 
-    // Transfer current headers into the internal request.
-    $curr_request = Request::createFromGlobals();
-    $request = Request::create($url);
+      // Transfer current headers into the internal request.
+      $curr_request = Request::createFromGlobals();
+      $request = Request::create($url);
 
-    // Transfer headers as they came from the original request.
-    $request->headers->set('Content-Type', 'application/json');
-    $request->headers->set('Date', $curr_request->headers->get('Date'));
+      // Transfer headers as they came from the original request.
+      $request->headers->set('Content-Type', 'application/json');
+      $request->headers->set('Date', $curr_request->headers->get('Date'));
 
-    $requestSigner = new RequestSigner(new Digest\Version1('sha256'));
-    $shared_secret = $this->config->get('shared_secret');
+      $requestSigner = new RequestSigner(new Digest\Version1('sha256'));
+      $shared_secret = $this->config->get('shared_secret');
 
-    $hmacrequest = new Symfony($request);
-    $signature = $requestSigner->signRequest($hmacrequest, $shared_secret);
-    $request->headers->set('Authorization', 'Acquia ContentHub:' . $signature);
+      $hmacrequest = new Symfony($request);
+      $signature = $requestSigner->signRequest($hmacrequest, $shared_secret);
+      $request->headers->set('Authorization', 'Acquia ContentHub:' . $signature);
 
-    /** @var \Drupal\Core\Render\HtmlResponse $response */
-    $response = $this->kernel->handle($request, HttpKernelInterface::SUB_REQUEST);
-    $entity_cdf_json = $response->getContent();
-    $bulk_cdf = Json::decode($entity_cdf_json);
+      /** @var \Drupal\Core\Render\HtmlResponse $response */
+      $response = $this->kernel->handle($request, HttpKernelInterface::SUB_REQUEST);
+      $entity_cdf_json = $response->getContent();
+      $bulk_cdf = Json::decode($entity_cdf_json);
+    }
+    catch (\Exception $e) {
+      // Do nothing, route does not exist.
+      $bulk_cdf = array();
+    }
     return $bulk_cdf;
   }
 
@@ -108,7 +114,6 @@ class ContentHubEntityExportController extends ControllerBase {
    * Collects all Drupal Entities that needs to be sent to Hub.
    */
   public function getDrupalEntities() {
-    global $base_path;
     $normalized = [
       'entities' => [],
     ];
@@ -117,24 +122,8 @@ class ContentHubEntityExportController extends ControllerBase {
       $ids = explode(",", $entity_ids);
       foreach ($ids as $id) {
         try {
-          $url = Url::fromRoute('acquia_contenthub.entity.' . $entity . '.GET.acquia_contenthub_cdf', [
-            'entity_type' => $entity,
-            'entity_id' => $id,
-            $entity => $id,
-            '_format' => 'acquia_contenthub_cdf',
-            'include_references' => 'true',
-          ])->toString();
-          $url = str_replace($base_path, '/', $url);
-          $request = Request::create($url);
-          /** @var \Drupal\Core\Render\HtmlResponse $response */
-          $response = $this->kernel->handle($request, HttpKernelInterface::SUB_REQUEST);
-          $entity_cdf_json = $response->getContent();
-          $bulk_cdf = Json::decode($entity_cdf_json);
-
-          $something = $this->getEntityCDFByInternalRequest($entity, $id);
-
-//          $bulk_cdf = array_pop($bulk_cdf);
-          $bulk_cdf = array_pop($something);
+          $bulk_cdf = $this->getEntityCDFByInternalRequest($entity, $id);
+          $bulk_cdf = array_pop($bulk_cdf);
           if (is_array($bulk_cdf)) {
             foreach ($bulk_cdf as $cdf) {
               $uuids = array_column($normalized['entities'], 'uuid');
