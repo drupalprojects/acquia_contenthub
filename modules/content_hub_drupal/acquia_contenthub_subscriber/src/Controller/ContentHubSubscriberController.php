@@ -42,7 +42,7 @@ class ContentHubSubscriberController extends ControllerBase {
    */
   public function loadDiscovery() {
     $config = \Drupal::config('acquia_contenthub.admin_settings');
-    $ember_endpoint = $config->get('ember_app');
+    $ember_endpoint = $config->get('ember_app') ?: $GLOBALS['base_url'] . '/' . drupal_get_path('module', 'acquia_contenthub_subscriber') . '/ember';
 
     // Set Client User Agent.
     $module_info = system_get_info('module', 'acquia_contenthub');
@@ -62,7 +62,7 @@ class ContentHubSubscriberController extends ControllerBase {
 
     $form['iframe'] = array(
       '#type' => 'markup',
-      '#markup' => \Drupal\Core\Render\Markup::create('<iframe id="acquia-contenthub-ember" src=' . $ember_endpoint . ' width="100%" height="1000px" style="border:0"></iframe>'),
+      '#markup' => \Drupal\Core\Render\Markup::create('<iframe id="acquia-contenthub-ember" src="' . $ember_endpoint . '" width="100%" height="1000px" style="border:0"></iframe>'),
     );
 
     return $form;
