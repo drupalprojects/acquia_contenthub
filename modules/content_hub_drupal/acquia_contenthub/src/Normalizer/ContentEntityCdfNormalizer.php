@@ -21,9 +21,8 @@ use Drupal\Core\Entity\EntityRepository;
 use Drupal\Core\Render\Renderer;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Drupal\Core\Url;
-use Symfony\Component\HttpFoundation\Request;
-use Drupal\Component\Serialization\Json;
 use Drupal\acquia_contenthub\EntityManager as EntityManager;
+use Drupal\acquia_contenthub\Controller\ContentHubEntityExportController;
 
 /**
  * Converts the Drupal entity object to a Acquia Content Hub CDF array.
@@ -115,6 +114,13 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
   protected $entityTypeManager;
 
   /**
+   * The Export Controller.
+   *
+   * @var \Drupal\acquia_contenthub\Controller\ContentHubEntityExportController
+   */
+  protected $exportController;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
@@ -126,7 +132,8 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       $container->get('http_kernel.basic'),
       $container->get('renderer'),
       $container->get('acquia_contenthub.entity_manager'),
-      $container->get('entity_type.manager')
+      $container->get('entity_type.manager'),
+      $container->get('acquia_contenthub.acquia_contenthub_export_entities')
     );
   }
 
@@ -145,8 +152,10 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    *   The entity manager.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
+   * @param \Drupal\acquia_contenthub\Controller\ContentHubEntityExportController $export_controller
+   *   The Export Controller.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, ContentEntityViewModesExtractorInterface $content_entity_view_modes_normalizer, ModuleHandlerInterface $module_handler, EntityRepository $entity_repository, HttpKernelInterface $kernel, Renderer $renderer, EntityManager $entity_manager, EntityTypeManagerInterface $entity_type_manager) {
+  public function __construct(ConfigFactoryInterface $config_factory, ContentEntityViewModesExtractorInterface $content_entity_view_modes_normalizer, ModuleHandlerInterface $module_handler, EntityRepository $entity_repository, HttpKernelInterface $kernel, Renderer $renderer, EntityManager $entity_manager, EntityTypeManagerInterface $entity_type_manager, ContentHubEntityExportController $export_controller) {
     global $base_url;
     $this->baseUrl = $base_url;
     $this->contentHubAdminConfig = $config_factory->get('acquia_contenthub.admin_settings');
@@ -157,6 +166,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     $this->renderer = $renderer;
     $this->entityManager = $entity_manager;
     $this->entityTypeManager = $entity_type_manager;
+    $this->exportController = $export_controller;
   }
 
   /**
@@ -274,17 +284,8 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
           // This is the best way to really make sure the content in Content Hub
           // and the content shown to any user is 100% the same.
           try {
-            $url = Url::fromRoute('acquia_contenthub.entity.' . $entity->getEntityTypeId() . '.GET.acquia_contenthub_cdf', [
-              'entity_type' => $entity->getEntityTypeId(),
-              'entity_id' => $entity->id(),
-              $entity->getEntityTypeId() => $entity->id(),
-              '_format' => 'acquia_contenthub_cdf',
-            ])->toString();
-            $request = Request::create($url);
-            /** @var \Drupal\Core\Render\HtmlResponse $response */
-            $response = $this->kernel->handle($request, HttpKernelInterface::SUB_REQUEST);
-            $referenced_entity_cdf_json = $response->getContent();
-            $referenced_entity_list_cdf = Json::decode($referenced_entity_cdf_json);
+            // Obtain the Entity CDF by making an hmac-signed internal request.
+            $referenced_entity_list_cdf = $this->exportController->getEntityCdfByInternalRequest($entity->getEntityTypeId(), $entity->id());
             $referenced_entity_list_cdf = array_pop($referenced_entity_list_cdf);
             if (is_array($referenced_entity_list_cdf)) {
               foreach ($referenced_entity_list_cdf as $referenced_entity_cdf) {
