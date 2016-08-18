@@ -266,7 +266,6 @@ class ClientManager implements ClientManagerInterface {
       '',
       $path,
     );
-    $this->loggerFactory->get('acquia_contenthub')->debug('Message = ' . print_r($message_array, TRUE));
     $message = implode("\n", $message_array);
     $s = hash_hmac('sha256', $message, $secret_key, TRUE);
     $signature = base64_encode($s);

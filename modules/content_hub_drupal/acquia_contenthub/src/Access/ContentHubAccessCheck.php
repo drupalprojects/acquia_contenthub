@@ -82,7 +82,6 @@ class ContentHubAccessCheck implements AccessInterface {
       // If this user has no permission, then validate Request Signature.
       $headers = array_map('current', $request->headers->all());
       $authorization_header = isset($headers['authorization']) ? $headers['authorization'] : '';
-
       $shared_secret = $this->contentHubSubscription->getSharedSecret();
       $signature = $this->clientManager->getRequestSignature($request, $shared_secret);
       $authorization = 'Acquia ContentHub:' . $signature;

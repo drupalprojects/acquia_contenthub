@@ -13,7 +13,7 @@ services:
 
   acquia_contenthub.acquia_contenthub_export_entities:
     class: Drupal\acquia_contenthub\Controller\ContentHubEntityExportController
-    arguments: ['@http_kernel.basic', '@config.factory']
+    arguments: ['@http_kernel.basic', '@acquia_contenthub.client_manager', '@acquia_contenthub.acquia_contenthub_subscription']
 
   acquia_contenthub.acquia_contenthub_subscription:
     class: Drupal\acquia_contenthub\ContentHubSubscription
