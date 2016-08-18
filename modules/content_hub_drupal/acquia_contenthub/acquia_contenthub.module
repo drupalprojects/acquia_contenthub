@@ -6,8 +6,6 @@
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
-use Drupal\Core\Url;
-use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Implements hook_help().
@@ -89,7 +87,7 @@ function acquia_contenthub_send_entities() {
     $entity_type = $entity->getEntityTypeId();
     $entity_id = $entity->id();
     $bulk_url_array[$entity_type][$entity_id] = $entity_id;
-    $acquia_contenthub_export_controller->getEntityCDFByInternalRequest($entity_type, $entity_id);
+    $acquia_contenthub_export_controller->getEntityCdfByInternalRequest($entity_type, $entity_id);
   }
 
   // Now implode parameters.

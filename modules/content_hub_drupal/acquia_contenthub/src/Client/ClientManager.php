@@ -248,7 +248,7 @@ class ClientManager implements ClientManagerInterface {
     $http_verb = $request->getMethod();
 
     // Adding the Request Query string.
-    if (null !== $qs = $request->getQueryString()) {
+    if (NULL !== $qs = $request->getQueryString()) {
       $qs = '?' . $qs;
     }
     $path = $request->getBasePath() . $request->getPathInfo() . $qs;

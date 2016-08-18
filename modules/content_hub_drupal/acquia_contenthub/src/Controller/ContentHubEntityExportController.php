@@ -78,9 +78,11 @@ class ContentHubEntityExportController extends ControllerBase {
    *   The Entity type.
    * @param string $entity_id
    *   The Entity ID.
-   * @return mixed
+   *
+   * @return array
+   *   The CDF array.
    */
-  public function getEntityCDFByInternalRequest($entity_type, $entity_id) {
+  public function getEntityCdfByInternalRequest($entity_type, $entity_id) {
     global $base_path;
     try {
       $url = Url::fromRoute('acquia_contenthub.entity.' . $entity_type . '.GET.acquia_contenthub_cdf', [

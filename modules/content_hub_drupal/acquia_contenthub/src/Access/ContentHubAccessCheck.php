@@ -3,7 +3,7 @@
  * @file
  * Implements a Content Hub Access Check based on Http HMAC Spec V1.
  *
- * https://github.com/acquia/http-hmac-spec/tree/1.0
+ * Https://github.com/acquia/http-hmac-spec/tree/1.0
  */
 
 namespace Drupal\acquia_contenthub\Access;
@@ -17,6 +17,9 @@ use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\acquia_contenthub\Client\ClientManagerInterface;
 use Drupal\acquia_contenthub\ContentHubSubscription;
 
+/**
+ * Implements permission to prevent unauthorized access to Entity CDF.
+ */
 class ContentHubAccessCheck implements AccessInterface {
 
   /**
@@ -70,9 +73,8 @@ class ContentHubAccessCheck implements AccessInterface {
    *   TRUE if granted access, FALSE otherwise.
    */
   public function access(Route $route, Request $request, AccountInterface $account) {
-    // Check permissions and combine that with any custom access checking needed. Pass forward
-    // parameters from the route and/or request as needed.
-
+    // Check permissions and combine that with any custom access checking
+    // needed. Pass forward parameters from the route and/or request as needed.
     if ($account->hasPermission(('Administer Acquia Content Hub'))) {
       // If this is a logged in user with 'Administer Acquia Content Hub'
       // permission then grant access.
