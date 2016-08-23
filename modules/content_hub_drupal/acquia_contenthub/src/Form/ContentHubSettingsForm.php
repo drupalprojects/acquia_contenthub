@@ -206,12 +206,6 @@ class ContentHubSettingsForm extends ConfigFormBase {
 
     if ($this->contentHubSubscription->registerClient($client_name)) {
       // Registration was successful. Save the rest of the values.
-
-      /*// Let active plugins save their settings.
-      foreach ($this->configurableInstances as $instance) {
-      $instance->submitConfigurationForm($form, $form_state);
-      }*/
-
       $hostname = NULL;
       if ($form_state->hasValue('hostname')) {
         $config->set('hostname', $form_state->getValue('hostname'));
