@@ -201,9 +201,11 @@ class ContentHubSettingsForm extends ConfigFormBase {
     // First Register the site to Content Hub.
     $client_name = $form_state->getValue('client_name');
 
+    // Get the admin config.
+    $config = $this->config('acquia_contenthub.admin_settings');
+
     if ($this->contentHubSubscription->registerClient($client_name)) {
       // Registration was successful. Save the rest of the values.
-      $config = $this->config('acquia_contenthub.admin_settings');
 
       /*// Let active plugins save their settings.
       foreach ($this->configurableInstances as $instance) {
@@ -245,6 +247,16 @@ class ContentHubSettingsForm extends ConfigFormBase {
 
       $config->save();
 
+    }
+    else {
+      drupal_get_messages();
+      if (!empty($config->get('origin'))) {
+        drupal_set_message(t('Client is already registered with Acquia Content Hub.'), 'error');
+      }
+      else {
+        drupal_set_message(t('There is a problem connecting to Acquia Content Hub. Please ensure that your hostname and credentials are correct.'), 'error');
+        $form_state->setRebuild(TRUE);
+      }
     }
 
   }
