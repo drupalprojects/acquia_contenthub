@@ -60,10 +60,19 @@ class ContentHubSubscriberController extends ControllerBase {
     $form['#attached']['drupalSettings']['acquia_contenthub_subscriber']['source'] = $config->get('drupal8');
     $form["#attached"]['drupalSettings']['acquia_contenthub_subscriber']['client_user_agent'] = $client_user_agent;
 
-    $form['iframe'] = array(
-      '#type' => 'markup',
-      '#markup' => \Drupal\Core\Render\Markup::create('<iframe id="acquia-contenthub-ember" src="' . $ember_endpoint . '" width="100%" height="1000px" style="border:0"></iframe>'),
-    );
+    if (empty($config->get('origin'))) {
+      drupal_set_message(t('Acquia Content Hub must be configured to view any content. Please contact your administrator.'), 'warning');
+    }
+    // Only load iframe when ember_endpoint is set.
+    elseif (!$ember_endpoint) {
+      drupal_set_message(t('Please configure your ember application by setting up config variable ember_app.'), 'warning');
+    }
+    else {
+      $form['iframe'] = array(
+        '#type' => 'markup',
+        '#markup' => \Drupal\Core\Render\Markup::create('<iframe id="acquia-contenthub-ember" src=' . $ember_endpoint . ' width="100%" height="1000px" style="border:0"></iframe>'),
+      );
+    }
 
     return $form;
   }
