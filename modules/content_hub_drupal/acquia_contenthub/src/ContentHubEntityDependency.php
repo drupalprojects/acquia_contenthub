@@ -7,7 +7,7 @@
 namespace Drupal\acquia_contenthub;
 
 use Acquia\ContentHubClient\Entity;
-use Drupal\Component\Uuid;
+use Drupal\Component\Uuid\Uuid;
 use Acquia\ContentHubClient\Attribute;
 
 /**
@@ -152,6 +152,30 @@ class ContentHubEntityDependency {
     return $this;
   }
 
+  /**
+   * Sets the parent of the dependency.
+   *
+   * @param \Drupal\acquia_contenthub\ContentHubEntityDependency $parent
+   *   The parent ContentHubEntity.
+   *
+   * @return $this
+   *   This Content Hub Entity.
+   */
+  public function setParent(ContentHubEntityDependency $parent) {
+    $this->parent = $parent;
+    $this->parent->appendDependencyChain($this);
+    return $this;
+  }
+
+  /**
+   * Returns the Parent Entity.
+   *
+   * @return \Drupal\acquia_contenthub\ContentHubEntityDependency
+   *   The ContentHubEntity parent object.
+   */
+  public function getParent() {
+    return $this->parent;
+  }
 
   /**
    * Obtains a Raw Remote Content Hub Entity.
@@ -186,7 +210,7 @@ class ContentHubEntityDependency {
     $excluded_attributes = $this->getExcludedAttributesFromDependencies();
 
     // Finding attributes (entity references) dependencies.
-    foreach ($this->getAttributes() as $name => $attribute) {
+    foreach ($this->cdf->getAttributes() as $name => $attribute) {
       if (!in_array($name, $excluded_attributes)) {
         $type = $attribute['type'];
         if ($type == Attribute::TYPE_REFERENCE) {

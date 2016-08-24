@@ -475,7 +475,8 @@ class EntityManager {
     $uuids = $content_hub_entity->getRemoteDependencies();
 
     foreach ($uuids as $uuid) {
-      if ($content_hub_dependent_entity = $this->loadRemoteEntity($uuid) === FALSE) {
+      $content_hub_dependent_entity = $this->loadRemoteEntity($uuid);
+      if ( $content_hub_dependent_entity === FALSE) {
         continue;
       }
       // If this dependency is already tracked in the dependency chain
