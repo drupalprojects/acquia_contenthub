@@ -243,6 +243,8 @@ class ContentHubSettingsForm extends ConfigFormBase {
 
     }
     else {
+      // Call drupal_get_messages, to override the dsm. Otherwise,
+      // on save it will show two messages.
       drupal_get_messages();
       if (!empty($config->get('origin'))) {
         drupal_set_message(t('Client is already registered with Acquia Content Hub.'), 'error');
