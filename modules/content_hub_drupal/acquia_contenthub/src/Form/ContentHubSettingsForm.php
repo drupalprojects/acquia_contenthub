@@ -203,13 +203,8 @@ class ContentHubSettingsForm extends ConfigFormBase {
 
     if ($this->contentHubSubscription->registerClient($client_name)) {
       // Registration was successful. Save the rest of the values.
+      // Get the admin config.
       $config = $this->config('acquia_contenthub.admin_settings');
-
-      /*// Let active plugins save their settings.
-      foreach ($this->configurableInstances as $instance) {
-      $instance->submitConfigurationForm($form, $form_state);
-      }*/
-
       $hostname = NULL;
       if ($form_state->hasValue('hostname')) {
         $config->set('hostname', $form_state->getValue('hostname'));
@@ -245,6 +240,20 @@ class ContentHubSettingsForm extends ConfigFormBase {
 
       $config->save();
 
+    }
+    else {
+      // Get the admin config.
+      $config = $this->config('acquia_contenthub.admin_settings');
+
+      // Call drupal_get_messages, to override the dsm. Otherwise,
+      // on save it will show two messages.
+      drupal_get_messages();
+      if (!empty($config->get('origin'))) {
+        drupal_set_message(t('Client is already registered with Acquia Content Hub.'), 'error');
+      }
+      else {
+        drupal_set_message(t('There is a problem connecting to Acquia Content Hub. Please ensure that your hostname and credentials are correct.'), 'error');
+      }
     }
 
   }
