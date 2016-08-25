@@ -22,6 +22,7 @@ use Drupal\Core\Render\Renderer;
 use Drupal\taxonomy\Entity\Vocabulary;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Drupal\Core\Url;
+use Drupal\Component\Uuid\Uuid;
 use Drupal\acquia_contenthub\EntityManager as EntityManager;
 use Drupal\acquia_contenthub\Controller\ContentHubEntityExportController;
 
@@ -603,17 +604,31 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         continue;
       }
 
+      // In the case of images/files, etc... we need to add the assets.
+      $file_types = array(
+        'image',
+        'file',
+        'video',
+      );
+
       $field = $fields[$name];
       if (isset($field)) {
         // Try to map it to a known field type.
         $field_type = $field->getFieldDefinition()->getType();
-
         $value = $attribute['value'][$langcode];
         $output = [];
 
         if (strpos($type_mapping[$field_type], 'array') !== FALSE) {
           foreach ($value as $item) {
-            $output = json_decode($item, TRUE);
+            // Special handling for the case of files.
+            if (in_array($field_type, $file_types)) {
+              $item = $this->removeBracketsUuid($item);
+              $output[] = $item;
+            }
+            else {
+              // Assigning the output.
+              $output = json_decode($item, TRUE);
+            }
           }
           $value = $output;
         }
@@ -678,6 +693,9 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       'array<string>' => array(
         'fallback',
         'text_with_summary',
+        'image',
+        'file',
+        'video',
       ),
       'array<reference>' => array(
         'entity_reference',
@@ -837,6 +855,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
 
         case 'taxonomy_term':
           // If it is a taxonomy_term, assing the vocabulary.
+          // @TODO: This is a hack. It should work with vocabulary entities.
           $attribute = $contenthub_entity->getAttribute('vocabulary');
           foreach ($langcodes as $lang) {
             $vocabulary_machine_name = $attribute['value'][$lang];
@@ -846,8 +865,6 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
             }
           }
           break;
-
-
 
       }
 
@@ -869,6 +886,26 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       }
     }
     return $entity;
+  }
+
+  /**
+   * Remove brackets from the Uuid.
+   *
+   * @param string $uuid_with_brakets
+   *   A [UUID] enclosed within brackets.
+   *
+   * @return mixed
+   *   The UUID without brackets, FALSE otherwise.
+   */
+  protected function removeBracketsUuid($uuid_with_brakets) {
+    preg_match('#\[(.*)\]#', $uuid_with_brakets, $match);
+    $uuid = isset($match[1]) ? $match[1] : '';
+    if (Uuid::isValid($uuid)) {
+      return $uuid;
+    }
+    else {
+      return FALSE;
+    }
   }
 
 }
