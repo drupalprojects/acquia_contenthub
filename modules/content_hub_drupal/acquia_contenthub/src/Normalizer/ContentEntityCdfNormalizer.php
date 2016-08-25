@@ -19,6 +19,7 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Entity\EntityRepository;
 use Drupal\Core\Render\Renderer;
+use Drupal\taxonomy\Entity\Vocabulary;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Drupal\Core\Url;
 use Drupal\acquia_contenthub\EntityManager as EntityManager;
@@ -351,6 +352,15 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         continue;
       }
 
+      // @TODO: This is a HACK to make it work with vocabularies. It should be
+      // replaced with appropriate handling of taxonomy vocabulary entities.
+      if ($name == 'vid' && $entity->getEntityTypeId() == 'taxonomy_term') {
+        $attribute = new Attribute(Attribute::TYPE_STRING);
+        $attribute->setValue($items[0]['target_id'], $langcode);
+        $contenthub_entity->setAttribute('vocabulary', $attribute);
+        continue;
+      }
+
       // Try to map it to a known field type.
       $field_type = $field->getFieldDefinition()->getType();
       // Go to the fallback data type when the field type is not known.
@@ -658,6 +668,9 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         'title',
         'type',
         'langcode',
+        // This is a special field that we will want to parse as string for now.
+        // @TODO: Replace this to work with taxonomy_vocabulary entities.
+        'vid',
       ),
       'array<string>' => array(
         'fallback',
@@ -730,7 +743,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       'promote',
 
       // Getting rid of identifiers and others.
-      'vid',
+//      'vid',
       'nid',
       'fid',
       'tid',
