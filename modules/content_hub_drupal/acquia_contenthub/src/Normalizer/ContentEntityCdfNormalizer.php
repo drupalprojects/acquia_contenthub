@@ -804,6 +804,19 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         $values['status'] = 0;
       }
 
+      if ($entity_type == 'file') {
+        // If this is a file, then download the asset (image) locally.
+        $attribute = $contenthub_entity->getAttribute('url');
+        foreach ($langcodes as $lang) {
+          if (isset($attribute['value'][$lang])) {
+            $remote_uri = $attribute['value'][$lang];
+            $file_drupal_path = system_retrieve_file($remote_uri, NULL, FALSE);
+            // @TODO: Fix this 'value' key. It should not be like that.
+            $values['uri']['value'] = $file_drupal_path;
+          }
+        }
+      }
+
       $entity = $this->entityTypeManager->getStorage($entity_type)->create($values);
     }
 
