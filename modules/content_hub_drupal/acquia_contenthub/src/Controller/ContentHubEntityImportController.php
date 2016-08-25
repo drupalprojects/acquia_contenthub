@@ -150,7 +150,7 @@ class ContentHubEntityImportController extends ControllerBase {
       // Collect and flat out all dependencies.
       $dependencies = array();
       if ($include_dependencies) {
-        $dependencies = $this->getAllRemoteDependencies($dependencies, TRUE);
+        $dependencies = $this->entityManager->getAllRemoteDependencies($contenthub_entity, $dependencies, TRUE);
       }
 
       // Obtaining the Status of the parent entity, if it is a node.
@@ -191,11 +191,11 @@ class ContentHubEntityImportController extends ControllerBase {
    *
    * This method is not to be used alone but to be used from saveDrupalEntity()
    * method, which is why it is protected.
-   *
+
+   * @param \Drupal\acquia_contenthub\ContentHubEntityDependency $contenthub_entity
+   *   The Content Hub Entity.
    * @param array $dependencies
    *   An array of ContentHubEntityDependency objetcts.
-   * @param object|null $entity
-   *   The Drupal entity object.
    *
    * @return bool|null
    *   The Drupal entity being created.
@@ -216,7 +216,7 @@ class ContentHubEntityImportController extends ControllerBase {
 
     // Now that we have created all its pre-dependencies, create the current
     // Drupal entity.
-    $host_entity = $contenthub_entity->isPostDependency() ? $this->getHostEntity($contenthub_entity, $dependencies) : FALSE;
+    $host_entity = $contenthub_entity->isEntityDependent() ? $this->getHostEntity($contenthub_entity, $dependencies) : FALSE;
     $entity = $this->saveDrupalEntityNoDependencies($contenthub_entity, $host_entity);
 
     // Create post-dependencies.

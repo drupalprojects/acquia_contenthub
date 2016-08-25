@@ -57,6 +57,14 @@ class ContentHubEntityDependency {
    */
   protected $dependencyType;
 
+  /**
+   * Public constructor.
+   *
+   * @param \Acquia\ContentHubClient\Entity $cdf
+   *   The Entity CDF.
+   *
+   * @throws \Exception
+   */
   public function __construct($cdf) {
     $this->cdf = $cdf;
     if (in_array($this->cdf->getType(), self::getPostDependencyEntityTypes())) {
@@ -139,7 +147,6 @@ class ContentHubEntityDependency {
     return $this->dependencyChain;
   }
 
-
   /**
    * Sets the relationship flag.
    *
@@ -162,6 +169,13 @@ class ContentHubEntityDependency {
         throw new \Exception("Unknown relationship: $type.");
     }
     return $this;
+  }
+
+  /**
+   * Obtains the relationship flag.
+   */
+  public function getRelationship() {
+    return $this->dependencyType;
   }
 
   /**
