@@ -89,6 +89,18 @@ class ContentHubEntityDependency {
   }
 
   /**
+   * Checks whether the current entity is dependent on another one or not.
+   *
+   * If it is entity dependent, then it needs a parent or host entity.
+   *
+   * @return bool
+   *   TRUE if it is Entity Dependent, FALSE otherwise.
+   */
+  public function isEntityDependent() {
+    return in_array($this->cdf->getType(), $this->getPostDependencyEntityTypes());
+  }
+
+  /**
    * Tracks dependencies as a flat chain to combat dependency loops.
    *
    * @param \Drupal\acquia_contenthub\ContentHubEntityDependency $content_hub_entity
@@ -185,6 +197,16 @@ class ContentHubEntityDependency {
    */
   public function getRawEntity() {
     return !empty($this->cdf) ? $this->cdf : FALSE;
+  }
+
+  /**
+   * Returns the Content Hub Entity Type.
+   *
+   * @return bool|string
+   *   The Entity Type or FALSE.
+   */
+  public function getEntityType() {
+    return !empty($this->cdf) ? $this->cdf->getType() : FALSE;
   }
 
   /**
