@@ -6,6 +6,7 @@
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\taxonomy\Entity\Vocabulary;
 
 /**
  * Implements hook_help().
@@ -112,9 +113,10 @@ function acquia_contenthub_send_entities() {
  *   or null if no such vocabulary exists
  */
 function acquia_contenthub_get_vocabulary_by_name($vocabulary_name) {
-  $vocabs = taxonomy_get_vocabularies(NULL);
+  $vocabs = Vocabulary::loadMultiple(NULL);
   foreach ($vocabs as $vocab_object) {
-    if ($vocab_object->name == $vocabulary_name) {
+    /** @var $vocab_object \Drupal\taxonomy\Entity\Vocabulary  */
+    if ($vocab_object->getOriginalId() == $vocabulary_name) {
       return $vocab_object;
     }
   }

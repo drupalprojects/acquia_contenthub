@@ -815,22 +815,40 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         'type' => $bundle,
       ];
 
-      // Status is by default unpublished if it is a node.
-      if ($entity_type == 'node') {
-        $values['status'] = 0;
-      }
+      // Special treatment according to entity types.
+      switch ($entity_type) {
+        case 'node':
+          // Status is by default unpublished if it is a node.
+          $values['status'] = 0;
+          break;
 
-      if ($entity_type == 'file') {
-        // If this is a file, then download the asset (image) locally.
-        $attribute = $contenthub_entity->getAttribute('url');
-        foreach ($langcodes as $lang) {
-          if (isset($attribute['value'][$lang])) {
-            $remote_uri = $attribute['value'][$lang];
-            $file_drupal_path = system_retrieve_file($remote_uri, NULL, FALSE);
-            // @TODO: Fix this 'value' key. It should not be like that.
-            $values['uri']['value'] = $file_drupal_path;
+        case 'file':
+          // If this is a file, then download the asset (image) locally.
+          $attribute = $contenthub_entity->getAttribute('url');
+          foreach ($langcodes as $lang) {
+            if (isset($attribute['value'][$lang])) {
+              $remote_uri = $attribute['value'][$lang];
+              $file_drupal_path = system_retrieve_file($remote_uri, NULL, FALSE);
+              // @TODO: Fix this 'value' key. It should not be like that.
+              $values['uri']['value'] = $file_drupal_path;
+            }
           }
-        }
+          break;
+
+        case 'taxonomy_term':
+          // If it is a taxonomy_term, assing the vocabulary.
+          $attribute = $contenthub_entity->getAttribute('vocabulary');
+          foreach ($langcodes as $lang) {
+            $vocabulary_machine_name = $attribute['value'][$lang];
+            $vocabulary = acquia_contenthub_get_vocabulary_by_name($vocabulary_machine_name);
+            if (isset($vocabulary)) {
+              $values['vid'] = $vocabulary->getOriginalId();
+            }
+          }
+          break;
+
+
+
       }
 
       $entity = $this->entityTypeManager->getStorage($entity_type)->create($values);
