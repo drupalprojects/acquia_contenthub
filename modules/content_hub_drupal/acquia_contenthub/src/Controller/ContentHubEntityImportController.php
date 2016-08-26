@@ -134,11 +134,11 @@ class ContentHubEntityImportController extends ControllerBase {
       // Checking that the entity origin is different than this site's origin.
       if ($origin == $site_origin) {
         $args = array(
-          '%type' => $contenthub_entity->getType(),
-          '%uuid' => $contenthub_entity->getUuid(),
-          '%origin' => $origin,
+          '@type' => $contenthub_entity->getRawEntity()->getType(),
+          '@uuid' => $contenthub_entity->getRawEntity()->getUuid(),
+          '@origin' => $origin,
         );
-        $message = new FormattableMarkup('Cannot save %type entity with uuid=%uuid. It has the same origin as this site: %origin', $args);
+        $message = new FormattableMarkup('Cannot save "@type" entity with uuid="@uuid". It has the same origin as this site: "@origin"', $args);
         $this->loggerFactory->get('acquia_contenthub')->debug($message);
         $result = FALSE;
         return $this->jsonErrorResponseMessage($message, $result, 403);
@@ -174,10 +174,10 @@ class ContentHubEntityImportController extends ControllerBase {
     }
     else {
       // If the Entity is not found in Content Hub then return a 404 Not Found.
-      $message = t('Entity with UUID = %uuid not found.', array(
-        '%uuid' => $uuid,
+      $message = t('Entity with UUID = @uuid not found.', array(
+        '@uuid' => $uuid,
       ));
-      return $this->jsonErrorResponseMessage($message, 'ERROR', 404);
+      return $this->jsonErrorResponseMessage($message, FALSE, 404);
     }
 
   }
@@ -327,10 +327,10 @@ class ContentHubEntityImportController extends ControllerBase {
    */
   protected function jsonErrorResponseMessage($message, $status, $status_code = 400) {
     // If the Entity is not found in Content Hub then return a 404 Not Found.
-    $json = Json::encode(array(
+    $json = array(
       'status' => $status,
       'message' => $message,
-    ));
+    );
     return new JsonResponse($json, $status_code);
   }
 
