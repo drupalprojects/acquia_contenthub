@@ -101,21 +101,22 @@ function acquia_contenthub_send_entities() {
 
 
 // Helper function.
-
 /**
- * This function will return a vocabulary object which matches the
- * given name. Will return null if no such vocabulary exists.
+ * Returns a vocabulary object which matches the given name.
  *
- * @param String $vocabulary_name
- *   This is the name of the section which is required
+ * Will return null if no such vocabulary exists.
+ *
+ * @param string $vocabulary_name
+ *   This is the name of the section which is required.
+ *
  * @return Object
- *   This is the vocabulary object with the name
- *   or null if no such vocabulary exists
+ *   This is the vocabulary object with the name or null if no such vocabulary
+ *   exists.
  */
 function acquia_contenthub_get_vocabulary_by_name($vocabulary_name) {
   $vocabs = Vocabulary::loadMultiple(NULL);
   foreach ($vocabs as $vocab_object) {
-    /** @var $vocab_object \Drupal\taxonomy\Entity\Vocabulary  */
+    /* @var $vocab_object \Drupal\taxonomy\Entity\Vocabulary  */
     if ($vocab_object->getOriginalId() == $vocabulary_name) {
       return $vocab_object;
     }

@@ -470,13 +470,13 @@ class EntityManager {
    * @return array
    *   An array of \Drupal\acquia_contenthub\ContentHubEntityDependency.
    */
-  public function getRemoteDependencies($content_hub_entity, $use_chain = TRUE) {
+  public function getRemoteDependencies(ContentHubEntityDependency $content_hub_entity, $use_chain = TRUE) {
     $dependencies = array();
     $uuids = $content_hub_entity->getRemoteDependencies();
 
     foreach ($uuids as $uuid) {
       $content_hub_dependent_entity = $this->loadRemoteEntity($uuid);
-      if ( $content_hub_dependent_entity === FALSE) {
+      if ($content_hub_dependent_entity === FALSE) {
         continue;
       }
       // If this dependency is already tracked in the dependency chain
@@ -508,7 +508,7 @@ class EntityManager {
    * @return array
    *   An array of \Drupal\acquia_contenthub\ContentHubEntityDependency.
    */
-  public function getAllRemoteDependencies($content_hub_entity, &$dependencies, $use_chain = TRUE) {
+  public function getAllRemoteDependencies(ContentHubEntityDependency $content_hub_entity, &$dependencies, $use_chain = TRUE) {
     // Obtaining dependencies of this entity.
     $dep_dependencies = $this->getRemoteDependencies($content_hub_entity, $use_chain);
 

@@ -9,8 +9,6 @@ namespace Drupal\acquia_contenthub\Controller;
 use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Database\Connection;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Component\Serialization\Json;
@@ -143,9 +141,8 @@ class ContentHubEntityImportController extends ControllerBase {
         $message = new FormattableMarkup('Cannot save %type entity with uuid=%uuid. It has the same origin as this site: %origin', $args);
         $this->loggerFactory->get('acquia_contenthub')->debug($message);
         $result = FALSE;
-        return $this->JsonErrorResponseMessage($message, $result, 403);
+        return $this->jsonErrorResponseMessage($message, $result, 403);
       }
-
 
       // Collect and flat out all dependencies.
       $dependencies = array();
@@ -154,15 +151,14 @@ class ContentHubEntityImportController extends ControllerBase {
       }
 
       // Obtaining the Status of the parent entity, if it is a node.
-//    if ($attribute = $contenthub_entity->getRawEntity()->getAttribute('status')) {
-//      $status = $attribute->getValue();
-//    }
-
+      // if ($attribute = $contenthub_entity->getRawEntity()
+      // ->getAttribute('status')) {
+      // $status = $attribute->getValue();
+      // }
       // Assigning author to this entity and dependencies.
-//    $contenthub_entity->setAuthor($author);
+      // $contenthub_entity->setAuthor($author);
       foreach ($dependencies as $uuid => $dependency) {
-//      $dependencies[$uuid]->setAuthor($author);
-
+        // $dependencies[$uuid]->setAuthor($author);
         // Only change the Node status of dependent entities if they are nodes,
         // if the status flag is set and if they haven't been imported before.
         $entity_type = $dependency->getEntityType();
@@ -181,7 +177,7 @@ class ContentHubEntityImportController extends ControllerBase {
       $message = t('Entity with UUID = %uuid not found.', array(
         '%uuid' => $uuid,
       ));
-      return $this->JsonErrorResponseMessage($message, 'ERROR', 404);
+      return $this->jsonErrorResponseMessage($message, 'ERROR', 404);
     }
 
   }
@@ -191,16 +187,16 @@ class ContentHubEntityImportController extends ControllerBase {
    *
    * This method is not to be used alone but to be used from saveDrupalEntity()
    * method, which is why it is protected.
-
+   *
    * @param \Drupal\acquia_contenthub\ContentHubEntityDependency $contenthub_entity
    *   The Content Hub Entity.
    * @param array $dependencies
-   *   An array of ContentHubEntityDependency objetcts.
+   *   An array of ContentHubEntityDependency objects.
    *
    * @return bool|null
    *   The Drupal entity being created.
    */
-  protected function saveDrupalEntityDependencies($contenthub_entity, &$dependencies) {
+  protected function saveDrupalEntityDependencies(ContentHubEntityDependency $contenthub_entity, &$dependencies) {
     // Un-managed assets are also pre-dependencies for an entity and they would
     // need to be saved before we can create the current entity.
     $this->saveUnManagedAssets($contenthub_entity);
@@ -230,20 +226,28 @@ class ContentHubEntityImportController extends ControllerBase {
     return $entity;
   }
 
+  /**
+   * Saves Unmanaged Assets.
+   */
   protected function saveUnManagedAssets($contenthub_entity) {
     // @TODO: Implement this function to save unmanaged files.
   }
 
 
+  /**
+   * Obtains the host entity for a post-dependency.
+   */
   protected function getHostEntity($contenthub_entity, $dependencies) {
     // @TODO: Implement obtaining the Host Entity.
     return FALSE;
   }
 
   /**
+   * Saves an Entity without taking care of dependencies. Not to be used alone.
+   *
    * @param \Drupal\acquia_contenthub\ContentHubEntityDependency $contenthub_entity
    *   The Content Hub Entity.
-   * @param $host_entity
+   * @param object $host_entity
    *   The Host Entity.
    *
    * @return \Symfony\Component\HttpFoundation\JsonResponse
@@ -252,7 +256,7 @@ class ContentHubEntityImportController extends ControllerBase {
    * @throws \Exception
    *   Throws exception in certain cases.
    */
-  protected function saveDrupalEntityNoDependencies($contenthub_entity, $host_entity) {
+  protected function saveDrupalEntityNoDependencies(ContentHubEntityDependency $contenthub_entity, $host_entity) {
     // Import the entity.
     $entity_type = $contenthub_entity->getRawEntity()->getType();
     $class = \Drupal::entityTypeManager()->getDefinition($entity_type)->getClass();
@@ -262,7 +266,7 @@ class ContentHubEntityImportController extends ControllerBase {
     }
     catch (UnexpectedValueException $e) {
       $error = $e->getMessage();
-      return $this->JsonErrorResponseMessage($error, FALSE, 400);
+      return $this->jsonErrorResponseMessage($error, FALSE, 400);
     }
 
     // Finally Save the Entity.
@@ -319,8 +323,9 @@ class ContentHubEntityImportController extends ControllerBase {
    *   The HTTP Status code.
    *
    * @return \Symfony\Component\HttpFoundation\JsonResponse
+   *   The JSON Response.
    */
-  protected function JsonErrorResponseMessage($message, $status, $status_code = 400) {
+  protected function jsonErrorResponseMessage($message, $status, $status_code = 400) {
     // If the Entity is not found in Content Hub then return a 404 Not Found.
     $json = Json::encode(array(
       'status' => $status,

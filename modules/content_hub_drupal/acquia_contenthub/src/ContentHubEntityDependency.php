@@ -6,7 +6,6 @@
 
 namespace Drupal\acquia_contenthub;
 
-use Acquia\ContentHubClient\Entity;
 use Drupal\Component\Uuid\Uuid;
 use Acquia\ContentHubClient\Attribute;
 
@@ -65,7 +64,7 @@ class ContentHubEntityDependency {
    *
    * @throws \Exception
    */
-  public function __construct($cdf) {
+  public function __construct(\Acquia\ContentHubClient\Entity $cdf) {
     $this->cdf = $cdf;
     if (in_array($this->cdf->getType(), self::getPostDependencyEntityTypes())) {
       $this->setRelationship(self::RELATIONSHIP_DEPENDENT);
@@ -79,6 +78,7 @@ class ContentHubEntityDependency {
    * Obtains the Entity's UUID.
    *
    * @return string
+   *   The UUID.
    */
   public function getUuid() {
     return $this->cdf->getUuid();
@@ -154,7 +154,7 @@ class ContentHubEntityDependency {
    *   The Relationship type.
    *
    * @return \Drupal\acquia_contenthub\ContentHubEntityDependency
-   *  This object.
+   *   This object.
    *
    * @throws \Exception
    */
@@ -285,4 +285,5 @@ class ContentHubEntityDependency {
       'host_entity',
     );
   }
+
 }

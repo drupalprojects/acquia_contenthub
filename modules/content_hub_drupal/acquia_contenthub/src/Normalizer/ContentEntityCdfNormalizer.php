@@ -19,7 +19,6 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Entity\EntityRepository;
 use Drupal\Core\Render\Renderer;
-use Drupal\taxonomy\Entity\Vocabulary;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Drupal\Core\Url;
 use Drupal\Component\Uuid\Uuid;
@@ -767,7 +766,6 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       'promote',
 
       // Getting rid of identifiers and others.
-//      'vid',
       'nid',
       'fid',
       'tid',
