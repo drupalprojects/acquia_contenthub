@@ -618,19 +618,22 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         $value = $attribute['value'][$langcode];
         $output = [];
 
-        if (strpos($type_mapping[$field_type], 'array') !== FALSE) {
-          foreach ($value as $item) {
-            // Special handling for the case of files.
-            if (in_array($field_type, $file_types)) {
-              $item = $this->removeBracketsUuid($item);
-              $output[] = $item;
-            }
-            else {
+        if ($field instanceof \Drupal\Core\Field\EntityReferenceFieldItemListInterface) {
+          foreach ($value as $delta => $item) {
+            $uuid = in_array($field_type, $file_types) ? $this->removeBracketsUuid($item) : $item;
+            $entity_type = $field->getFieldDefinition()->getSettings()['target_type'];
+            $output[$delta] = $this->entityRepository->loadEntityByUuid($entity_type, $uuid)->id();
+          }
+          $value = $output;
+        }
+        else {
+          if (strpos($type_mapping[$field_type], 'array') !== FALSE) {
+            foreach ($value as $item) {
               // Assigning the output.
               $output = json_decode($item, TRUE);
             }
+            $value = $output;
           }
-          $value = $output;
         }
 
         $entity->$name = $value;
