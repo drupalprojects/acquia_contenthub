@@ -59,7 +59,6 @@ class ContentHubAccessCheck implements AccessInterface {
     $this->contentHubSubscription = $contenthub_subscription;
   }
 
-
   /**
    * Checks access to Entity CDF.
    *
