@@ -246,7 +246,12 @@ class ClientManager implements ClientManagerInterface {
     // Extract signature information from the request.
     $headers = array_map('current', $request->headers->all());
     $http_verb = $request->getMethod();
-    $path = $request->getBasePath() . $request->getPathInfo();
+
+    // Adding the Request Query string.
+    if (NULL !== $qs = $request->getQueryString()) {
+      $qs = '?' . $qs;
+    }
+    $path = $request->getBasePath() . $request->getPathInfo() . $qs;
     $body = $request->getContent();
 
     // If the headers are not given, then the request is probably not coming

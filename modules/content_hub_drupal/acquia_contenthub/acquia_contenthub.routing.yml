@@ -53,6 +53,6 @@ acquia_contenthub.acquia_contenthub_bulk_cdf:
   methods:
     - GET
   defaults:
-    _controller: 'Drupal\acquia_contenthub\Controller\ContentHubEntityExportController::getDrupalEntities'
+    _controller: '\Drupal\acquia_contenthub\Controller\ContentHubEntityExportController::getDrupalEntities'
   requirements:
-    _access: 'TRUE'
+    _contenthub_access_check : 'TRUE'

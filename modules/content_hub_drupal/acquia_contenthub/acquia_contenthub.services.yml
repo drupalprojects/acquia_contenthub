@@ -11,6 +11,10 @@ services:
     class: Drupal\acquia_contenthub\ContentHubImportedEntities
     arguments: ['@database', '@config.factory']
 
+  acquia_contenthub.acquia_contenthub_export_entities:
+    class: Drupal\acquia_contenthub\Controller\ContentHubEntityExportController
+    arguments: ['@http_kernel.basic', '@acquia_contenthub.client_manager', '@acquia_contenthub.acquia_contenthub_subscription']
+
   acquia_contenthub.acquia_contenthub_subscription:
     class: Drupal\acquia_contenthub\ContentHubSubscription
     arguments: ['@logger.factory', '@config.factory', '@acquia_contenthub.client_manager']
@@ -21,7 +25,7 @@ services:
 
   acquia_contenthub.normalizer.entity.acquia_contenthub_cdf:
     class: Drupal\acquia_contenthub\Normalizer\ContentEntityCdfNormalizer
-    arguments: ['@config.factory', '@acquia_contenthub.normalizer.content_entity_view_modes_extractor', '@module_handler', '@entity.repository', '@http_kernel.basic', '@renderer', '@acquia_contenthub.entity_manager', '@entity_type.manager']
+    arguments: ['@config.factory', '@acquia_contenthub.normalizer.content_entity_view_modes_extractor', '@module_handler', '@entity.repository', '@http_kernel.basic', '@renderer', '@acquia_contenthub.entity_manager', '@entity_type.manager', '@acquia_contenthub.acquia_contenthub_export_entities']
     tags:
       - { name: normalizer, priority: 10 }
 
@@ -62,3 +66,9 @@ services:
     arguments: ['@plugin.manager.rest', '@config.factory', '@acquia_contenthub.entity_manager']
     tags:
       - { name: 'event_subscriber' }
+
+  access_check.acquia_contenthub.contenthub_access_check:
+    class: Drupal\acquia_contenthub\Access\ContentHubAccessCheck
+    tags:
+      - { name: access_check, applies_to: _contenthub_access_check }
+    arguments: ['@logger.factory', '@acquia_contenthub.client_manager', '@acquia_contenthub.acquia_contenthub_subscription']
