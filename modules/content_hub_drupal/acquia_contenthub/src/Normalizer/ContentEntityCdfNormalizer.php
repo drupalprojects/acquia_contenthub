@@ -555,7 +555,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     foreach ($ref_entities as $key => $entity) {
       if (!in_array($entity->uuid(), $uuids)) {
         // @TODO: This if-condition is a hack to avoid Vocabulary entities.
-        if (in_array('Drupal\Core\Entity\ContentEntityInterface', class_implements($entity))) {
+        if ($entity instanceof \Drupal\Core\Entity\ContentEntityInterface) {
           $referenced_entities[] = $entity;
           $this->getMultilevelReferencedFields($entity, $referenced_entities, $context);
         }
