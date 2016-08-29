@@ -21,6 +21,7 @@ use Drupal\Core\Entity\EntityRepository;
 use Drupal\Core\Render\Renderer;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Drupal\Core\Url;
+use Drupal\Component\Uuid\Uuid;
 use Drupal\acquia_contenthub\EntityManager as EntityManager;
 use Drupal\acquia_contenthub\Controller\ContentHubEntityExportController;
 
@@ -351,6 +352,15 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         continue;
       }
 
+      // @TODO: This is a HACK to make it work with vocabularies. It should be
+      // replaced with appropriate handling of taxonomy vocabulary entities.
+      if ($name == 'vid' && $entity->getEntityTypeId() == 'taxonomy_term') {
+        $attribute = new Attribute(Attribute::TYPE_STRING);
+        $attribute->setValue($items[0]['target_id'], $langcode);
+        $contenthub_entity->setAttribute('vocabulary', $attribute);
+        continue;
+      }
+
       // Try to map it to a known field type.
       $field_type = $field->getFieldDefinition()->getType();
       // Go to the fallback data type when the field type is not known.
@@ -544,8 +554,11 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     $ref_entities = $this->getReferencedFields($entity, $context);
     foreach ($ref_entities as $key => $entity) {
       if (!in_array($entity->uuid(), $uuids)) {
-        $referenced_entities[] = $entity;
-        $this->getMultilevelReferencedFields($entity, $referenced_entities, $context);
+        // @TODO: This if-condition is a hack to avoid Vocabulary entities.
+        if ($entity instanceof \Drupal\Core\Entity\ContentEntityInterface) {
+          $referenced_entities[] = $entity;
+          $this->getMultilevelReferencedFields($entity, $referenced_entities, $context);
+        }
       }
     }
 
@@ -590,19 +603,36 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         continue;
       }
 
+      // In the case of images/files, etc... we need to add the assets.
+      $file_types = array(
+        'image',
+        'file',
+        'video',
+      );
+
       $field = $fields[$name];
       if (isset($field)) {
         // Try to map it to a known field type.
         $field_type = $field->getFieldDefinition()->getType();
-
         $value = $attribute['value'][$langcode];
         $output = [];
 
-        if (strpos($type_mapping[$field_type], 'array') !== FALSE) {
-          foreach ($value as $item) {
-            $output = json_decode($item, TRUE);
+        if ($field instanceof \Drupal\Core\Field\EntityReferenceFieldItemListInterface) {
+          foreach ($value as $delta => $item) {
+            $uuid = in_array($field_type, $file_types) ? $this->removeBracketsUuid($item) : $item;
+            $entity_type = $field->getFieldDefinition()->getSettings()['target_type'];
+            $output[$delta] = $this->entityRepository->loadEntityByUuid($entity_type, $uuid)->id();
           }
           $value = $output;
+        }
+        else {
+          if (strpos($type_mapping[$field_type], 'array') !== FALSE) {
+            foreach ($value as $item) {
+              // Assigning the output.
+              $output = json_decode($item, TRUE);
+            }
+            $value = $output;
+          }
         }
 
         $entity->$name = $value;
@@ -658,10 +688,16 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         'title',
         'type',
         'langcode',
+        // This is a special field that we will want to parse as string for now.
+        // @TODO: Replace this to work with taxonomy_vocabulary entities.
+        'vid',
       ),
       'array<string>' => array(
         'fallback',
         'text_with_summary',
+        'image',
+        'file',
+        'video',
       ),
       'array<reference>' => array(
         'entity_reference',
@@ -730,7 +766,6 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       'promote',
 
       // Getting rid of identifiers and others.
-      'vid',
       'nid',
       'fid',
       'tid',
@@ -799,9 +834,39 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         'type' => $bundle,
       ];
 
-      // Status is by default unpublished if it is a node.
-      if ($entity_type == 'node') {
-        $values['status'] = 0;
+      // Special treatment according to entity types.
+      switch ($entity_type) {
+        case 'node':
+          // Status is by default unpublished if it is a node.
+          $values['status'] = 0;
+          break;
+
+        case 'file':
+          // If this is a file, then download the asset (image) locally.
+          $attribute = $contenthub_entity->getAttribute('url');
+          foreach ($langcodes as $lang) {
+            if (isset($attribute['value'][$lang])) {
+              $remote_uri = $attribute['value'][$lang];
+              $file_drupal_path = system_retrieve_file($remote_uri, NULL, FALSE);
+              // @TODO: Fix this 'value' key. It should not be like that.
+              $values['uri']['value'] = $file_drupal_path;
+            }
+          }
+          break;
+
+        case 'taxonomy_term':
+          // If it is a taxonomy_term, assing the vocabulary.
+          // @TODO: This is a hack. It should work with vocabulary entities.
+          $attribute = $contenthub_entity->getAttribute('vocabulary');
+          foreach ($langcodes as $lang) {
+            $vocabulary_machine_name = $attribute['value'][$lang];
+            $vocabulary = acquia_contenthub_get_vocabulary_by_name($vocabulary_machine_name);
+            if (isset($vocabulary)) {
+              $values['vid'] = $vocabulary->getOriginalId();
+            }
+          }
+          break;
+
       }
 
       $entity = $this->entityTypeManager->getStorage($entity_type)->create($values);
@@ -822,6 +887,26 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       }
     }
     return $entity;
+  }
+
+  /**
+   * Remove brackets from the Uuid.
+   *
+   * @param string $uuid_with_brakets
+   *   A [UUID] enclosed within brackets.
+   *
+   * @return mixed
+   *   The UUID without brackets, FALSE otherwise.
+   */
+  protected function removeBracketsUuid($uuid_with_brakets) {
+    preg_match('#\[(.*)\]#', $uuid_with_brakets, $match);
+    $uuid = isset($match[1]) ? $match[1] : '';
+    if (Uuid::isValid($uuid)) {
+      return $uuid;
+    }
+    else {
+      return FALSE;
+    }
   }
 
 }

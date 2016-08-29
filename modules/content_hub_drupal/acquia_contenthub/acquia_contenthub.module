@@ -6,6 +6,7 @@
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\taxonomy\Entity\Vocabulary;
 
 /**
  * Implements hook_help().
@@ -96,4 +97,29 @@ function acquia_contenthub_send_entities() {
   }
   $resource_url = $entity_manager->getBulkResourceUrl($bulk_url_array);
   $entity_manager->updateRemoteEntities($resource_url);
+}
+
+
+// Helper function.
+/**
+ * Returns a vocabulary object which matches the given name.
+ *
+ * Will return null if no such vocabulary exists.
+ *
+ * @param string $vocabulary_name
+ *   This is the name of the section which is required.
+ *
+ * @return Object
+ *   This is the vocabulary object with the name or null if no such vocabulary
+ *   exists.
+ */
+function acquia_contenthub_get_vocabulary_by_name($vocabulary_name) {
+  $vocabs = Vocabulary::loadMultiple(NULL);
+  foreach ($vocabs as $vocab_object) {
+    /* @var $vocab_object \Drupal\taxonomy\Entity\Vocabulary  */
+    if ($vocab_object->getOriginalId() == $vocabulary_name) {
+      return $vocab_object;
+    }
+  }
+  return NULL;
 }
