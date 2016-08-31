@@ -59,6 +59,7 @@ class ContentHubFilterForm extends EntityForm {
       '#default_value' => $contenthub_filter->id(),
       '#machine_name' => array(
         'exists' => array($this, 'exist'),
+        'source' => array('name'),
       ),
       '#disabled' => !$contenthub_filter->isNew(),
     );
@@ -85,27 +86,24 @@ class ContentHubFilterForm extends EntityForm {
       '#maxlength' => 255,
       '#default_value' => $contenthub_filter->search_term,
       '#description' => $this->t("The search term."),
-      '#required' => TRUE,
     );
 
     // The From Date.
     $form['from_date'] = array(
-      '#type' => 'textfield',
+      '#type' => 'date',
       '#title' => $this->t('Date From'),
       '#maxlength' => 255,
       '#default_value' => $contenthub_filter->from_date,
       '#description' => $this->t("Date starting from"),
-      '#required' => TRUE,
     );
 
     // The To Date.
     $form['to_date'] = array(
-      '#type' => 'textfield',
+      '#type' => 'date',
       '#title' => $this->t('Date To'),
       '#maxlength' => 255,
       '#default_value' => $contenthub_filter->to_date,
       '#description' => $this->t("Date until"),
-      '#required' => TRUE,
     );
 
     // The Source.
@@ -115,7 +113,6 @@ class ContentHubFilterForm extends EntityForm {
       '#maxlength' => 255,
       '#default_value' => $contenthub_filter->source,
       '#description' => $this->t("Source"),
-      '#required' => TRUE,
     );
 
     // The Tags.
@@ -125,7 +122,6 @@ class ContentHubFilterForm extends EntityForm {
       '#maxlength' => 255,
       '#default_value' => $contenthub_filter->tags,
       '#description' => $this->t("Tags"),
-      '#required' => TRUE,
     );
 
     return $form;

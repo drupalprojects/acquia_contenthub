@@ -1,6 +1,6 @@
 acquia_contenthub_subscriber.contenthub_filter.*:
   type: config_entity
-  label: 'ContentHub Filter config'
+  label: 'ContentHub Filter'
   mapping:
     id:
       type: string
