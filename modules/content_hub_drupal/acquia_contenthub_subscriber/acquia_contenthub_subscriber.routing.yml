@@ -6,15 +6,15 @@ acquia_contenthub_subscriber.discovery:
     _permission: 'access content'
 
 entity.contenthub_filter.collection:
-  path: '/admin/config/system/contenthub_filter'
+  path: '/admin/config/services/acquia-contenthub/contenthub_filter'
   defaults:
     _entity_list: 'contenthub_filter'
-    _title: 'Content Hub Filter Configuration'
+    _title: 'Manage Content Hub Filters'
   requirements:
     _permission: 'administer site configuration'
 
 entity.contenthub_filter.add_form:
-  path: '/admin/config/system/contenthub_filter/add'
+  path: '/admin/config/services/acquia-contenthub/contenthub_filter/add'
   defaults:
     _entity_form: 'contenthub_filter.add'
     _title: 'Add contenthub_filter'
@@ -22,7 +22,7 @@ entity.contenthub_filter.add_form:
     _permission: 'administer site configuration'
 
 entity.contenthub_filter.edit_form:
-  path: '/admin/config/system/contenthub_filter/{contenthub_filter}'
+  path: '/admin/config/services/acquia-contenthub/contenthub_filter/{contenthub_filter}'
   defaults:
     _entity_form: 'contenthub_filter.edit'
     _title: 'Edit contenthub_filter'
@@ -30,7 +30,7 @@ entity.contenthub_filter.edit_form:
     _permission: 'administer site configuration'
 
 entity.contenthub_filter.delete_form:
-  path: '/admin/config/system/contenthub_filter/{contenthub_filter}/delete'
+  path: '/admin/config/services/acquia-contenthub/contenthub_filter/{contenthub_filter}/delete'
   defaults:
     _entity_form: 'contenthub_filter.delete'
     _title: 'Delete contenthub_filter'
