@@ -12,5 +12,11 @@ use Drupal\Core\Config\Entity\ConfigEntityInterface;
 * Provides an interface defining a Acquia Content Hub Filter entity.
 */
 interface ContentHubFilterInterface extends ConfigEntityInterface {
-// Add get/set methods for your configuration properties here.
+
+  /**
+   * Returns the Publish setting in human-readable format.
+   *
+   * @return string.
+   */
+  public function getPublishSetting();
 }

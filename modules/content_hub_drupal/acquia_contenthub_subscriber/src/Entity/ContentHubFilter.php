@@ -93,6 +93,18 @@ class ContentHubFilter extends ConfigEntityBase implements ContentHubFilterInter
    */
   public $tags;
 
-  // Your specific configuration property get/set methods go here,
-  // implementing the interface.
+  /**
+   * Returns the human-readable publish_setting.
+   *
+   * @return string
+   *   The human-readable publish_setting.
+   */
+  public function getPublishSetting() {
+    $setting = array(
+      'view' => t('View Results'),
+      'import' => t('Always Import'),
+      'publish' => t('Always Publish'),
+    );
+    return $setting[$this->publish_setting];
+  }
 }
