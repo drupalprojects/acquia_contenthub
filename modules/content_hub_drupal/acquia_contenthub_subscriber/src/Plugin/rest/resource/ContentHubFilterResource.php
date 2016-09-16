@@ -4,7 +4,7 @@
  * Plugin REST Resource for ContentHubFilter.
  */
 
-namespace Drupal\acquia_contenthub\Plugin\rest\resource;
+namespace Drupal\acquia_contenthub_subscriber\Plugin\rest\resource;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Session\AccountProxyInterface;
@@ -20,7 +20,7 @@ use Psr\Log\LoggerInterface;
  * Provides a resource to perform CRUD operations on Content Hub Filters.
  *
  * @RestResource(
- *   id = "Content Hub Filter Machine Name",
+ *   id = "Content Hub Filter",
  *   label = @Translation("Content Hub Filter"),
  *   uri_paths = {
  *     "canonical" = "/entity/contenthub_filter/{contenthub_filter}",
