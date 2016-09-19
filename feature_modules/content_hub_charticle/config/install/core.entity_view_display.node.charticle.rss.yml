@@ -1,0 +1,24 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.node.rss
+    - field.field.node.charticle.body
+    - field.field.node.charticle.comment
+    - field.field.node.charticle.field_image
+    - field.field.node.charticle.field_tags
+    - node.type.charticle
+  module:
+    - user
+id: node.charticle.rss
+targetEntityType: node
+bundle: charticle
+mode: rss
+content:
+  links:
+    weight: 100
+hidden:
+  body: true
+  comment: true
+  field_image: true
+  field_tags: true

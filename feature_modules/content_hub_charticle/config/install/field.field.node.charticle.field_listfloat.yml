@@ -1,0 +1,20 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_listfloat
+    - node.type.charticle
+  module:
+    - options
+id: node.charticle.field_listfloat
+field_name: field_listfloat
+entity_type: node
+bundle: charticle
+label: ListFloat
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: list_float
