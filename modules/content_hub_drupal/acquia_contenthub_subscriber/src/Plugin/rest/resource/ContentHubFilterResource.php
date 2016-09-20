@@ -15,6 +15,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Psr\Log\LoggerInterface;
+use Drupal\Core\Entity\EntityManagerInterface;
 
 /**
  * Provides a resource to perform CRUD operations on Content Hub Filters.
