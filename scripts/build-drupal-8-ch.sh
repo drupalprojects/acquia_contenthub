@@ -21,6 +21,9 @@ if [ "$2" == "" ]; then
   branch="develop"
 fi
 
+# optional destination, defaults to scripts directory.
+destination="$3"
+
 # project creation
 if [ ! -d $1 ]; then
 
@@ -77,6 +80,12 @@ fi
 cd $1/web
 tar -cf ../$1.tar .
 cd ../..
+
+# move site build to the destination if provided.
+if [ ! -z $destination ]; then
+  echo "> moving site build to provided destination: $destination"
+  mv $1 $destination
+fi
 
 # todo: in the future trigger automatically
 # for now just run ./deploy.sh after wards, but configure it for yourself
