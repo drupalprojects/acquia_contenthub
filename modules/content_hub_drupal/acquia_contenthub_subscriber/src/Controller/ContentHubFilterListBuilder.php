@@ -21,6 +21,7 @@ class ContentHubFilterListBuilder extends ConfigEntityListBuilder {
     $header['name'] = $this->t('Content Hub Filter');
     $header['id'] = $this->t('Machine name');
     $header['publish_setting'] = $this->t('Publish setting');
+    $header['author'] = $this->t('Author');
     return $header + parent::buildHeader();
   }
 
@@ -31,7 +32,7 @@ class ContentHubFilterListBuilder extends ConfigEntityListBuilder {
     $row['name'] = $this->getLabel($entity);
     $row['id'] = $entity->id();
     $row['publish_setting'] = $entity->getPublishSetting();
-
+    $row['author'] = $entity->getAuthor();
 
     // You probably want a few more properties here...
 

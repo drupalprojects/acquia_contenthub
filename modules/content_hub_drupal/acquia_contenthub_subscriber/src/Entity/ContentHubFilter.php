@@ -94,6 +94,13 @@ class ContentHubFilter extends ConfigEntityBase implements ContentHubFilterInter
   public $tags;
 
   /**
+   * The Author or the user UID who created the filter.
+   *
+   * @var int
+   */
+  public $author;
+
+  /**
    * Returns the human-readable publish_setting.
    *
    * @return string
@@ -106,5 +113,16 @@ class ContentHubFilter extends ConfigEntityBase implements ContentHubFilterInter
       'publish' => t('Always Publish'),
     );
     return $setting[$this->publish_setting];
+  }
+
+  /**
+   * Returns the Author name (User account name).
+   *
+   * @return string
+   *   The user account name.
+   */
+  public function getAuthor() {
+    $user = user_load($this->author);
+    return $user->getAccountName();
   }
 }

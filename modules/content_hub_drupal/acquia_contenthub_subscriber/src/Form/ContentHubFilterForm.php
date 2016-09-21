@@ -132,6 +132,14 @@ class ContentHubFilterForm extends EntityForm {
    */
   public function save(array $form, FormStateInterface $form_state) {
     $contenthub_filter = $this->entity;
+
+    // This Filter is owned by the user who created it.
+    if (empty($contenthub_filter->author)) {
+      $user = \Drupal::currentUser();
+      $contenthub_filter->author = $user->id();
+    }
+
+    // Save the filter.
     $status = $contenthub_filter->save();
 
     if ($status) {

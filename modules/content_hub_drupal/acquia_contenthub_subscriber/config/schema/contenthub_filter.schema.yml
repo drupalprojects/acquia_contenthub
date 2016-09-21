@@ -29,4 +29,7 @@ acquia_contenthub_subscriber.contenthub_filter.*:
     tags:
       type: string
       label: 'Tags'
+    author:
+      type: int
+      label: 'Author'
 
