@@ -148,9 +148,17 @@ class EntityManager {
       if ($type == 'node') {
         switch ($action) {
           case 'INSERT':
+            if (!$entity->isPublished()) {
+              // Do not push nodes that are unpublished to the Content Hub.
+              return;
+            }
             break;
 
           case 'UPDATE':
+            if (!$entity->isPublished()) {
+              // If a node is unpublished, then delete it from the Content Hub.
+              $action = 'DELETE';
+            }
             break;
 
           case 'DELETE':
