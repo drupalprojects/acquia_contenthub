@@ -107,6 +107,9 @@ class ContentHubFilterResource extends ResourceBase {
       $filters = count($filters) > 1 ? $filters : reset($filters);
       return new ResourceResponse($filters);
     }
+    elseif ($contenthub_filter == 'all') {
+      return new ResourceResponse(array());
+    }
 
     throw new NotFoundHttpException(t('No Content Hub Filters were found'));
 
