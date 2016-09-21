@@ -24,8 +24,8 @@ use Drupal\Core\Entity\EntityManagerInterface;
  *   id = "Content Hub Filter",
  *   label = @Translation("Content Hub Filter"),
  *   uri_paths = {
- *     "canonical" = "/entity/contenthub_filter/{contenthub_filter}",
- *     "http://drupal.org/link-relations/create" = "/entity/contenthub_filter"
+ *     "canonical" = "/entity/acquia_contenthub/contenthub_filter/{contenthub_filter}",
+ *     "http://drupal.org/link-relations/create" = "/entity/acquia_contenthub/contenthub_filter"
  *   }
  * )
  */
@@ -96,15 +96,19 @@ class ContentHubFilterResource extends ResourceBase {
       throw new AccessDeniedHttpException();
     }
 
-    $filters = \Drupal::entityManager()->get('contenthub_filter')->loadMultiple();
-
-//    if (empty($contenthub_filter)) {
+    $entities = NULL;
+    if (!empty($contenthub_filter) && $contenthub_filter !== 'all') {
+      $entities = array();
+      $entities[] = $contenthub_filter;
+    }
+    $filters = $this->entityManager->getStorage('contenthub_filter')->loadMultiple($entities);
 
     if (!empty($filters)) {
+      $filters = count($filters) > 1 ? $filters : reset($filters);
       return new ResourceResponse($filters);
     }
 
-    throw new NotFoundHttpException(t('No Content Hub Filters were not found'));
+    throw new NotFoundHttpException(t('No Content Hub Filters were found'));
 
   }
 
