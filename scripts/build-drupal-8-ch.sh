@@ -47,6 +47,10 @@ else
   cd $1
 fi
 
+# Contrib modules required for development
+composer require drupal/devel:1.0.0-alpha1 --profile
+composer require drupal/features:3.0.0-beta9 --profile
+
 # setup the content-hub-d8 module and change branch if needed
 if [ ! -d web/modules/contrib/content-hub-d8 ]; then
   echo "> composer update for content-hub-d8"
@@ -62,9 +66,6 @@ else
   git checkout $branch
   git pull
 fi
-
-# could include additional modules here
-# todo: add modules here
 
 # back to the root
 cd ../../../../..
