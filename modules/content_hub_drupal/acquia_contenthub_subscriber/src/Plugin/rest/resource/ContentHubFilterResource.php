@@ -115,9 +115,8 @@ class ContentHubFilterResource extends ResourceBase {
       $messages[] = t('The filter has to have a "name" field.');
     }
 
-    // @TODO: Fix this. Set it up as admin by default.
-    if (!isset($contenthub_filter->author)) {
-      $contenthub_filter->author = 1;
+    if (!isset($contenthub_filter->author) || $contenthub_filter->author == 0) {
+      $messages[] = t('You are trying to create a new filter without a valid session.');
     }
 
     // @TODO: Validate other fields.
@@ -175,13 +174,20 @@ class ContentHubFilterResource extends ResourceBase {
    */
   public function post(ContentHubFilterInterface $contenthub_filter = NULL) {
     $permission = 'Administer Acquia Content Hub';
-//    if(!$this->currentUser->hasPermission($permission)) {
-//      throw new AccessDeniedHttpException();
-//    }
+    if(!$this->currentUser->hasPermission($permission)) {
+      throw new AccessDeniedHttpException();
+    }
 
     if ($contenthub_filter == NULL) {
       throw new BadRequestHttpException('No Content Hub Filter content received.');
     }
+
+    // This Filter is owned by the user who created it.
+    if (empty($contenthub_filter->author)) {
+      $user = \Drupal::currentUser();
+      $contenthub_filter->author = $user->id();
+    }
+
 
     // Verify that we have valid Content Hub Filter Entity.
     $this->validate($contenthub_filter, TRUE);
