@@ -227,9 +227,9 @@ class ContentHubFilterResource extends ResourceBase {
    */
   public function patch(ContentHubFilterInterface $original_contenthub_filter, ContentHubFilterInterface $contenthub_filter = NULL) {
     $permission = 'Administer Acquia Content Hub';
-//    if(!$this->currentUser->hasPermission($permission)) {
-//      throw new AccessDeniedHttpException();
-//    }
+    if(!$this->currentUser->hasPermission($permission)) {
+      throw new AccessDeniedHttpException();
+    }
 
     if ($contenthub_filter == NULL) {
       throw new BadRequestHttpException('No Content Hub Filter content received.');
