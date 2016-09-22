@@ -23,7 +23,7 @@ use Drupal\acquia_contenthub_subscriber\Entity\ContentHubFilter;
  * Provides a resource to perform CRUD operations on Content Hub Filters.
  *
  * @RestResource(
- *   id = "Content Hub Filter",
+ *   id = "contenthub_filter",
  *   label = @Translation("Content Hub Filter"),
  *   uri_paths = {
  *     "canonical" = "/acquia_contenthub/contenthub_filter/{contenthub_filter}",
