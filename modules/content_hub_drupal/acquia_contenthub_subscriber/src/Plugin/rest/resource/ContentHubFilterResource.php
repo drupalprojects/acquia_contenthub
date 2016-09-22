@@ -191,7 +191,7 @@ class ContentHubFilterResource extends ResourceBase {
     // POSTed entities must not have an ID set, because we always want to create
     // new entities here.
     if (!$contenthub_filter->isNew()) {
-      throw new BadRequestHttpException('Only new entities can be created');
+      throw new BadRequestHttpException('Only new entities can be created. ');
     }
 
     // Validation has passed, now try to save the entity.
@@ -203,9 +203,38 @@ class ContentHubFilterResource extends ResourceBase {
     catch (EntityStorageException $e) {
       throw new HttpException(500, 'Internal Server Error', $e);
     }
+  }
 
-    throw new HttpException(500, 'Internal Server Error', $e);
+  /**
+   * Responds to PATCH requests.
+   *
+   * @param \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface $original_contenthub_filter
+   *   The original Content Hub Filter entity.
+   * @param \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface|NULL $contenthub_filter
+   *   The Content Hub Filter entity.
+   *
+   * @return \Drupal\rest\ResourceResponse
+   *   The Content Hub Filter after it has been saved.
+   */
+  public function patch(ContentHubFilterInterface $original_contenthub_filter, ContentHubFilterInterface $contenthub_filter = NULL) {
+    $permission = 'Administer Acquia Content Hub';
+//    if(!$this->currentUser->hasPermission($permission)) {
+//      throw new AccessDeniedHttpException();
+//    }
+
+    if ($contenthub_filter == NULL) {
+      throw new BadRequestHttpException('No Content Hub Filter content received.');
+    }
+
+    // Verify that we have valid and existent Content Hub Filter Entity.
+    $this->validate($contenthub_filter, FALSE);
+
+    // Save changes.
+
+    // Return.
+    return new ResourceResponse($contenthub_filter);
 
   }
+
 
 }
