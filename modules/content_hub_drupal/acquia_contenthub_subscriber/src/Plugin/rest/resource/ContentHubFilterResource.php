@@ -91,17 +91,24 @@ class ContentHubFilterResource extends ResourceBase {
    *
    * @param \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface|NULL $contenthub_filter
    *   The Content Hub Filter entity.
+   * @param bool $is_new
+   *   Validate taken into consideration it is a new entity or an existent one.
    */
-  public function validate(ContentHubFilterInterface $contenthub_filter) {
+  public function validate(ContentHubFilterInterface $contenthub_filter, $is_new = TRUE) {
     $messages = array();
     if (!empty($contenthub_filter->uuid())) {
-      if (Uuid::isValid($contenthub_filter->uuid())) {
-        $contenthub_filter->enforceIsNew(FALSE);
+      if (Uuid::isValid($contenthub_filter->uuid()) && $is_new) {
+        $messages[] = t('Filter "!name" already exists (id = "!id", uuid = "!uuid").', array(
+          '!id' => $contenthub_filter->id(),
+          '!name' => $contenthub_filter->name,
+          '!uuid' => $contenthub_filter->uuid(),
+        ));
       }
       else {
         $messages[] = t('The filter has an invalid "uuid" field.');
       }
     }
+
     if (empty($contenthub_filter->id())) {
       $messages[] = t('The filter has an invalid "id" field.');
     }
@@ -179,7 +186,13 @@ class ContentHubFilterResource extends ResourceBase {
     }
 
     // Verify that we have valid Content Hub Filter Entity.
-    $this->validate($contenthub_filter);
+    $this->validate($contenthub_filter, TRUE);
+
+    // POSTed entities must not have an ID set, because we always want to create
+    // new entities here.
+    if (!$contenthub_filter->isNew()) {
+      throw new BadRequestHttpException('Only new entities can be created');
+    }
 
     // Validation has passed, now try to save the entity.
     try {
