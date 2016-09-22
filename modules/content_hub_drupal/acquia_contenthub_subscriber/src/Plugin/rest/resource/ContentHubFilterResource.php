@@ -15,7 +15,9 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Psr\Log\LoggerInterface;
+use Drupal\Component\Uuid\Uuid;
 use Drupal\Core\Entity\EntityManagerInterface;
+use Drupal\acquia_contenthub_subscriber\Entity\ContentHubFilter;
 
 /**
  * Provides a resource to perform CRUD operations on Content Hub Filters.
@@ -24,8 +26,8 @@ use Drupal\Core\Entity\EntityManagerInterface;
  *   id = "Content Hub Filter",
  *   label = @Translation("Content Hub Filter"),
  *   uri_paths = {
- *     "canonical" = "/entity/acquia_contenthub/contenthub_filter/{contenthub_filter}",
- *     "http://drupal.org/link-relations/create" = "/entity/acquia_contenthub/contenthub_filter"
+ *     "canonical" = "/acquia_contenthub/contenthub_filter/{contenthub_filter}",
+ *     "http://drupal.org/link-relations/create" = "/acquia_contenthub/contenthub_filter"
  *   }
  * )
  */
@@ -80,6 +82,37 @@ class ContentHubFilterResource extends ResourceBase {
     );
   }
 
+  /**
+   * Validates input from user.
+   *
+   * @param object $contenthub_filter
+   *   The Content Hub Filter object.
+   */
+  public function validate($contenthub_filter) {
+    $messages = array();
+    if (isset($contenthub_filter->uuid) && !Uuid::isValid($contenthub_filter->uuid)) {
+      $messages[] = t('The filter has an invalid "uuid" field.');
+    }
+    if (!isset($contenthub_filter->id)) {
+      $messages[] = t('The filter has an invalid "id" field.');
+    }
+    else {
+      if (preg_match("/^[a-zA-Z0-9_]*$/", $contenthub_filter->id, $matches) !== 0) {
+        $messages[] = t('The "id" field has to be a "machine_name" (Only small letters, numbers and underscore allowed).');
+      }
+      // @TODO: Check that the ID is unique making a query to the database.
+    }
+    if (!isset($contenthub_filter->name)) {
+      $messages[] = t('The filter has to have a "name" field.');
+    }
+
+
+    if (count($messages) > 0) {
+      $message = implode("\n", $messages);
+      throw new HttpException(422, $message);
+    }
+  }
+
   /*
    * Responds to GET requests.
    *
@@ -115,5 +148,24 @@ class ContentHubFilterResource extends ResourceBase {
 
   }
 
+  public function post($contenthub_filter = NULL) {
+    $permission = 'Administer Acquia Content Hub';
+    if(!$this->currentUser->hasPermission($permission)) {
+      throw new AccessDeniedHttpException();
+    }
+
+    if ($contenthub_filter == NULL) {
+      throw new BadRequestHttpException('No Content Hub Filter content received.');
+    }
+
+    // Verify that it is a Content Hub Filter Entity.
+    $this->validate($contenthub_filter);
+
+    // Validation has passed, now try to save the entity.
+    // $entity = new ContentHubFilter($contenthub_filter, 'contenthub_filter');
+
+    return new ResourceResponse($contenthub_filter);
+
+  }
 
 }
