@@ -97,14 +97,7 @@ class ContentHubFilterResource extends ResourceBase {
   public function validate(ContentHubFilterInterface $contenthub_filter, $is_new = TRUE) {
     $messages = array();
     if (!empty($contenthub_filter->uuid())) {
-      if (Uuid::isValid($contenthub_filter->uuid()) && $is_new) {
-        $messages[] = t('Filter "!name" already exists (id = "!id", uuid = "!uuid").', array(
-          '!id' => $contenthub_filter->id(),
-          '!name' => $contenthub_filter->name,
-          '!uuid' => $contenthub_filter->uuid(),
-        ));
-      }
-      else {
+      if (!Uuid::isValid($contenthub_filter->uuid())) {
         $messages[] = t('The filter has an invalid "uuid" field.');
       }
     }
@@ -191,7 +184,12 @@ class ContentHubFilterResource extends ResourceBase {
     // POSTed entities must not have an ID set, because we always want to create
     // new entities here.
     if (!$contenthub_filter->isNew()) {
-      throw new BadRequestHttpException('Only new entities can be created. ');
+      $message = t('Only new entities can be created. Filter "!name" already exists (id = "!id", uuid = "!uuid").', array(
+        '!id' => $contenthub_filter->id(),
+        '!name' => $contenthub_filter->name,
+        '!uuid' => $contenthub_filter->uuid(),
+      ));
+      throw new BadRequestHttpException($message);
     }
 
     // Validation has passed, now try to save the entity.
