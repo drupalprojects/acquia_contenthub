@@ -115,6 +115,11 @@ class ContentHubFilterResource extends ResourceBase {
       $messages[] = t('The filter has to have a "name" field.');
     }
 
+    // @TODO: Fix this. Set it up as admin by default.
+    if (!isset($contenthub_filter->author)) {
+      $contenthub_filter->author = 1;
+    }
+
     // @TODO: Validate other fields.
 
 
