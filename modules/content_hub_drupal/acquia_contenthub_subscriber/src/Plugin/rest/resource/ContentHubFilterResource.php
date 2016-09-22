@@ -14,10 +14,13 @@ use Drupal\rest\ResourceResponse;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Psr\Log\LoggerInterface;
 use Drupal\Component\Uuid\Uuid;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\acquia_contenthub_subscriber\Entity\ContentHubFilter;
+use Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface;
 
 /**
  * Provides a resource to perform CRUD operations on Content Hub Filters.
@@ -25,6 +28,7 @@ use Drupal\acquia_contenthub_subscriber\Entity\ContentHubFilter;
  * @RestResource(
  *   id = "contenthub_filter",
  *   label = @Translation("Content Hub Filter"),
+ *   serialization_class = "Drupal\acquia_contenthub_subscriber\Entity\ContentHubFilter",
  *   uri_paths = {
  *     "canonical" = "/acquia_contenthub/contenthub_filter/{contenthub_filter}",
  *     "http://drupal.org/link-relations/create" = "/acquia_contenthub/contenthub_filter"
@@ -148,11 +152,11 @@ class ContentHubFilterResource extends ResourceBase {
 
   }
 
-  public function post($contenthub_filter = NULL) {
+  public function post(ContentHubFilterInterface $contenthub_filter = NULL) {
     $permission = 'Administer Acquia Content Hub';
-    if(!$this->currentUser->hasPermission($permission)) {
-      throw new AccessDeniedHttpException();
-    }
+//    if(!$this->currentUser->hasPermission($permission)) {
+//      throw new AccessDeniedHttpException();
+//    }
 
     if ($contenthub_filter == NULL) {
       throw new BadRequestHttpException('No Content Hub Filter content received.');
