@@ -89,19 +89,24 @@ class ContentHubFilterResource extends ResourceBase {
   /**
    * Validates input from user.
    *
-   * @param object $contenthub_filter
-   *   The Content Hub Filter object.
+   * @param \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface|NULL $contenthub_filter
+   *   The Content Hub Filter entity.
    */
-  public function validate($contenthub_filter) {
+  public function validate(ContentHubFilterInterface $contenthub_filter) {
     $messages = array();
-    if (isset($contenthub_filter->uuid) && !Uuid::isValid($contenthub_filter->uuid)) {
-      $messages[] = t('The filter has an invalid "uuid" field.');
+    if (!empty($contenthub_filter->uuid())) {
+      if (Uuid::isValid($contenthub_filter->uuid())) {
+        $contenthub_filter->enforceIsNew(FALSE);
+      }
+      else {
+        $messages[] = t('The filter has an invalid "uuid" field.');
+      }
     }
-    if (!isset($contenthub_filter->id)) {
+    if (empty($contenthub_filter->id())) {
       $messages[] = t('The filter has an invalid "id" field.');
     }
     else {
-      if (preg_match("/^[a-zA-Z0-9_]*$/", $contenthub_filter->id, $matches) !== 0) {
+      if (preg_match("/^[a-zA-Z0-9_]*$/", $contenthub_filter->id(), $matches) !== 1) {
         $messages[] = t('The "id" field has to be a "machine_name" (Only small letters, numbers and underscore allowed).');
       }
       // @TODO: Check that the ID is unique making a query to the database.
@@ -109,6 +114,8 @@ class ContentHubFilterResource extends ResourceBase {
     if (!isset($contenthub_filter->name)) {
       $messages[] = t('The filter has to have a "name" field.');
     }
+
+    // @TODO: Validate other fields.
 
 
     if (count($messages) > 0) {
@@ -152,6 +159,15 @@ class ContentHubFilterResource extends ResourceBase {
 
   }
 
+  /**
+   * Responds to POST requests.
+   *
+   * @param \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface|NULL $contenthub_filter
+   *   The Content Hub Filter.
+   *
+   * @return \Drupal\rest\ResourceResponse
+   *   The Content Hub Filter after it has been saved.
+   */
   public function post(ContentHubFilterInterface $contenthub_filter = NULL) {
     $permission = 'Administer Acquia Content Hub';
 //    if(!$this->currentUser->hasPermission($permission)) {
@@ -162,13 +178,20 @@ class ContentHubFilterResource extends ResourceBase {
       throw new BadRequestHttpException('No Content Hub Filter content received.');
     }
 
-    // Verify that it is a Content Hub Filter Entity.
+    // Verify that we have valid Content Hub Filter Entity.
     $this->validate($contenthub_filter);
 
     // Validation has passed, now try to save the entity.
-    // $entity = new ContentHubFilter($contenthub_filter, 'contenthub_filter');
+    try {
+      $contenthub_filter->save();
+      $this->logger->notice('Created entity %type with ID %id.', array('%type' => $contenthub_filter->getEntityTypeId(), '%id' => $contenthub_filter->id()));
+      return new ResourceResponse($contenthub_filter);
+    }
+    catch (EntityStorageException $e) {
+      throw new HttpException(500, 'Internal Server Error', $e);
+    }
 
-    return new ResourceResponse($contenthub_filter);
+    throw new HttpException(500, 'Internal Server Error', $e);
 
   }
 
