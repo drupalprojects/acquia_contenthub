@@ -19,4 +19,18 @@ interface ContentHubFilterInterface extends ConfigEntityInterface {
    * @return string.
    */
   public function getPublishSetting();
+
+  /**
+   * Returns the Author.
+   *
+   * @return mixed
+   */
+  public function getAuthor();
+
+  /**
+   * Returns the conditions string.
+   *
+   * @return string
+   */
+  public function getConditions();
 }

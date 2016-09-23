@@ -8,6 +8,7 @@ namespace Drupal\acquia_contenthub_subscriber\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface;
+use Drupal\user\Entity\User;
 
 /**
  * Defines the ContentHubFilter entity.
@@ -122,7 +123,42 @@ class ContentHubFilter extends ConfigEntityBase implements ContentHubFilterInter
    *   The user account name.
    */
   public function getAuthor() {
-    $user = user_load($this->author);
+    $user = User::load($this->author);
     return $user->getAccountName();
+  }
+
+  /**
+   * Gets the Conditions to match in a webhook.
+   */
+  public function getConditions() {
+    $tags = array();
+
+    // Search Term.
+    if (isset($this->search_term)) {
+      $tags[] = $this->search_term;
+    }
+
+    // <Date From>to<Date-To>.
+    if (isset($this->from_date) || isset($this->to_date)) {
+      $tags[] ='modified:' . $this->from_date . 'to' . $this->to_date;
+    }
+
+    // Building origin condition.
+    if (isset($this->source)) {
+      $origins = explode(',', $this->source);
+      foreach ($origins as $origin) {
+        $tags[] = 'origin:' . $origin;
+      }
+    }
+
+    // Building field_tags condition.
+    if (isset($this->tags)) {
+      $field_tags = explode(',', $this->tags);
+      foreach ($field_tags as $field_tag) {
+        $tags[] = 'field_tags:' . $field_tag;
+      }
+    }
+
+    return implode(',', $tags);
   }
 }

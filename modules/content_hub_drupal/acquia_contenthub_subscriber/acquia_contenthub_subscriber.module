@@ -13,6 +13,13 @@ use Drupal\Core\Entity\EntityInterface;
 function acquia_contenthub_subscriber_acquia_contenthub_process_webhook_alter($webhook) {
   $contenthub_imported_entities = \Drupal::service('acquia_contenthub.acquia_contenthub_imported_entities');
   $contenthub_import_controller = \Drupal::service('acquia_contenthub.acquia_contenthub_cdf.import_entity');
+
+  /* @var \Drupal\Core\Entity\EntityManagerInterface $entity_manager */
+  $entity_manager = \Drupal::service('entity.manager');
+
+  // Load all Content Hub Filters.
+  $filters = $this->entityManager->getStorage('contenthub_filter')->loadMultiple();
+
   $assets = $webhook['assets'];
   // Process every asset that comes in the webhook, other than the
   // post dependencies.
@@ -23,6 +30,10 @@ function acquia_contenthub_subscriber_acquia_contenthub_process_webhook_alter($w
     // For now, we are just importing anything that comes in.
     if ($contenthub_imported_entities->loadByUuid($asset['uuid']) !== FALSE) {
       $contenthub_import_controller->saveDrupalEntity($asset['uuid']);
+    }
+    else {
+      // New entities are handled by Content Hub Filters.
+      acquia_contenthub_subscriber_process_filters($filters, $asset);
     }
   }
 }
@@ -42,6 +53,32 @@ function acquia_contenthub_subscriber_entity_delete(EntityInterface $entity) {
     $contenthub_imported_entities = \Drupal::service('acquia_contenthub.acquia_contenthub_imported_entities');
     if ($imported_entity = $contenthub_imported_entities->loadByUuid($entity_uuid)) {
       $imported_entity->delete();
+    }
+  }
+}
+
+/**
+ * Processes an Asset that has arrived through a Webhook.
+ *
+ * @param array $contenthub_filters
+ *   The Content Hub Filters.
+ * @param array $asset
+ *   The asset to process.
+ */
+function acquia_contenthub_subscriber_process_filters(array $contenthub_filters, $asset) {
+
+  /* @var \Drupal\acquia_contenthub\EntityManager $entity_manager */
+  $entity_manager = \Drupal::service('acquia_contenthub.entity_manager');
+
+  // Loading the entity remotely from Content Hub.
+  if ($contenthub_entity = $entity_manager->loadRemoteEntity($asset['uuid'])) {
+
+    foreach ($contenthub_filters as $contenthub_filter) {
+
+      // Obtain the Filter conditions.
+      $conditions = $contenthub_filter->getConditions();
+
+      // Evaluate the conditions to see if the This matches.
     }
   }
 }

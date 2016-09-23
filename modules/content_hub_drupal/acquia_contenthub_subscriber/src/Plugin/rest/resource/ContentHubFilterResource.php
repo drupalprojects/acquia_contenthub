@@ -188,12 +188,10 @@ class ContentHubFilterResource extends ResourceBase {
       $contenthub_filter->author = $user->id();
     }
 
-
     // Verify that we have valid Content Hub Filter Entity.
     $this->validate($contenthub_filter, TRUE);
 
-    // POSTed entities must not have an ID set, because we always want to create
-    // new entities here.
+    // We are ONLY creating new entities through POST requests.
     if (!$contenthub_filter->isNew()) {
       $message = t('Only new entities can be created. Filter "!name" already exists (id = "!id", uuid = "!uuid").', array(
         '!id' => $contenthub_filter->id(),
