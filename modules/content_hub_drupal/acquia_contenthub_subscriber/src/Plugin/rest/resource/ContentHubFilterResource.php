@@ -185,7 +185,8 @@ class ContentHubFilterResource extends ResourceBase {
     // This Filter is owned by the user who created it.
     if (empty($contenthub_filter->author)) {
       $user = \Drupal::currentUser();
-      $contenthub_filter->author = $user->id();
+      $uid = $user->id();
+      $contenthub_filter->author = $uid ?: 1;
     }
 
     // Verify that we have valid Content Hub Filter Entity.
