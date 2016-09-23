@@ -20,7 +20,7 @@ function acquia_contenthub_subscriber_acquia_contenthub_process_webhook_alter($w
   $entity_manager = \Drupal::service('entity.manager');
 
   // Load all Content Hub Filters.
-  $filters = $this->entityManager->getStorage('contenthub_filter')->loadMultiple();
+  $filters = $entity_manager->getStorage('contenthub_filter')->loadMultiple();
 
   $assets = $webhook['assets'];
   // Process every asset that comes in the webhook, other than the
