@@ -42,7 +42,7 @@ class ContentHubSubscriberController extends ControllerBase {
    */
   public function loadDiscovery() {
     // Get the session token.
-    $token = \Drupal::csrfToken()->get('');
+    $token = \Drupal::csrfToken()->get('rest');
 
     // Get the cookie.
     $request = Request::createFromGlobals();
