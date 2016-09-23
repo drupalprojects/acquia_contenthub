@@ -852,7 +852,7 @@ class ClientManager implements ClientManagerInterface {
    */
   public function parseSearchString($str_val, $webhook_uuid = '', $type = '', $options = array()) {
     if ($str_val) {
-      $search_terms = drupal_explode_tags($str_val);
+      $search_terms = $this->drupal_explode_tags($str_val);
       foreach ($search_terms as $search_term) {
         $check_for_filter = preg_match('/[:]/', $search_term);
         if ($check_for_filter) {
@@ -919,5 +919,27 @@ class ClientManager implements ClientManagerInterface {
     $result = $this->executeQuery($query);
 
     return $result;
+  }
+
+  // @TODO: This should go away
+  protected function drupal_explode_tags($tags) {
+    // This regexp allows the following types of user input:
+    // this, "somecompany, llc", "and ""this"" w,o.rks", foo bar
+    $regexp = '%(?:^|,\ *)("(?>[^"]*)(?>""[^"]* )*"|(?: [^",]*))%x';
+    preg_match_all($regexp, $tags, $matches);
+    $typed_tags = array_unique($matches[1]);
+
+    $tags = array();
+    foreach ($typed_tags as $tag) {
+      // If a user has escaped a term (to demonstrate that it is a group,
+      // or includes a comma or quote character), we remove the escape
+      // formatting so to save the term into the database as the user intends.
+      $tag = trim(str_replace('""', '"', preg_replace('/^"(.*)"$/', '\1', $tag)));
+      if ($tag != "") {
+        $tags[] = $tag;
+      }
+    }
+
+    return $tags;
   }
 }

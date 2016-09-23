@@ -134,17 +134,17 @@ class ContentHubFilter extends ConfigEntityBase implements ContentHubFilterInter
     $tags = array();
 
     // Search Term.
-    if (isset($this->search_term)) {
+    if (!empty($this->search_term)) {
       $tags[] = $this->search_term;
     }
 
     // <Date From>to<Date-To>.
-    if (isset($this->from_date) || isset($this->to_date)) {
+    if (!empty($this->from_date) || !empty($this->to_date)) {
       $tags[] ='modified:' . $this->from_date . 'to' . $this->to_date;
     }
 
     // Building origin condition.
-    if (isset($this->source)) {
+    if (!empty($this->source)) {
       $origins = explode(',', $this->source);
       foreach ($origins as $origin) {
         $tags[] = 'origin:' . $origin;
@@ -152,7 +152,7 @@ class ContentHubFilter extends ConfigEntityBase implements ContentHubFilterInter
     }
 
     // Building field_tags condition.
-    if (isset($this->tags)) {
+    if (!empty($this->tags)) {
       $field_tags = explode(',', $this->tags);
       foreach ($field_tags as $field_tag) {
         $tags[] = 'field_tags:' . $field_tag;
