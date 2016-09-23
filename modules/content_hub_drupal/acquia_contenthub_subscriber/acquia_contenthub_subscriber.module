@@ -1,5 +1,7 @@
 <?php
 
+use \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface;
+
 /**
  * @file
  * Implements entity auto-updates through webhooks.
@@ -33,7 +35,7 @@ function acquia_contenthub_subscriber_acquia_contenthub_process_webhook_alter($w
     }
     else {
       // New entities are handled by Content Hub Filters.
-      acquia_contenthub_subscriber_process_filters($filters, $asset);
+      acquia_contenthub_subscriber_process_filters($contenthub_import_controller, $filters, $asset);
     }
   }
 }
@@ -60,25 +62,66 @@ function acquia_contenthub_subscriber_entity_delete(EntityInterface $entity) {
 /**
  * Processes an Asset that has arrived through a Webhook.
  *
- * @param array $contenthub_filters
- *   The Content Hub Filters.
+ * @param \Drupal\acquia_contenthub\Controller\ContentHubEntityImportController $contenthub_import_controller
+ *   The Content Hub Import Controller Service.
+ * @param \Drupal\acquia_contenthub_subscriber\Entity\ContentHubFilter[] $contenthub_filters
+ *   The Content Hub Filters array.
  * @param array $asset
  *   The asset to process.
  */
-function acquia_contenthub_subscriber_process_filters(array $contenthub_filters, $asset) {
+function acquia_contenthub_subscriber_process_filters($contenthub_import_controller, array $contenthub_filters, $asset) {
 
   /* @var \Drupal\acquia_contenthub\EntityManager $entity_manager */
   $entity_manager = \Drupal::service('acquia_contenthub.entity_manager');
+
 
   // Loading the entity remotely from Content Hub.
   if ($contenthub_entity = $entity_manager->loadRemoteEntity($asset['uuid'])) {
 
     foreach ($contenthub_filters as $contenthub_filter) {
-
-      // Obtain the Filter conditions.
-      $conditions = $contenthub_filter->getConditions();
-
       // Evaluate the conditions to see if the This matches.
+      if (acquia_contenthub_subscriber_evaluate_filter_conditions($contenthub_filter, $asset)) {
+        $contenthub_import_controller->saveDrupalEntity($asset['uuid']);
+
+        // If this filter matches, then stop processing other filters.
+        break;
+      }
+
     }
   }
+}
+
+/**
+ * Checks whether this asset (entity) matches the filter condition.
+ *
+ * @param \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface $contenthub_filter
+ *   A Content Hub Filter.
+ * @param string $asset
+ *   An entity [entity_type, entity_uuid]
+ *
+ * @return bool
+ *   TRUE if matches condition, FALSE otherwise.
+ */
+function acquia_contenthub_subscriber_evaluate_filter_conditions(ContentHubFilterInterface $contenthub_filter, array $asset) {
+  $uuid = $asset['uuid'];
+  /* @var \Drupal\acquia_contenthub\Client\ClientManager $client_manager */
+  $client_manager = \Drupal::service('acquia_contenthub.client_manager');
+
+  // Obtain the Filter conditions.
+  $conditions = $contenthub_filter->getConditions();
+
+  // Process the uuid that comes in the webhook's asset.
+  $type = 'content_hub';
+  if (isset($uuid) && !empty($conditions)) {
+    $count = $client_manager->buildTagsQuery($conditions, $uuid, $type);
+    if ($count > 0) {
+      return TRUE;
+    }
+  }
+  else {
+    return TRUE;
+  }
+
+  // If we reach here, return FALSE.
+  return FALSE;
 }
