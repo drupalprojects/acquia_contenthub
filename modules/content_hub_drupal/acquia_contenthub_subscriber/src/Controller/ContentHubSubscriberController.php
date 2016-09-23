@@ -41,6 +41,13 @@ class ContentHubSubscriberController extends ControllerBase {
    * Loads the content hub discovery page from an ember app.
    */
   public function loadDiscovery() {
+    // Get the session token.
+    $token = \Drupal::csrfToken()->get('');
+
+    // Get the cookie.
+    $request = Request::createFromGlobals();
+    $cookie_header = session_name() . '=' . current($request->cookies->all());
+
     $config = \Drupal::config('acquia_contenthub.admin_settings');
     $ember_endpoint = $config->get('ember_app') ?: $GLOBALS['base_url'] . '/' . drupal_get_path('module', 'acquia_contenthub_subscriber') . '/ember';
 
@@ -64,6 +71,8 @@ class ContentHubSubscriberController extends ControllerBase {
     $form["#attached"]['drupalSettings']['acquia_contenthub_subscriber']['client_user_agent'] = $client_user_agent;
     $form["#attached"]['drupalSettings']['acquia_contenthub_subscriber']['import_endpoint'] = $import_endpoint;
     $form["#attached"]['drupalSettings']['acquia_contenthub_subscriber']['saved_filters_endpoint'] = $saved_filters_endpoint;
+    $form["#attached"]['drupalSettings']['acquia_contenthub_subscriber']['token'] = $token;
+    $form["#attached"]['drupalSettings']['acquia_contenthub_subscriber']['cookie'] = $cookie_header;
 
     if (empty($config->get('origin'))) {
       drupal_set_message(t('Acquia Content Hub must be configured to view any content. Please contact your administrator.'), 'warning');
