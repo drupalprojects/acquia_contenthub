@@ -1,0 +1,12 @@
+resources:
+  contenthub_filter:
+    GET:
+      supported_formats:
+        - json
+      supported_auth:
+        - cookie
+    POST:
+      supported_formats:
+        - json
+      supported_auth:
+        - cookie
