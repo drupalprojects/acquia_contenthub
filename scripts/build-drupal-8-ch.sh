@@ -21,6 +21,9 @@ if [ "$2" == "" ]; then
   branch="develop"
 fi
 
+# optional destination, defaults to scripts directory.
+destination="$3"
+
 # project creation
 if [ ! -d $1 ]; then
 
@@ -47,6 +50,10 @@ else
   cd $1
 fi
 
+# Contrib modules required for development
+composer require drupal/devel:1.0.0-alpha1 --profile
+composer require drupal/features:3.0.0-beta9 --profile
+
 # setup the content-hub-d8 module and change branch if needed
 if [ ! -d web/modules/contrib/content-hub-d8 ]; then
   echo "> composer update for content-hub-d8"
@@ -63,9 +70,6 @@ else
   git pull
 fi
 
-# could include additional modules here
-# todo: add modules here
-
 # back to the root
 cd ../../../../..
 
@@ -76,6 +80,12 @@ fi
 cd $1/web
 tar -cf ../$1.tar .
 cd ../..
+
+# move site build to the destination if provided.
+if [ ! -z $destination ]; then
+  echo "> moving site build to provided destination: $destination"
+  mv $1 $destination
+fi
 
 # todo: in the future trigger automatically
 # for now just run ./deploy.sh after wards, but configure it for yourself

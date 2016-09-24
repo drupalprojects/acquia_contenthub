@@ -1,0 +1,18 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_list_textplainlong
+    - node.type.charticle
+id: node.charticle.field_list_textplainlong
+field_name: field_list_textplainlong
+entity_type: node
+bundle: charticle
+label: List_TextPlainLong
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string_long
