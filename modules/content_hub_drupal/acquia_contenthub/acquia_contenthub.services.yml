@@ -19,6 +19,10 @@ services:
     class: Drupal\acquia_contenthub\ContentHubSubscription
     arguments: ['@logger.factory', '@config.factory', '@acquia_contenthub.client_manager']
 
+  acquia_contenthub.acquia_contenthub_search:
+    class: Drupal\acquia_contenthub\ContentHubSearch
+    arguments: ['@acquia_contenthub.client_manager']
+
   acquia_contenthub.client_manager:
     class: Drupal\acquia_contenthub\Client\ClientManager
     arguments: ['@logger.factory', '@config.factory']
