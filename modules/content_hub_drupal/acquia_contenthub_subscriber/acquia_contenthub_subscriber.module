@@ -75,22 +75,19 @@ function acquia_contenthub_subscriber_entity_delete(EntityInterface $entity) {
  */
 function acquia_contenthub_subscriber_process_filters($contenthub_import_controller, array $contenthub_filters, $asset) {
 
-  /* @var \Drupal\acquia_contenthub\EntityManager $entity_manager */
-  $entity_manager = \Drupal::service('acquia_contenthub.entity_manager');
+  foreach ($contenthub_filters as $contenthub_filter) {
 
-  // Loading the entity remotely from Content Hub.
-  if ($contenthub_entity = $entity_manager->loadRemoteEntity($asset['uuid'])) {
+    // Evaluate the conditions to see if the this filter matches.
+    if (acquia_contenthub_subscriber_evaluate_filter_conditions($contenthub_filter, $asset)) {
 
-    foreach ($contenthub_filters as $contenthub_filter) {
-      // Evaluate the conditions to see if the This matches.
-      if (acquia_contenthub_subscriber_evaluate_filter_conditions($contenthub_filter, $asset)) {
-        $contenthub_import_controller->saveDrupalEntity($asset['uuid']);
+      // If condition is TRUE, then save entity with dependencies.
+      $contenthub_import_controller->saveDrupalEntity($asset['uuid']);
 
-        // If this filter matches, then stop processing other filters.
-        break;
-      }
-
+      // If this filter matches, then stop processing other filters.
+      // @TODO: Find a better way of handling different filters (ie. priority).
+      break;
     }
+
   }
 }
 
@@ -107,8 +104,8 @@ function acquia_contenthub_subscriber_process_filters($contenthub_import_control
  */
 function acquia_contenthub_subscriber_evaluate_filter_conditions(ContentHubFilterInterface $contenthub_filter, array $asset) {
   $uuid = $asset['uuid'];
-  /* @var \Drupal\acquia_contenthub\Client\ClientManager $client_manager */
-  $client_manager = \Drupal::service('acquia_contenthub.client_manager');
+  /* @var \Drupal\acquia_contenthub\ContentHubSearch $contenthub_search */
+  $contenthub_search = \Drupal::service('acquia_contenthub.acquia_contenthub_search');
 
   // Obtain the Filter conditions.
   $conditions = $contenthub_filter->getConditions();
@@ -116,7 +113,7 @@ function acquia_contenthub_subscriber_evaluate_filter_conditions(ContentHubFilte
   // Process the uuid that comes in the webhook's asset.
   $type = 'content_hub';
   if (isset($uuid) && !empty($conditions)) {
-    $count = $client_manager->buildTagsQuery($conditions, $uuid, $type);
+    $count = $contenthub_search->buildTagsQuery($conditions, $uuid, $type);
     if ($count > 0) {
       return TRUE;
     }
