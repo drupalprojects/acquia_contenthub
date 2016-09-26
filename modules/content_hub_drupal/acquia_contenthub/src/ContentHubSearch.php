@@ -8,8 +8,9 @@ namespace Drupal\acquia_contenthub;
 
 use Drupal\acquia_contenthub\Client\ClientManagerInterface;
 use Drupal\Component\Utility\Tags;
+
 /**
- *
+ * Perform queries to the Content Hub "_search" endpoint [Elasticsearch].
  */
 class ContentHubSearch {
 

@@ -17,6 +17,7 @@ interface ContentHubFilterInterface extends ConfigEntityInterface {
    * Returns the Publish setting in human-readable format.
    *
    * @return string.
+   *   Returns the Human readable version of the publish setting.
    */
   public function getPublishSetting();
 
@@ -24,6 +25,7 @@ interface ContentHubFilterInterface extends ConfigEntityInterface {
    * Returns the Author.
    *
    * @return mixed
+   *   Returns the author account name.
    */
   public function getAuthor();
 
@@ -31,6 +33,7 @@ interface ContentHubFilterInterface extends ConfigEntityInterface {
    * Returns the conditions string.
    *
    * @return string
+   *   Returns the condition string.
    */
   public function getConditions();
 

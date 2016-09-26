@@ -130,7 +130,7 @@ class ContentHubFilterResource extends ResourceBase {
    * Returns a list of filters.
    *
    * @return \Drupal\rest\ResourceResponse
-   * The response containing a list of filters.
+   *   The response containing a list of filters.
    *
    * @throws \Symfony\Component\HttpKernel\Exception\HttpException
    */

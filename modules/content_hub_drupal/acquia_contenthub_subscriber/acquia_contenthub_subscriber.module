@@ -5,6 +5,7 @@
  */
 
 use \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface;
+use \Drupal\acquia_contenthub\Controller\ContentHubEntityImportController;
 
 /**
  * @file
@@ -69,11 +70,12 @@ function acquia_contenthub_subscriber_entity_delete(EntityInterface $entity) {
  * @param \Drupal\acquia_contenthub\Controller\ContentHubEntityImportController $contenthub_import_controller
  *   The Content Hub Import Controller Service.
  * @param \Drupal\acquia_contenthub_subscriber\Entity\ContentHubFilter[] $contenthub_filters
- *   The Content Hub Filters array.
+ *   of Content Hub Filters.
+ *   Array of Content Hub Filters.
  * @param array $asset
  *   The asset to process.
  */
-function acquia_contenthub_subscriber_process_filters($contenthub_import_controller, array $contenthub_filters, $asset) {
+function acquia_contenthub_subscriber_process_filters(ContentHubEntityImportController $contenthub_import_controller, array $contenthub_filters, array $asset) {
 
   foreach ($contenthub_filters as $contenthub_filter) {
 
@@ -96,8 +98,8 @@ function acquia_contenthub_subscriber_process_filters($contenthub_import_control
  *
  * @param \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface $contenthub_filter
  *   A Content Hub Filter.
- * @param string $asset
- *   An entity [entity_type, entity_uuid]
+ * @param array $asset
+ *   An entity [entity_type, entity_uuid].
  *
  * @return bool
  *   TRUE if matches condition, FALSE otherwise.

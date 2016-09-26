@@ -11,12 +11,15 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
+
 /**
- *
+ * Prepares the form for input Content Hub Filters.
  */
 class ContentHubFilterForm extends EntityForm {
 
   /**
+   * Public Constructor.
+   *
    * @param \Drupal\Core\Entity\Query\QueryFactory $entity_query
    *   The entity query.
    */
@@ -158,7 +161,7 @@ class ContentHubFilterForm extends EntityForm {
   }
 
   /**
-   *
+   * Checks whether this entity exists or not.
    */
   public function exist($id) {
     $entity = $this->entityQuery->get('contenthub_filter')
