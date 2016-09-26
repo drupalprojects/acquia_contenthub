@@ -6,9 +6,7 @@
 
 namespace Drupal\acquia_contenthub_subscriber\Plugin\rest\resource;
 
-use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Session\AccountProxyInterface;
-use Drupal\field\Entity\FieldConfig;
 use Drupal\rest\Plugin\ResourceBase;
 use Drupal\rest\ResourceResponse;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -19,7 +17,6 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Psr\Log\LoggerInterface;
 use Drupal\Component\Uuid\Uuid;
 use Drupal\Core\Entity\EntityManagerInterface;
-use Drupal\acquia_contenthub_subscriber\Entity\ContentHubFilter;
 use Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface;
 
 /**
@@ -38,14 +35,14 @@ use Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface;
 class ContentHubFilterResource extends ResourceBase {
 
   /**
-   *  A curent user instance.
+   * A curent user instance.
    *
    * @var \Drupal\Core\Session\AccountProxyInterface
    */
   protected $currentUser;
 
   /**
-   *  A instance of entity manager.
+   * A instance of entity manager.
    *
    * @var \Drupal\Core\Entity\EntityManagerInterface
    */
@@ -121,26 +118,25 @@ class ContentHubFilterResource extends ResourceBase {
 
     // @TODO: Validate other fields.
 
-
     if (count($messages) > 0) {
       $message = implode("\n", $messages);
       throw new HttpException(422, $message);
     }
   }
 
-  /*
+  /**
    * Responds to GET requests.
    *
    * Returns a list of filters.
    *
    * @return \Drupal\rest\ResourceResponse
-   *   The response containing a list of filters.
+   * The response containing a list of filters.
    *
    * @throws \Symfony\Component\HttpKernel\Exception\HttpException
    */
   public function get($contenthub_filter = NULL) {
     $permission = 'Administer Acquia Content Hub';
-    if(!$this->currentUser->hasPermission($permission)) {
+    if (!$this->currentUser->hasPermission($permission)) {
       throw new AccessDeniedHttpException();
     }
 
@@ -174,7 +170,7 @@ class ContentHubFilterResource extends ResourceBase {
    */
   public function post(ContentHubFilterInterface $contenthub_filter = NULL) {
     $permission = 'Administer Acquia Content Hub';
-    if(!$this->currentUser->hasPermission($permission)) {
+    if (!$this->currentUser->hasPermission($permission)) {
       throw new AccessDeniedHttpException();
     }
 
@@ -226,7 +222,7 @@ class ContentHubFilterResource extends ResourceBase {
    */
   public function patch(ContentHubFilterInterface $original_contenthub_filter, ContentHubFilterInterface $contenthub_filter = NULL) {
     $permission = 'Administer Acquia Content Hub';
-    if(!$this->currentUser->hasPermission($permission)) {
+    if (!$this->currentUser->hasPermission($permission)) {
       throw new AccessDeniedHttpException();
     }
 
@@ -238,11 +234,9 @@ class ContentHubFilterResource extends ResourceBase {
     $this->validate($contenthub_filter, FALSE);
 
     // Save changes.
-
     // Return.
     return new ResourceResponse($contenthub_filter);
 
   }
-
 
 }

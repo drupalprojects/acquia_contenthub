@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Handles Content Hub Content Subscriptions and Updates.
+ */
 
 use \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface;
 
@@ -73,7 +77,6 @@ function acquia_contenthub_subscriber_process_filters($contenthub_import_control
 
   /* @var \Drupal\acquia_contenthub\EntityManager $entity_manager */
   $entity_manager = \Drupal::service('acquia_contenthub.entity_manager');
-
 
   // Loading the entity remotely from Content Hub.
   if ($contenthub_entity = $entity_manager->loadRemoteEntity($asset['uuid'])) {

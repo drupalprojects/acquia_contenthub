@@ -35,7 +35,6 @@ class ContentHubFilterListBuilder extends ConfigEntityListBuilder {
     $row['author'] = $entity->getAuthor();
 
     // You probably want a few more properties here...
-
     return $row + parent::buildRow($entity);
   }
 

@@ -9,8 +9,8 @@ namespace Drupal\acquia_contenthub_subscriber;
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
 
 /**
-* Provides an interface defining a Acquia Content Hub Filter entity.
-*/
+ * Provides an interface defining a Acquia Content Hub Filter entity.
+ */
 interface ContentHubFilterInterface extends ConfigEntityInterface {
 
   /**
@@ -33,4 +33,5 @@ interface ContentHubFilterInterface extends ConfigEntityInterface {
    * @return string
    */
   public function getConditions();
+
 }

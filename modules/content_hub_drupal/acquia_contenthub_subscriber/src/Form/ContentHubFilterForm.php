@@ -6,13 +6,14 @@
 
 namespace Drupal\acquia_contenthub_subscriber\Form;
 
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityForm;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
-
+/**
+ *
+ */
 class ContentHubFilterForm extends EntityForm {
 
   /**
@@ -40,7 +41,7 @@ class ContentHubFilterForm extends EntityForm {
 
     $contenthub_filter = $this->entity;
 
-    // Change page title for the edit operation
+    // Change page title for the edit operation.
     if ($this->operation == 'edit') {
       $form['#title'] = $this->t('Edit Content Hub Filter: @name', array('@name' => $contenthub_filter->name));
     }
@@ -156,10 +157,14 @@ class ContentHubFilterForm extends EntityForm {
     $form_state->setRedirect('entity.contenthub_filter.collection');
   }
 
+  /**
+   *
+   */
   public function exist($id) {
     $entity = $this->entityQuery->get('contenthub_filter')
       ->condition('id', $id)
       ->execute();
     return (bool) $entity;
   }
+
 }

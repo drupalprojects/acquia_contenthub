@@ -13,7 +13,6 @@ use Drupal\Core\Form\FormStateInterface;
 /**
  * Builds the form to delete a ContentHubFilter.
  */
-
 class ContentHubFilterDeleteForm extends EntityConfirmFormBase {
 
   /**
@@ -46,4 +45,5 @@ class ContentHubFilterDeleteForm extends EntityConfirmFormBase {
 
     $form_state->setRedirectUrl($this->getCancelUrl());
   }
+
 }

@@ -140,7 +140,7 @@ class ContentHubFilter extends ConfigEntityBase implements ContentHubFilterInter
 
     // <Date From>to<Date-To>.
     if (!empty($this->from_date) || !empty($this->to_date)) {
-      $tags[] ='modified:' . $this->from_date . 'to' . $this->to_date;
+      $tags[] = 'modified:' . $this->from_date . 'to' . $this->to_date;
     }
 
     // Building origin condition.
@@ -161,4 +161,5 @@ class ContentHubFilter extends ConfigEntityBase implements ContentHubFilterInter
 
     return implode(',', $tags);
   }
+
 }
