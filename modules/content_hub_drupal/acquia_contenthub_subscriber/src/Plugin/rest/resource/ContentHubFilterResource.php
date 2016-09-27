@@ -149,7 +149,7 @@ class ContentHubFilterResource extends ResourceBase {
 
     if (!empty($filters)) {
       $filters = count($filters) > 1 ? $filters : reset($filters);
-      return new ResourceResponse($filters);
+      return new ResourceResponse(array_values($filters));
     }
     elseif ($contenthub_filter == 'all') {
       return new ResourceResponse(array());
