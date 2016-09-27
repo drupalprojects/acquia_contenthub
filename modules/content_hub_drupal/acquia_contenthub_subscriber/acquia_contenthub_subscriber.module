@@ -18,7 +18,9 @@ use Drupal\Core\Entity\EntityInterface;
  * Implements hook_acquia_contenthub_process_webhook_alter().
  */
 function acquia_contenthub_subscriber_acquia_contenthub_process_webhook_alter($webhook) {
-  $contenthub_imported_entities = \Drupal::service('acquia_contenthub.acquia_contenthub_imported_entities');
+  /* @var \Drupal\acquia_contenthub\ContentHubImportedEntities $contenthub_imported_entity */
+  $contenthub_imported_entity = \Drupal::service('acquia_contenthub.acquia_contenthub_imported_entities');
+
   $contenthub_import_controller = \Drupal::service('acquia_contenthub.acquia_contenthub_cdf.import_entity');
 
   /* @var \Drupal\Core\Entity\EntityManagerInterface $entity_manager */
@@ -32,11 +34,12 @@ function acquia_contenthub_subscriber_acquia_contenthub_process_webhook_alter($w
   // post dependencies.
   foreach ($assets as $asset) {
     // @TODO: We need to exclude post-dependencies (entity dependent).
-    // @TODO: We need to invoke the default rule.
-    // rules_invoke_event('content_hub_event_webhook_landing', $asset);
-    // For now, we are just importing anything that comes in.
-    if ($contenthub_imported_entities->loadByUuid($asset['uuid']) !== FALSE) {
-      $contenthub_import_controller->saveDrupalEntity($asset['uuid']);
+
+    // If the entity has been previously imported, check auto update status.
+    if ($contenthub_imported_entity->loadByUuid($asset['uuid']) !== FALSE) {
+      if ($contenthub_imported_entity->getAutoUpdate() == \Drupal\acquia_contenthub\ContentHubImportedEntities::AUTO_UPDATE_ENABLED) {
+        $contenthub_import_controller->saveDrupalEntity($asset['uuid']);
+      }
     }
     else {
       // New entities are handled by Content Hub Filters.
