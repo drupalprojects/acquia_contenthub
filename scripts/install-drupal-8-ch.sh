@@ -10,10 +10,18 @@ set -e
 # Import local settings.
 source .env
 
-SITE_PATH=$1
+PROJECT_NAME=$1
+
+if [ ! -z $2 ]; then
+  SITE_PATH=$2/$PROJECT_NAME
+else
+  SITE_PATH=$PROJECT_NAME
+fi
+
+
 
 # Make sure we were passed a project name for the directory.
-if [ -z "$SITE_PATH" ]; then
+if [ -z "$PROJECT_NAME" ]; then
   echo "You need to specify a directory name where the build is."
   exit
 fi
