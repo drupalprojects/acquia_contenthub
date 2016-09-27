@@ -21,6 +21,7 @@ function acquia_contenthub_subscriber_acquia_contenthub_process_webhook_alter($w
   /* @var \Drupal\acquia_contenthub\ContentHubImportedEntities $contenthub_imported_entity */
   $contenthub_imported_entity = \Drupal::service('acquia_contenthub.acquia_contenthub_imported_entities');
 
+  /* @var \Drupal\acquia_contenthub\Controller\ContentHubEntityImportController $contenthub_import_controller */
   $contenthub_import_controller = \Drupal::service('acquia_contenthub.acquia_contenthub_cdf.import_entity');
 
   /* @var \Drupal\Core\Entity\EntityManagerInterface $entity_manager */
@@ -82,7 +83,7 @@ function acquia_contenthub_subscriber_process_filters(ContentHubEntityImportCont
 
   foreach ($contenthub_filters as $contenthub_filter) {
 
-    // Evaluate the conditions to see if the this filter matches.
+    // Evaluate filter conditions to see if it matches for this entity.
     if (acquia_contenthub_subscriber_evaluate_filter_conditions($contenthub_filter, $asset)) {
 
       // If condition is TRUE, then save entity with dependencies.
