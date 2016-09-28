@@ -96,8 +96,8 @@ class ContentHubFilterForm extends EntityForm {
     $form['from_date'] = array(
       '#type' => 'date',
       '#title' => $this->t('Date From'),
-      '#maxlength' => 255,
       '#default_value' => $contenthub_filter->from_date,
+      '#date_date_format' => 'm-d-Y',
       '#description' => $this->t("Date starting from"),
     );
 
@@ -105,7 +105,7 @@ class ContentHubFilterForm extends EntityForm {
     $form['to_date'] = array(
       '#type' => 'date',
       '#title' => $this->t('Date To'),
-      '#maxlength' => 255,
+      '#date_date_format' => 'm-d-Y',
       '#default_value' => $contenthub_filter->to_date,
       '#description' => $this->t("Date until"),
     );

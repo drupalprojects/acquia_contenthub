@@ -37,4 +37,14 @@ interface ContentHubFilterInterface extends ConfigEntityInterface {
    */
   public function getConditions();
 
+  /**
+   * Change Date format from "m-d-Y" to "Y-m-d".
+   */
+  public function changeDateFormatMonthDayYear2YearMonthDay();
+
+  /**
+   * Change Date format from "Y-m-d" to "m-d-Y".
+   */
+  public function changeDateFormatYearMonthDay2MonthDayYear();
+
 }

@@ -18,6 +18,7 @@ use Psr\Log\LoggerInterface;
 use Drupal\Component\Uuid\Uuid;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface;
+use DateTime;
 
 /**
  * Provides a resource to perform CRUD operations on Content Hub Filters.
@@ -116,6 +117,18 @@ class ContentHubFilterResource extends ResourceBase {
       $messages[] = t('You are trying to create a new filter without a valid session.');
     }
 
+    // Validating Date fields.
+    if (!empty($contenthub_filter->from_date)) {
+      if (DateTime::createFromFormat('m-d-Y', $contenthub_filter->from_date) === FALSE) {
+        $messages[] = t('Invalid "from_date" field. Valid format is "m-d-Y".');
+      }
+    }
+    if (!empty($contenthub_filter->to_date)) {
+      if (DateTime::createFromFormat('m-d-Y', $contenthub_filter->to_date) === FALSE) {
+        $messages[] = t('Invalid "to_date" field. Valid format is "m-d-Y".');
+      }
+    }
+
     // @TODO: Validate other fields.
 
     if (count($messages) > 0) {
@@ -148,6 +161,11 @@ class ContentHubFilterResource extends ResourceBase {
     $filters = $this->entityManager->getStorage('contenthub_filter')->loadMultiple($entities);
 
     if (!empty($filters)) {
+      foreach ($filters as $key => $filter) {
+        // Present the date fields in format "m-d-Y".
+        $filters[$key]->changeDateFormatYearMonthDay2MonthDayYear();
+      }
+
       return new ResourceResponse(array_values($filters));
     }
     elseif ($contenthub_filter == 'all') {
@@ -188,6 +206,10 @@ class ContentHubFilterResource extends ResourceBase {
 
     // Verify that we have valid Content Hub Filter Entity.
     $this->validate($contenthub_filter, TRUE);
+
+    // Now that it has been validated, we need to convert the Date to the
+    // appropriate storage format in "Y-m-d".
+    $contenthub_filter->changeDateFormatMonthDayYear2YearMonthDay();
 
     // We are ONLY creating new entities through POST requests.
     if (!$contenthub_filter->isNew()) {

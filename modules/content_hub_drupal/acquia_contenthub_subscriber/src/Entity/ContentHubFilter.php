@@ -9,6 +9,7 @@ namespace Drupal\acquia_contenthub_subscriber\Entity;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface;
 use Drupal\user\Entity\User;
+use DateTime;
 
 /**
  * Defines the ContentHubFilter entity.
@@ -160,6 +161,40 @@ class ContentHubFilter extends ConfigEntityBase implements ContentHubFilterInter
     }
 
     return implode(',', $tags);
+  }
+
+  /**
+   * Change Date format from "m-d-Y" to "Y-m-d".
+   */
+  public function changeDateFormatMonthDayYear2YearMonthDay() {
+    if (!empty($this->from_date)) {
+      if ($from_date = DateTime::createFromFormat('m-d-Y', $this->from_date)) {
+        $this->from_date = $from_date->format('Y-m-d');
+      }
+    }
+    if (!empty($this->to_date)) {
+      if ($to_date = DateTime::createFromFormat('m-d-Y', $this->to_date)) {
+        $this->to_date = $to_date->format('Y-m-d');
+      }
+    }
+    return $this;
+  }
+
+  /**
+   * Change Date format from "Y-m-d" to "m-d-Y".
+   */
+  public function changeDateFormatYearMonthDay2MonthDayYear() {
+    if (!empty($this->from_date)) {
+      if ($from_date = DateTime::createFromFormat('Y-m-d', $this->from_date)) {
+        $this->from_date = $from_date->format('m-d-Y');
+      }
+    }
+    if (!empty($this->to_date)) {
+      if ($to_date = DateTime::createFromFormat('Y-m-d', $this->to_date)) {
+        $this->to_date = $to_date->format('m-d-Y');
+      }
+    }
+    return $this;
   }
 
 }
