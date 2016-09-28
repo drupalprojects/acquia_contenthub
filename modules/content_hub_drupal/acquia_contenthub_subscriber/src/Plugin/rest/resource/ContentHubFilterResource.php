@@ -179,8 +179,10 @@ class ContentHubFilterResource extends ResourceBase {
 
     // This Filter is owned by the user who created it.
     if (empty($contenthub_filter->author)) {
-      $user = \Drupal::currentUser();
-      $uid = $user->id();
+      $uid = $this->currentUser->id();
+
+      // Anonymous should not be able to have 'Administer Content Hub'
+      // permission but if it ever does, this filter will be owned by admin.
       $contenthub_filter->author = $uid ?: 1;
     }
 
