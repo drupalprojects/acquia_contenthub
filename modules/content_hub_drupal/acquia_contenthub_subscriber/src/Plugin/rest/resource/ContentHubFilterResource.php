@@ -225,6 +225,9 @@ class ContentHubFilterResource extends ResourceBase {
     try {
       $contenthub_filter->save();
       $this->logger->notice('Created entity %type with ID %id.', array('%type' => $contenthub_filter->getEntityTypeId(), '%id' => $contenthub_filter->id()));
+
+      // Convert back the Dates to format "m-d-Y".
+      $contenthub_filter->changeDateFormatYearMonthDay2MonthDayYear();
       return new ResourceResponse($contenthub_filter);
     }
     catch (EntityStorageException $e) {
