@@ -204,7 +204,7 @@ class EntityManager {
    *   The array of entities to export.
    */
   public function collectExportEntities($entity = NULL) {
-    $entities = &drupal_static(__FUNCTION__);
+    $entities = &drupal_static(__METHOD__);
     if (!isset($entities)) {
       $entities = array();
     }
@@ -227,7 +227,7 @@ class EntityManager {
    *   The total number of entities that failed to bulk upload.
    */
   public function entityFailures($num = NULL) {
-    $total = &drupal_static(__FUNCTION__);
+    $total = &drupal_static(__METHOD__);
     if (!isset($total)) {
       $total = is_int($num) ? $num : 0;
     }
