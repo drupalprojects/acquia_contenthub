@@ -148,12 +148,7 @@ class ContentHubFilterResource extends ResourceBase {
     $filters = $this->entityManager->getStorage('contenthub_filter')->loadMultiple($entities);
 
     if (!empty($filters)) {
-      if (count($filters) > 1) {
-        return new ResourceResponse(array_values($filters));
-      }
-      else {
-        return new ResourceResponse(reset($filters));
-      }
+      return new ResourceResponse(array_values($filters));
     }
     elseif ($contenthub_filter == 'all') {
       return new ResourceResponse(array());
