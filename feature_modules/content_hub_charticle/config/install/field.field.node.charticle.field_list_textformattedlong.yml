@@ -1,0 +1,20 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_list_textformattedlong
+    - node.type.charticle
+  module:
+    - text
+id: node.charticle.field_list_textformattedlong
+field_name: field_list_textformattedlong
+entity_type: node
+bundle: charticle
+label: List_TextFormattedLong
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: text_long

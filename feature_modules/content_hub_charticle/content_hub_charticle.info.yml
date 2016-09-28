@@ -1,0 +1,20 @@
+name: 'Content Hub CH-Article'
+description: 'Provides CH-Article content type and related configuration. Use <em>charticles</em> for time-sensitive content like news, press releases or blog posts.'
+type: module
+core: 8.x
+dependencies:
+  - comment
+  - datetime
+  - field
+  - file
+  - image
+  - link
+  - node
+  - options
+  - path
+  - rdf
+  - system
+  - taxonomy
+  - text
+  - user
+version: '0.1'

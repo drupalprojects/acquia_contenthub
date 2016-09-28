@@ -12,18 +12,26 @@ source .env
 
 PROJECT_NAME=$1
 
+if [ ! -z $2 ]; then
+  SITE_PATH=$2/$PROJECT_NAME
+else
+  SITE_PATH=$PROJECT_NAME
+fi
+
+
+
 # Make sure we were passed a project name for the directory.
 if [ -z "$PROJECT_NAME" ]; then
   echo "You need to specify a directory name where the build is."
   exit
 fi
 
-if [ ! -d $PROJECT_NAME ]; then
-  echo "The directory $PROJECT_NAME does not exist."
+if [ ! -d $SITE_PATH ]; then
+  echo "The directory $SITE_PATH does not exist."
   exit
 fi
 
-cd $PROJECT_NAME/web
+cd $SITE_PATH/web
 
 # MySQL has trouble with dashes in database names.
 DB_URL="$DRUPAL_DB_URL${PROJECT_NAME//-/_}"

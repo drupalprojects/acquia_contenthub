@@ -482,9 +482,9 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       }
       $att = new \Acquia\ContentHubClient\Attribute('string');
       $contenthub_entity->setAttribute('url', $att->setValue($value, $langcode));
-
-      return $contenthub_entity;
     }
+
+    return $contenthub_entity;
   }
 
   /**
