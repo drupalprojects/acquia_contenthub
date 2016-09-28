@@ -29,7 +29,7 @@ use DateTime;
  *   serialization_class = "Drupal\acquia_contenthub_subscriber\Entity\ContentHubFilter",
  *   uri_paths = {
  *     "canonical" = "/acquia_contenthub/contenthub_filter/{contenthub_filter}",
- *     "http://drupal.org/link-relations/create" = "/acquia_contenthub/contenthub_filter"
+ *     "https://www.drupal.org/link-relations/create" = "/acquia_contenthub/contenthub_filter"
  *   }
  * )
  */
