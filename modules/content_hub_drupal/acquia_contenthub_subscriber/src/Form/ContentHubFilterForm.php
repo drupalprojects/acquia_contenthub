@@ -73,11 +73,11 @@ class ContentHubFilterForm extends EntityForm {
       '#type' => 'select',
       '#title' => $this->t('Publish Setting'),
       '#options' => array(
-        'view' => 'View Results',
+        'none' => 'None',
         'import' => 'Always Import',
         'publish' => 'Always Publish',
       ),
-      '#default_value' => isset($contenthub_filter->publish_setting) ? $contenthub_filter->publish_setting : 'view',
+      '#default_value' => isset($contenthub_filter->publish_setting) ? $contenthub_filter->publish_setting : 'none',
       '#maxlength' => 255,
       '#description' => $this->t("Sets the Publish setting for this filter."),
       '#required' => TRUE,

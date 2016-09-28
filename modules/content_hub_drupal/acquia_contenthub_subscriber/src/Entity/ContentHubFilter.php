@@ -109,7 +109,7 @@ class ContentHubFilter extends ConfigEntityBase implements ContentHubFilterInter
    */
   public function getPublishSetting() {
     $setting = array(
-      'view' => t('View Results'),
+      'none' => t('None'),
       'import' => t('Always Import'),
       'publish' => t('Always Publish'),
     );
