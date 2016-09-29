@@ -1,0 +1,6 @@
+services:
+  acquia_contenthub_subscriber.resource_routes:
+    class: Drupal\acquia_contenthub_subscriber\Routing\ResourceRoutes
+    arguments: ['@plugin.manager.rest']
+    tags:
+      - { name: 'event_subscriber' }
