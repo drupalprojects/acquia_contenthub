@@ -91,6 +91,9 @@ class ResourceRoutes extends RouteSubscriberBase {
           $route->setRequirement('_format', 'json');
         }
 
+        // Require X-CSRF-Token.
+        $route->setRequirement('_access_rest_csrf', 'TRUE');
+
         // Add cookie-based authentication.
         $route->setOption('_auth', array('cookie'));
 
