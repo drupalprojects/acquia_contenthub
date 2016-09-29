@@ -86,15 +86,15 @@ class ResourceRoutes extends RouteSubscriberBase {
           continue;
         }
 
-        // Do not take methods that are not json.
-//        if ($route->getRequirement('_format') !== 'json') {
-//          continue;
-//        }
+        // Support JSON.
+        if ($route->getRequirement('_format') !== 'json') {
+          $route->setRequirement('_format', 'json');
+        }
 
         // Add cookie-based authentication.
         $route->setOption('_auth', array('cookie'));
 
-        $collection->add($name, $route);
+        $collection->add('rest.' . $name, $route);
       }
     }
   }
