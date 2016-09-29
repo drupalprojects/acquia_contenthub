@@ -7,36 +7,12 @@
 namespace Drupal\acquia_contenthub_subscriber\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
-use \Drupal\node\Entity\Node;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\JsonResponse;
 
 /**
  * Controller for Content Hub Discovery page.
  */
 class ContentHubSubscriberController extends ControllerBase {
-  /**
-   * Callback for `acquia-contenthub-api/post.json` API method.
-   */
-  public function postExample(Request $request) {
-    // This condition checks the `Content-type` and makes sure to
-    // decode JSON string from the request body into array.
-    if (0 === strpos($request->headers->get('Content-Type'), 'application/json')) {
-      $data = json_decode($request->getContent(), TRUE);
-      $request->request->replace(is_array($data) ? $data : []);
-    }
-
-    $node = Node::create([
-      'type'        => 'article',
-      'title'       => $data['title'],
-    ]);
-    $node->save();
-    $response['message'] = "Article created with title - " . $data['title'];
-    $response['method'] = 'POST';
-
-    return new JsonResponse($response);
-  }
-
   /**
    * Loads the content hub discovery page from an ember app.
    */
