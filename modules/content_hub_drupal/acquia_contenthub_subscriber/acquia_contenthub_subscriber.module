@@ -6,6 +6,7 @@
 
 use \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface;
 use \Drupal\acquia_contenthub\Controller\ContentHubEntityImportController;
+use Drupal\user\Entity\User;
 
 /**
  * @file
@@ -83,11 +84,24 @@ function acquia_contenthub_subscriber_process_filters(ContentHubEntityImportCont
 
   foreach ($contenthub_filters as $contenthub_filter) {
 
+    // Get the Status from the Filter Information.
+    $status = $contenthub_filter->getPublishStatus();
+
+    // If Publish Status is FALSE, stop processing this filter and jump to the
+    // next one.
+    if ($status === FALSE) {
+      continue;
+    }
+
     // Evaluate filter conditions to see if it matches for this entity.
     if (acquia_contenthub_subscriber_evaluate_filter_conditions($contenthub_filter, $asset)) {
 
-      // If condition is TRUE, then save entity with dependencies.
-      $contenthub_import_controller->saveDrupalEntity($asset['uuid']);
+      // Assign the appropriate author for this filter (User UUID).
+      $uid = $contenthub_filter->author;
+      $user = User::load($uid);
+
+      // If Filter condition evaluates to TRUE, save entity with dependencies.
+      $contenthub_import_controller->saveDrupalEntity($asset['uuid'], TRUE, $user->uuid(), $status);
 
       // If this filter matches, then stop processing other filters.
       // @TODO: Find a better way of handling different filters (ie. priority).

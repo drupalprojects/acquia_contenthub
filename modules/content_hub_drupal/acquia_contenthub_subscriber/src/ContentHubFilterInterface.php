@@ -22,6 +22,14 @@ interface ContentHubFilterInterface extends ConfigEntityInterface {
   public function getPublishSetting();
 
   /**
+   * Returns the Drupal Publish status to use on nodes that matches this filter.
+   *
+   * @return bool|int
+   *   0 if Unpublished status, 1 for Publish status, FALSE otherwise.
+   */
+  public function getPublishStatus();
+
+  /**
    * Returns the Author.
    *
    * @return mixed

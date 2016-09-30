@@ -118,6 +118,23 @@ class ContentHubFilter extends ConfigEntityBase implements ContentHubFilterInter
   }
 
   /**
+   * Returns the Publish status for this particular filter.
+   *
+   * This is the status flag to be saved on node entities.
+   *
+   * @return int|bool
+   *   0 if Unpublished status, 1 for Publish status, FALSE otherwise.
+   */
+  public function getPublishStatus() {
+    $status = array(
+      'none' => FALSE,
+      'import' => 0,
+      'publish' => 1,
+    );
+    return $status[$this->publish_setting];
+  }
+
+  /**
    * Returns the Author name (User account name).
    *
    * @return string

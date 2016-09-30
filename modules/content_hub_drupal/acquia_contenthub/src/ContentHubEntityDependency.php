@@ -286,4 +286,45 @@ class ContentHubEntityDependency {
     );
   }
 
+  /**
+   * Sets the author for the current node entity, if $author is given.
+   *
+   * @param string|null $author
+   *   The author's UUID if given.
+   */
+  public function setAuthor($author = NULL) {
+    if ($this->getEntityType() == 'node' && Uuid::isValid($author)) {
+      // Set the entity's author for node entities.
+      if ($this->getRawEntity()->getAttribute('author')) {
+        $this->cdf->setAttributeValue('author', $author);
+      }
+      else {
+        $attribute = new Attribute(Attribute::TYPE_REFERENCE);
+        $attribute = $attribute->setValue($author);
+        $this->cdf->setAttribute('author', $attribute);
+      }
+    }
+  }
+
+  /**
+   * Sets the status flag for a node entity, if given.
+   *
+   * @param int|null $status
+   *   The Status flag for a node entity.
+   */
+  public function setStatus($status = NULL) {
+    if ($this->getEntityType() == 'node' && isset($status)) {
+      // Set the entity's status for node entities.
+      if ($this->getRawEntity()->getAttribute('status')) {
+        $this->cdf->setAttributeValue('status', $status);
+      }
+      else {
+        $attribute = new Attribute(Attribute::TYPE_INTEGER);
+        $attribute = $attribute->setValue($status);
+        $this->cdf->setAttribute('status', $attribute);
+      }
+    }
+  }
+
+
 }
