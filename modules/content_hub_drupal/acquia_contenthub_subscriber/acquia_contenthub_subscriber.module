@@ -5,6 +5,8 @@
  * Implements entity auto-updates through webhooks.
  */
 
+use Drupal\Core\Entity\EntityInterface;
+
 /**
  * Implements hook_acquia_contenthub_process_webhook_alter().
  */
@@ -22,5 +24,19 @@ function acquia_contenthub_subscriber_acquia_contenthub_process_webhook_alter($w
     if ($contenthub_imported_entities->loadByUuid($asset['uuid']) !== FALSE) {
       $contenthub_import_controller->saveDrupalEntity($asset['uuid']);
     }
+  }
+}
+
+/**
+ * Implements hook_entity_delete().
+ */
+function acquia_contenthub_subscriber_entity_delete(EntityInterface $entity) {
+  // @TODO: Discuss flags like $entity->importedFromContentHub. Refer CHMS-929.
+  // @TODO: Make phpstrom 'goto function' work with Drupal-8 services.
+
+  // If this is an imported entity, delete its track record.
+  $contenthub_imported_entities = \Drupal::service('acquia_contenthub.acquia_contenthub_imported_entities');
+  if (($entity_uuid = $entity->get('uuid')->getString()) && ($imported_entity = $contenthub_imported_entities->loadByUuid($entity_uuid))) {
+    $imported_entity->delete();
   }
 }
