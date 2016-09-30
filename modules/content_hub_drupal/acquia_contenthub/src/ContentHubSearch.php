@@ -50,7 +50,7 @@ class ContentHubSearch {
    *   Returns elasticSearch query response hits.
    */
   public function executeSearchQuery(array $query) {
-    if ($query_response = $this->createRequest('searchEntity', array($query))) {
+    if ($query_response = $this->clientManager->createRequest('searchEntity', array($query))) {
       return $query_response['hits'];
     }
     return FALSE;
