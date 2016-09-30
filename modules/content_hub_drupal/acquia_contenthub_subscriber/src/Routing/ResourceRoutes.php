@@ -97,7 +97,7 @@ class ResourceRoutes extends RouteSubscriberBase {
         // Add cookie-based authentication.
         $route->setOption('_auth', array('cookie'));
 
-        $collection->add('rest.' . $name, $route);
+//        $collection->add('rest.' . $name, $route);
       }
     }
   }
