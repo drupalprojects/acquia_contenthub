@@ -295,13 +295,21 @@ class ContentHubEntityDependency {
   public function setAuthor($author = NULL) {
     if ($this->getEntityType() == 'node' && Uuid::isValid($author)) {
       // Set the entity's author for node entities.
-      if ($this->getRawEntity()->getAttribute('author')) {
-        $this->cdf->setAttributeValue('author', $author);
+      if (isset($this->getRawEntity()['attributes']['author'])) {
+        // Get the language.
+        $languages = array_keys($this->cdf['attributes']['author']['value']);
+        $lang = reset($languages);
+        $this->cdf['attributes']['author']['value'][$lang] = $author;
       }
       else {
-        $attribute = new Attribute(Attribute::TYPE_REFERENCE);
-        $attribute = $attribute->setValue($author);
-        $this->cdf->setAttribute('author', $attribute);
+        // Get the language.
+        $lang = reset($this->cdf['attributes']['langcode']['value']);
+        $this->cdf['attributes']['author'] = [
+          'type' => 'reference',
+          'value' => [
+            $lang => $author,
+          ]
+        ];
       }
     }
   }
@@ -314,14 +322,23 @@ class ContentHubEntityDependency {
    */
   public function setStatus($status = NULL) {
     if ($this->getEntityType() == 'node' && isset($status)) {
+
       // Set the entity's status for node entities.
-      if ($this->getRawEntity()->getAttribute('status')) {
-        $this->cdf->setAttributeValue('status', $status);
+      if (isset($this->getRawEntity()['attributes']['status'])) {
+        // Get the language.
+        $languages = array_keys($this->cdf['attributes']['status']['value']);
+        $lang = reset($languages);
+        $this->cdf['attributes']['status']['value'][$lang] = $status;
       }
       else {
-        $attribute = new Attribute(Attribute::TYPE_INTEGER);
-        $attribute = $attribute->setValue($status);
-        $this->cdf->setAttribute('status', $attribute);
+        // Get the language.
+        $lang = reset($this->cdf['attributes']['langcode']['value']);
+        $this->cdf['attributes']['status'] = [
+          'type' => 'integer',
+          'value' => [
+            $lang => $status,
+          ]
+        ];
       }
     }
   }
