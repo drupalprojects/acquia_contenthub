@@ -19,6 +19,8 @@ use Drupal\Component\Uuid\Uuid;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface;
 use DateTime;
+use Drupal\Core\Entity\EntityStorageException;
+use Drupal\Component\Render\FormattableMarkup;
 
 /**
  * Provides a resource to perform CRUD operations on Content Hub Filters.
@@ -166,10 +168,14 @@ class ContentHubFilterResource extends ResourceBase {
         $filters[$key]->changeDateFormatYearMonthDay2MonthDayYear();
       }
 
-      return new ResourceResponse(array_values($filters));
+      $response = new ResourceResponse(array_values($filters));
+      $response->addCacheableDependency($filters);
+      return $response;
     }
     elseif ($contenthub_filter == 'all') {
-      return new ResourceResponse(array());
+      $response = new ResourceResponse(array());
+      $response->addCacheableDependency($filters);
+      return $response;
     }
 
     throw new NotFoundHttpException(t('No Content Hub Filters were found'));
@@ -231,7 +237,10 @@ class ContentHubFilterResource extends ResourceBase {
       return new ResourceResponse($contenthub_filter);
     }
     catch (EntityStorageException $e) {
-      throw new HttpException(500, 'Internal Server Error', $e);
+      $message = new FormattableMarkup('Internal Server Error [!message].', array(
+        '!message' => $e->getMessage(),
+      ));
+      throw new HttpException(500, $message, $e);
     }
   }
 
