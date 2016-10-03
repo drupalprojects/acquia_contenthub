@@ -839,12 +839,13 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         case 'node':
           foreach ($langcodes as $language) {
             // Set the author as coming from the CDF.
-            $author = $contenthub_entity->getAttribute('author')['value'][$language];
-            $user = $this->entityRepository->loadEntityByUuid('user', $author);
+            $author = $contenthub_entity->getAttribute('author') ? $contenthub_entity->getAttribute('author')['value'][$language] : FALSE;
+            $user = Uuid::isValid($author) ? $this->entityRepository->loadEntityByUuid('user', $author) : \Drupal::currentUser();
             $values['uid'] = $user->id();
 
-            // Set the author as coming from the CDF.
-            $status = $contenthub_entity->getAttribute('status')['value'][$language];
+            // Set the status as coming from the CDF.
+            // If it doesn't have a status attribute, set it as 0 (unpublished).
+            $status = $contenthub_entity->getAttribute('status') ? $contenthub_entity->getAttribute('status')['value'][$language] : 0;
             $values['status'] = $status;
           }
           break;
