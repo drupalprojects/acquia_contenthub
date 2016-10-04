@@ -65,7 +65,8 @@ function acquia_contenthub_subscriber_install() {
   $config->save();
 
   // Rebuild routing cache.
-  $this->routeBuilder->rebuild();
+  $route_builder = \Drupal::service('router.builder');
+  $route_builder->rebuild();
   drupal_set_message(t('The resource "Content Hub Filter" was configured successfully.'));
 
 }
