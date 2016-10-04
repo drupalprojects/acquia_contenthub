@@ -165,7 +165,7 @@ class ContentHubEntityImportController extends ControllerBase {
         $entity_type = $dependency->getEntityType();
         if (isset($status) && ($entity_type == 'node')) {
           if ($this->contentHubImportedEntities->loadByUuid($uuid) === FALSE) {
-             $dependencies[$uuid]->setStatus($status);
+            $dependencies[$uuid]->setStatus($status);
           }
         }
       }

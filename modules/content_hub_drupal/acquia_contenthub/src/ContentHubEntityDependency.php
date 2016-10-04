@@ -308,7 +308,7 @@ class ContentHubEntityDependency {
           'type' => 'reference',
           'value' => [
             $lang => $author,
-          ]
+          ],
         ];
       }
     }
@@ -337,11 +337,10 @@ class ContentHubEntityDependency {
           'type' => 'integer',
           'value' => [
             $lang => $status,
-          ]
+          ],
         ];
       }
     }
   }
-
 
 }
