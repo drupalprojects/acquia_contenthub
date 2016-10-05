@@ -34,9 +34,14 @@ function acquia_contenthub_subscriber_entity_delete(EntityInterface $entity) {
   // @TODO: Discuss flags like $entity->importedFromContentHub. Refer CHMS-929.
   // @TODO: Make phpstrom 'goto function' work with Drupal-8 services.
 
-  // If this is an imported entity, delete its track record.
-  $contenthub_imported_entities = \Drupal::service('acquia_contenthub.acquia_contenthub_imported_entities');
-  if (($entity_uuid = $entity->get('uuid')->getString()) && ($imported_entity = $contenthub_imported_entities->loadByUuid($entity_uuid))) {
-    $imported_entity->delete();
+  // Get entity's uuid. D8 has direct core function for it.
+  // Note: Some config and non rename-able entities will return NULL.
+  $entity_uuid = $entity->uuid();
+  if (isset($entity_uuid)) {
+    // If this is an imported entity, delete its track record.
+    $contenthub_imported_entities = \Drupal::service('acquia_contenthub.acquia_contenthub_imported_entities');
+    if ($imported_entity = $contenthub_imported_entities->loadByUuid($entity_uuid)) {
+      $imported_entity->delete();
+    }
   }
 }
