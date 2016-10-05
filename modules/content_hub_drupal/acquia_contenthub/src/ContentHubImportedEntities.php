@@ -244,7 +244,7 @@ class ContentHubImportedEntities {
    * Deletes the entry for this particular entity.
    */
   public function delete() {
-    // @TODO Update after export tracking work in CHMS-880
+    // @TODO Update after export tracking work in CHMS-774
     // @TODO Discuss logging with team
     return $this->database->delete(self::TABLE)
       ->condition('entity_uuid', $this->getImportedEntity()->uuid)
