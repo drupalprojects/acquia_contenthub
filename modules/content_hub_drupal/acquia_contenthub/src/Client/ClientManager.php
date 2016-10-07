@@ -86,7 +86,7 @@ class ClientManager implements ClientManagerInterface {
    *   Throws exception when cannot connect to Content Hub.
    */
   protected function setConnection($config = []) {
-    $this->client = &drupal_static(__FUNCTION__);
+    $this->client = &drupal_static(__METHOD__);
     if (NULL === $this->client) {
 
       // Find out the module version in use.
