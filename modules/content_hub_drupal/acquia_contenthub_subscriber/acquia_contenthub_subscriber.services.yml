@@ -1,5 +1,0 @@
-services:
-  acquia_contenthub_subscriber.acquia_contenthub_subscriber_event:
-    class: Drupal\acquia_contenthub_subscriber\EventSubscriber\ContentHubSubscriberEvent
-    tags:
-      - { name: event_subscriber }
