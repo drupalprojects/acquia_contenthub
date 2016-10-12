@@ -43,6 +43,13 @@ if [ ! -d $1 ]; then
   composer config --global repositories.0 composer https://packages.drupal.org/8
   composer config repositories.acquia-content-hub-d8 vcs https://github.com/acquia/content-hub-d8
 
+  # Set Drupal core version.
+  if [ ! -z $4 ]; then
+    core_version=$4
+    composer require drupal/core:$core_version --no-update
+    echo "> Specific Drupal core set: $core_version"
+  fi
+
   echo "> composer update"
   composer update --profile
 else
