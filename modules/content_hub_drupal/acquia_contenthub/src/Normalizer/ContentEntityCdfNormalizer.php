@@ -24,6 +24,8 @@ use Drupal\Core\Url;
 use Drupal\Component\Uuid\Uuid;
 use Drupal\acquia_contenthub\EntityManager as EntityManager;
 use Drupal\acquia_contenthub\Controller\ContentHubEntityExportController;
+use Drupal\Core\Language\LanguageManager;
+use Drupal\Core\Entity;
 
 /**
  * Converts the Drupal entity object to a Acquia Content Hub CDF array.
@@ -122,6 +124,13 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
   protected $exportController;
 
   /**
+   * Language Manager.
+   *
+   * @var \Drupal\Core\Language\LanguageManager
+   */
+  protected $languageManager;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
@@ -134,7 +143,8 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       $container->get('renderer'),
       $container->get('acquia_contenthub.entity_manager'),
       $container->get('entity_type.manager'),
-      $container->get('acquia_contenthub.acquia_contenthub_export_entities')
+      $container->get('acquia_contenthub.acquia_contenthub_export_entities'),
+      $container->get('language_manager')
     );
   }
 
@@ -155,8 +165,10 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    *   The entity type manager.
    * @param \Drupal\acquia_contenthub\Controller\ContentHubEntityExportController $export_controller
    *   The Export Controller.
+   * @param \Drupal\Core\Language\LanguageManager $languageManager
+   *   The Language Manager
    */
-  public function __construct(ConfigFactoryInterface $config_factory, ContentEntityViewModesExtractorInterface $content_entity_view_modes_normalizer, ModuleHandlerInterface $module_handler, EntityRepository $entity_repository, HttpKernelInterface $kernel, Renderer $renderer, EntityManager $entity_manager, EntityTypeManagerInterface $entity_type_manager, ContentHubEntityExportController $export_controller) {
+  public function __construct(ConfigFactoryInterface $config_factory, ContentEntityViewModesExtractorInterface $content_entity_view_modes_normalizer, ModuleHandlerInterface $module_handler, EntityRepository $entity_repository, HttpKernelInterface $kernel, Renderer $renderer, EntityManager $entity_manager, EntityTypeManagerInterface $entity_type_manager, ContentHubEntityExportController $export_controller, LanguageManager $language_nanager) {
     global $base_url;
     $this->baseUrl = $base_url;
     $this->contentHubAdminConfig = $config_factory->get('acquia_contenthub.admin_settings');
@@ -168,6 +180,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     $this->entityManager = $entity_manager;
     $this->entityTypeManager = $entity_type_manager;
     $this->exportController = $export_controller;
+    $this->languageManager = $language_nanager;
   }
 
   /**
@@ -581,7 +594,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    * @return \Drupal\Core\Entity\ContentEntityInterface
    *   The Drupal Entity after integrating data from Content Hub.
    */
-  protected function addFieldsToDrupalEntity(\Drupal\Core\Entity\ContentEntityInterface $entity, ContentHubEntity $contenthub_entity, $langcode = 'und', array $context = array()) {
+  protected function addFieldsToDrupalEntity(\Drupal\Core\Entity\ContentEntityInterface $entity, ContentHubEntity $contenthub_entity, $langcode='und', array $context = array()) {
     /** @var \Drupal\Core\Field\FieldItemListInterface[] $fields */
     $fields = $entity->getFields();
 
@@ -592,7 +605,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     // Ignore the entity ID and revision ID.
     // Excluded comes here.
     $excluded_fields = $this->excludedProperties($entity);
-    $excluded_fields[] = 'langcode';
+//    $excluded_fields[] = 'langcode';
     $excluded_fields[] = 'type';
 
     // Iterate over all attributes.
@@ -611,32 +624,36 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       );
 
       $field = $fields[$name];
-      if (isset($field)) {
-        // Try to map it to a known field type.
-        $field_type = $field->getFieldDefinition()->getType();
-        $value = $attribute['value'][$langcode];
-        $output = [];
-
-        if ($field instanceof \Drupal\Core\Field\EntityReferenceFieldItemListInterface) {
-          foreach ($value as $delta => $item) {
-            $uuid = in_array($field_type, $file_types) ? $this->removeBracketsUuid($item) : $item;
-            $entity_type = $field->getFieldDefinition()->getSettings()['target_type'];
-            $output[$delta] = $this->entityRepository->loadEntityByUuid($entity_type, $uuid)->id();
+      // foreach ($languages as $langcode => $languageData) {
+        if (isset($field)) {
+          if ($name == 'langcode') {
+            $entity->language($langcode);
           }
-          $value = $output;
-        }
-        else {
-          if (strpos($type_mapping[$field_type], 'array') !== FALSE) {
-            foreach ($value as $item) {
-              // Assigning the output.
-              $output = json_decode($item, TRUE);
+          // Try to map it to a known field type.
+          $field_type = $field->getFieldDefinition()->getType();
+          $value[$langcode] = $attribute['value'][$langcode];
+          $output = [];
+
+          if ($field instanceof \Drupal\Core\Field\EntityReferenceFieldItemListInterface) {
+            foreach ($value as $delta => $item) {
+              $uuid = in_array($field_type, $file_types) ? $this->removeBracketsUuid($item) : $item;
+              $entity_type = $field->getFieldDefinition()->getSettings()['target_type'];
+              $output[$delta] = $this->entityRepository->loadEntityByUuid($entity_type, $uuid)->id();
             }
             $value = $output;
+          } else {
+            if (strpos($type_mapping[$field_type], 'array') !== FALSE) {
+              foreach ($value as $item) {
+                // Assigning the output.
+                $output = json_decode($item, TRUE);
+              }
+              $value[$langcode] = $output;
+            }
           }
-        }
 
-        $entity->$name = $value;
-      }
+          $entity->$name = $value[$langcode];
+        }
+      //}
     }
 
     return $entity;
@@ -841,12 +858,12 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
             // Set the author as coming from the CDF.
             $author = $contenthub_entity->getAttribute('author') ? $contenthub_entity->getAttribute('author')['value'][$language] : FALSE;
             $user = Uuid::isValid($author) ? $this->entityRepository->loadEntityByUuid('user', $author) : \Drupal::currentUser();
-            $values['uid'] = $user->id();
+            $values['uid'] = $user->id() ? $user->id() : FALSE;
 
             // Set the status as coming from the CDF.
             // If it doesn't have a status attribute, set it as 0 (unpublished).
             $status = $contenthub_entity->getAttribute('status') ? $contenthub_entity->getAttribute('status')['value'][$language] : 0;
-            $values['status'] = $status;
+            $values['status'] = $status ? $status : 0;
           }
           break;
 
@@ -882,17 +899,27 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     }
 
     // Assigning langcodes.
-    $entity->langcode = array_values($langcodes);
+    $entity->langcodes = array_values($langcodes);
 
     // We have to iterate over the entity translations and add all the
     // translations versions.
-    $languages = $entity->getTranslationLanguages();
+    $languages = $this->languageManager->getLanguages();
+    $currentLanguage = $this->languageManager->getCurrentLanguage();
+    // $languages = $entity->getTranslationLanguages();
     foreach ($languages as $language => $languagedata) {
       // Make sure the entity language is one of the language contained in the
       // Content Hub Entity.
       if (in_array($language, $langcodes)) {
-        $localized_entity = $entity->getTranslation($language);
-        $entity = $this->addFieldsToDrupalEntity($localized_entity, $contenthub_entity, $language, $context);
+        if ($entity->hasTranslation($language)) {
+          $localized_entity = $entity->getTranslation($language);
+          $entity = $this->addFieldsToDrupalEntity($localized_entity, $contenthub_entity, $language, $context);
+        }
+        else {
+          $localized_entity = $entity->addTranslation($language, $entity->toArray());
+          $localized_entity->content_translation_source = $entity->language()->getId();
+          $entity = $this->addFieldsToDrupalEntity($localized_entity, $contenthub_entity, $language, $context);
+          // $entity->addTranslation($language, $entity->toArray());
+        }
       }
     }
     return $entity;
