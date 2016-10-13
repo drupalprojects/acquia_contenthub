@@ -115,11 +115,13 @@ class ContentHubEntityImportController extends ControllerBase {
    *   TRUE if we want to save all its dependencies, FALSE otherwise.
    * @param string $author
    *   The UUID of the author (user) that will own the entity.
+   * @param int $status
+   *   The publishing status of the entity (Applies to nodes).
    *
    * @return \Symfony\Component\HttpFoundation\JsonResponse
    *   A JSON Response.
    */
-  public function saveDrupalEntity($uuid, $include_dependencies = TRUE, $author = NULL) {
+  public function saveDrupalEntity($uuid, $include_dependencies = TRUE, $author = NULL, $status = 0) {
     // Checking that the parameter given is a UUID.
     if (!Uuid::isValid($uuid)) {
       // We will just show a standard "access denied" page in this case.
@@ -149,21 +151,21 @@ class ContentHubEntityImportController extends ControllerBase {
         $dependencies = $this->entityManager->getAllRemoteDependencies($contenthub_entity, $dependencies, TRUE);
       }
 
-      // Obtaining the Status of the parent entity, if it is a node.
-      // if ($attribute = $contenthub_entity->getRawEntity()
-      // ->getAttribute('status')) {
-      // $status = $attribute->getValue();
-      // }
+      // Obtaining the Status of the parent entity, if it is a node and
+      // setting the publishing status of that entity.
+      $contenthub_entity->setStatus($status);
+
       // Assigning author to this entity and dependencies.
-      // $contenthub_entity->setAuthor($author);
+      $contenthub_entity->setAuthor($author);
+
       foreach ($dependencies as $uuid => $dependency) {
-        // $dependencies[$uuid]->setAuthor($author);
+        $dependencies[$uuid]->setAuthor($author);
         // Only change the Node status of dependent entities if they are nodes,
         // if the status flag is set and if they haven't been imported before.
         $entity_type = $dependency->getEntityType();
         if (isset($status) && ($entity_type == 'node')) {
           if ($this->contentHubImportedEntities->loadByUuid($uuid) === FALSE) {
-            // $dependencies[$uuid]->setStatus($status);
+            $dependencies[$uuid]->setStatus($status);
           }
         }
       }

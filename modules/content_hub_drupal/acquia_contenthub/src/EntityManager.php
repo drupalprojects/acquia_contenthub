@@ -191,25 +191,6 @@ class EntityManager {
     }
     else {
       // Entity has not been sync'ed, then proceed with it.
-      // Is this an entity that does not belong to this site? Has it been
-      // previously imported from Content Hub? Or was this entity type selected
-      // in the Entity Configuration page?
-      $uuid = $entity->uuid();
-      // We cannot bulk upload this entity because it does not belong to this
-      // site or it wasn't selected in the Entity Configuration Page.
-      // Add it to the pool of failed entities.
-      if (isset($uuid)) {
-        $this->entityFailures(1);
-        $args = array(
-          '%type' => $type,
-          '%uuid' => $entity->uuid(),
-        );
-        // We can use this pool of failed entities to display a message to the
-        // user about the entities that failed to export.
-        $message = new FormattableMarkup('Cannot export %type entity with UUID = %uuid to Content Hub because it was previously imported (did not originate from this site) or it wasn\'t selected in the Entity Configuration Page.', $args);
-        $this->loggerFactory->get('acquia_contenthub')->error($message);
-        return;
-      }
     }
   }
 
@@ -223,7 +204,7 @@ class EntityManager {
    *   The array of entities to export.
    */
   public function collectExportEntities($entity = NULL) {
-    $entities = &drupal_static(__FUNCTION__);
+    $entities = &drupal_static(__METHOD__);
     if (!isset($entities)) {
       $entities = array();
     }
@@ -246,7 +227,7 @@ class EntityManager {
    *   The total number of entities that failed to bulk upload.
    */
   public function entityFailures($num = NULL) {
-    $total = &drupal_static(__FUNCTION__);
+    $total = &drupal_static(__METHOD__);
     if (!isset($total)) {
       $total = is_int($num) ? $num : 0;
     }
@@ -445,6 +426,25 @@ class EntityManager {
     // If the entity has been imported before, then it didn't originate from
     // this site and shouldn't be exported.
     if ($this->contentHubImportedEntities->loadByDrupalEntity($entity->getEntityTypeId(), $entity->id()) !== FALSE) {
+      // Is this an entity that does not belong to this site? Has it been
+      // previously imported from Content Hub?
+      $uuid = $entity->uuid();
+      // We cannot bulk upload this entity because it does not belong to this
+      // site. Add it to the pool of failed entities.
+      if (isset($uuid)) {
+        $this->entityFailures(1);
+        $args = array(
+          '%type' => $entity->getEntityTypeId(),
+          '%uuid' => $entity->uuid(),
+        );
+
+        // We can use this pool of failed entities to display a message to the
+        // user about the entities that failed to export.
+        // $message = new FormattableMarkup('Cannot export %type entity with
+        // UUID = %uuid to Content Hub because it was previously imported
+        // (did not originate from this site).', $args);
+        // $this->loggerFactory->get('acquia_contenthub')->error($message);
+      }
       return FALSE;
     }
 

@@ -286,4 +286,61 @@ class ContentHubEntityDependency {
     );
   }
 
+  /**
+   * Sets the author for the current node entity, if $author is given.
+   *
+   * @param string|null $author
+   *   The author's UUID if given.
+   */
+  public function setAuthor($author = NULL) {
+    if ($this->getEntityType() == 'node' && Uuid::isValid($author)) {
+      // Set the entity's author for node entities.
+      if (isset($this->getRawEntity()['attributes']['author'])) {
+        // Get the language.
+        $languages = array_keys($this->cdf['attributes']['author']['value']);
+        $lang = reset($languages);
+        $this->cdf['attributes']['author']['value'][$lang] = $author;
+      }
+      else {
+        // Get the language.
+        $lang = reset($this->cdf['attributes']['langcode']['value']);
+        $this->cdf['attributes']['author'] = [
+          'type' => 'reference',
+          'value' => [
+            $lang => $author,
+          ],
+        ];
+      }
+    }
+  }
+
+  /**
+   * Sets the status flag for a node entity, if given.
+   *
+   * @param int|null $status
+   *   The Status flag for a node entity.
+   */
+  public function setStatus($status = NULL) {
+    if ($this->getEntityType() == 'node' && isset($status)) {
+
+      // Set the entity's status for node entities.
+      if (isset($this->getRawEntity()['attributes']['status'])) {
+        // Get the language.
+        $languages = array_keys($this->cdf['attributes']['status']['value']);
+        $lang = reset($languages);
+        $this->cdf['attributes']['status']['value'][$lang] = $status;
+      }
+      else {
+        // Get the language.
+        $lang = reset($this->cdf['attributes']['langcode']['value']);
+        $this->cdf['attributes']['status'] = [
+          'type' => 'integer',
+          'value' => [
+            $lang => $status,
+          ],
+        ];
+      }
+    }
+  }
+
 }

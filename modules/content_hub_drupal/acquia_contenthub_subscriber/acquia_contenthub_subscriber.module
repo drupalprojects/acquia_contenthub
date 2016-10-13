@@ -1,26 +1,147 @@
 <?php
+/**
+ * @file
+ * Handles Content Hub Content Subscriptions and Updates.
+ */
+
+use \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface;
+use \Drupal\acquia_contenthub\Controller\ContentHubEntityImportController;
+use Drupal\user\Entity\User;
 
 /**
  * @file
  * Implements entity auto-updates through webhooks.
  */
 
+use Drupal\Core\Entity\EntityInterface;
+
 /**
  * Implements hook_acquia_contenthub_process_webhook_alter().
  */
 function acquia_contenthub_subscriber_acquia_contenthub_process_webhook_alter($webhook) {
-  $contenthub_imported_entities = \Drupal::service('acquia_contenthub.acquia_contenthub_imported_entities');
+  /* @var \Drupal\acquia_contenthub\ContentHubImportedEntities $contenthub_imported_entity */
+  $contenthub_imported_entity = \Drupal::service('acquia_contenthub.acquia_contenthub_imported_entities');
+
+  /* @var \Drupal\acquia_contenthub\Controller\ContentHubEntityImportController $contenthub_import_controller */
   $contenthub_import_controller = \Drupal::service('acquia_contenthub.acquia_contenthub_cdf.import_entity');
+
+  /* @var \Drupal\Core\Entity\EntityManagerInterface $entity_manager */
+  $entity_manager = \Drupal::service('entity.manager');
+
+  // Load all Content Hub Filters.
+  $filters = $entity_manager->getStorage('contenthub_filter')->loadMultiple();
+
   $assets = $webhook['assets'];
   // Process every asset that comes in the webhook, other than the
   // post dependencies.
   foreach ($assets as $asset) {
     // @TODO: We need to exclude post-dependencies (entity dependent).
-    // @TODO: We need to invoke the default rule.
-    // rules_invoke_event('content_hub_event_webhook_landing', $asset);
-    // For now, we are just importing anything that comes in.
-    if ($contenthub_imported_entities->loadByUuid($asset['uuid']) !== FALSE) {
-      $contenthub_import_controller->saveDrupalEntity($asset['uuid']);
+
+    // If the entity has been previously imported, check auto update status.
+    if ($contenthub_imported_entity->loadByUuid($asset['uuid']) !== FALSE) {
+      if ($contenthub_imported_entity->getAutoUpdate() == \Drupal\acquia_contenthub\ContentHubImportedEntities::AUTO_UPDATE_ENABLED) {
+        $contenthub_import_controller->saveDrupalEntity($asset['uuid']);
+      }
+    }
+    else {
+      // New entities are handled by Content Hub Filters.
+      acquia_contenthub_subscriber_process_filters($contenthub_import_controller, $filters, $asset);
     }
   }
+}
+
+/**
+ * Implements hook_entity_delete().
+ */
+function acquia_contenthub_subscriber_entity_delete(EntityInterface $entity) {
+  // @TODO: Discuss flags like $entity->importedFromContentHub. Refer CHMS-929.
+  // @TODO: Make phpstrom 'goto function' work with Drupal-8 services.
+
+  // Get entity's uuid. D8 has direct core function for it.
+  // Note: Some config and non rename-able entities will return NULL.
+  $entity_uuid = $entity->uuid();
+  if (isset($entity_uuid)) {
+    // If this is an imported entity, delete its track record.
+    $contenthub_imported_entities = \Drupal::service('acquia_contenthub.acquia_contenthub_imported_entities');
+    if ($imported_entity = $contenthub_imported_entities->loadByUuid($entity_uuid)) {
+      $imported_entity->delete();
+    }
+  }
+}
+
+/**
+ * Processes an Asset that has arrived through a Webhook.
+ *
+ * @param \Drupal\acquia_contenthub\Controller\ContentHubEntityImportController $contenthub_import_controller
+ *   The Content Hub Import Controller Service.
+ * @param \Drupal\acquia_contenthub_subscriber\Entity\ContentHubFilter[] $contenthub_filters
+ *   of Content Hub Filters.
+ *   Array of Content Hub Filters.
+ * @param array $asset
+ *   The asset to process.
+ */
+function acquia_contenthub_subscriber_process_filters(ContentHubEntityImportController $contenthub_import_controller, array $contenthub_filters, array $asset) {
+
+  foreach ($contenthub_filters as $contenthub_filter) {
+
+    // Get the Status from the Filter Information.
+    $status = $contenthub_filter->getPublishStatus();
+
+    // If Publish Status is FALSE, stop processing this filter and jump to the
+    // next one.
+    if ($status === FALSE) {
+      continue;
+    }
+
+    // Evaluate filter conditions to see if it matches for this entity.
+    if (acquia_contenthub_subscriber_evaluate_filter_conditions($contenthub_filter, $asset)) {
+
+      // Assign the appropriate author for this filter (User UUID).
+      $uid = $contenthub_filter->author;
+      $user = User::load($uid);
+
+      // If Filter condition evaluates to TRUE, save entity with dependencies.
+      $contenthub_import_controller->saveDrupalEntity($asset['uuid'], TRUE, $user->uuid(), $status);
+
+      // If this filter matches, then stop processing other filters.
+      // @TODO: Find a better way of handling different filters (ie. priority).
+      break;
+    }
+
+  }
+}
+
+/**
+ * Checks whether this asset (entity) matches the filter condition.
+ *
+ * @param \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface $contenthub_filter
+ *   A Content Hub Filter.
+ * @param array $asset
+ *   An entity [entity_type, entity_uuid].
+ *
+ * @return bool
+ *   TRUE if matches condition, FALSE otherwise.
+ */
+function acquia_contenthub_subscriber_evaluate_filter_conditions(ContentHubFilterInterface $contenthub_filter, array $asset) {
+  $uuid = $asset['uuid'];
+  /* @var \Drupal\acquia_contenthub\ContentHubSearch $contenthub_search */
+  $contenthub_search = \Drupal::service('acquia_contenthub.acquia_contenthub_search');
+
+  // Obtain the Filter conditions.
+  $conditions = $contenthub_filter->getConditions();
+
+  // Process the uuid that comes in the webhook's asset.
+  $type = 'content_hub';
+  if (isset($uuid) && !empty($conditions)) {
+    $count = $contenthub_search->buildTagsQuery($conditions, $uuid, $type);
+    if ($count > 0) {
+      return TRUE;
+    }
+  }
+  else {
+    return TRUE;
+  }
+
+  // If we reach here, return FALSE.
+  return FALSE;
 }

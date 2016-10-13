@@ -36,7 +36,10 @@ acquia_contenthub.acquia_contenthub_cdf.entity:
   defaults:
     _controller: 'Drupal\acquia_contenthub\Controller\ContentHubEntityImportController::saveDrupalEntity'
   requirements:
-    _access: 'TRUE'
+    _permission: 'administer acquia content hub'
+    _access_rest_csrf: 'TRUE'
+  options:
+    _auth: ['cookie']
 
 acquia_contenthub.content_entity_display.entity:
   path: '/acquia-contenthub/display/{entity_type}/{entity_id}/{view_mode_name}'

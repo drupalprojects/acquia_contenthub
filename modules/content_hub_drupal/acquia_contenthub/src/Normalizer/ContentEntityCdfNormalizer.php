@@ -837,8 +837,17 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       // Special treatment according to entity types.
       switch ($entity_type) {
         case 'node':
-          // Status is by default unpublished if it is a node.
-          $values['status'] = 0;
+          foreach ($langcodes as $language) {
+            // Set the author as coming from the CDF.
+            $author = $contenthub_entity->getAttribute('author') ? $contenthub_entity->getAttribute('author')['value'][$language] : FALSE;
+            $user = Uuid::isValid($author) ? $this->entityRepository->loadEntityByUuid('user', $author) : \Drupal::currentUser();
+            $values['uid'] = $user->id();
+
+            // Set the status as coming from the CDF.
+            // If it doesn't have a status attribute, set it as 0 (unpublished).
+            $status = $contenthub_entity->getAttribute('status') ? $contenthub_entity->getAttribute('status')['value'][$language] : 0;
+            $values['status'] = $status;
+          }
           break;
 
         case 'file':
