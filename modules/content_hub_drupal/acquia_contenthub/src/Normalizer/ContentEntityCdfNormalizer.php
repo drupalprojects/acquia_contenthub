@@ -25,7 +25,6 @@ use Drupal\Component\Uuid\Uuid;
 use Drupal\acquia_contenthub\EntityManager as EntityManager;
 use Drupal\acquia_contenthub\Controller\ContentHubEntityExportController;
 use Drupal\Core\Language\LanguageManager;
-use Drupal\Core\Entity;
 
 /**
  * Converts the Drupal entity object to a Acquia Content Hub CDF array.
@@ -165,8 +164,8 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    *   The entity type manager.
    * @param \Drupal\acquia_contenthub\Controller\ContentHubEntityExportController $export_controller
    *   The Export Controller.
-   * @param \Drupal\Core\Language\LanguageManager $languageManager
-   *   The Language Manager
+   * @param \Drupal\Core\Language\LanguageManager $language_nanager
+   *   The Language Manager.
    */
   public function __construct(ConfigFactoryInterface $config_factory, ContentEntityViewModesExtractorInterface $content_entity_view_modes_normalizer, ModuleHandlerInterface $module_handler, EntityRepository $entity_repository, HttpKernelInterface $kernel, Renderer $renderer, EntityManager $entity_manager, EntityTypeManagerInterface $entity_type_manager, ContentHubEntityExportController $export_controller, LanguageManager $language_nanager) {
     global $base_url;
@@ -637,7 +636,8 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
             $output[$delta] = $this->entityRepository->loadEntityByUuid($entity_type, $uuid)->id();
           }
           $value = $output;
-        } else {
+        }
+        else {
           if (strpos($type_mapping[$field_type], 'array') !== FALSE) {
             foreach ($value as $item) {
               // Assigning the output.
