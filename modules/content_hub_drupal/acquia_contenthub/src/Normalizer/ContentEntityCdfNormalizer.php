@@ -594,7 +594,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    * @return \Drupal\Core\Entity\ContentEntityInterface
    *   The Drupal Entity after integrating data from Content Hub.
    */
-  protected function addFieldsToDrupalEntity(\Drupal\Core\Entity\ContentEntityInterface $entity, ContentHubEntity $contenthub_entity, $langcode='und', array $context = array()) {
+  protected function addFieldsToDrupalEntity(\Drupal\Core\Entity\ContentEntityInterface $entity, ContentHubEntity $contenthub_entity, $langcode = 'und', array $context = array()) {
     /** @var \Drupal\Core\Field\FieldItemListInterface[] $fields */
     $fields = $entity->getFields();
 
@@ -605,7 +605,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     // Ignore the entity ID and revision ID.
     // Excluded comes here.
     $excluded_fields = $this->excludedProperties($entity);
-//    $excluded_fields[] = 'langcode';
+    $excluded_fields[] = 'langcode';
     $excluded_fields[] = 'type';
 
     // Iterate over all attributes.
@@ -624,36 +624,31 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       );
 
       $field = $fields[$name];
-      // foreach ($languages as $langcode => $languageData) {
-        if (isset($field)) {
-          if ($name == 'langcode') {
-            $entity->language($langcode);
-          }
-          // Try to map it to a known field type.
-          $field_type = $field->getFieldDefinition()->getType();
-          $value[$langcode] = $attribute['value'][$langcode];
-          $output = [];
+      if (isset($field)) {
+        // Try to map it to a known field type.
+        $field_type = $field->getFieldDefinition()->getType();
+        $value = $attribute['value'][$langcode];
+        $output = [];
 
-          if ($field instanceof \Drupal\Core\Field\EntityReferenceFieldItemListInterface) {
-            foreach ($value as $delta => $item) {
-              $uuid = in_array($field_type, $file_types) ? $this->removeBracketsUuid($item) : $item;
-              $entity_type = $field->getFieldDefinition()->getSettings()['target_type'];
-              $output[$delta] = $this->entityRepository->loadEntityByUuid($entity_type, $uuid)->id();
+        if ($field instanceof \Drupal\Core\Field\EntityReferenceFieldItemListInterface) {
+          foreach ($value as $delta => $item) {
+            $uuid = in_array($field_type, $file_types) ? $this->removeBracketsUuid($item) : $item;
+            $entity_type = $field->getFieldDefinition()->getSettings()['target_type'];
+            $output[$delta] = $this->entityRepository->loadEntityByUuid($entity_type, $uuid)->id();
+          }
+          $value = $output;
+        } else {
+          if (strpos($type_mapping[$field_type], 'array') !== FALSE) {
+            foreach ($value as $item) {
+              // Assigning the output.
+              $output = json_decode($item, TRUE);
             }
             $value = $output;
-          } else {
-            if (strpos($type_mapping[$field_type], 'array') !== FALSE) {
-              foreach ($value as $item) {
-                // Assigning the output.
-                $output = json_decode($item, TRUE);
-              }
-              $value[$langcode] = $output;
-            }
           }
-
-          $entity->$name = $value[$langcode];
         }
-      //}
+
+        $entity->$name = $value;
+      }
     }
 
     return $entity;
@@ -826,6 +821,9 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    *   Format the given data was extracted from.
    * @param array $context
    *   Options available to the denormalizer.
+   *
+   * @return array
+   *   Returns denormalized data.
    */
   public function denormalize($data, $class, $format = NULL, array $context = array()) {
     $context += ['account' => NULL];
@@ -904,8 +902,6 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     // We have to iterate over the entity translations and add all the
     // translations versions.
     $languages = $this->languageManager->getLanguages();
-    $currentLanguage = $this->languageManager->getCurrentLanguage();
-    // $languages = $entity->getTranslationLanguages();
     foreach ($languages as $language => $languagedata) {
       // Make sure the entity language is one of the language contained in the
       // Content Hub Entity.
@@ -918,7 +914,6 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
           $localized_entity = $entity->addTranslation($language, $entity->toArray());
           $localized_entity->content_translation_source = $entity->language()->getId();
           $entity = $this->addFieldsToDrupalEntity($localized_entity, $contenthub_entity, $language, $context);
-          // $entity->addTranslation($language, $entity->toArray());
         }
       }
     }
