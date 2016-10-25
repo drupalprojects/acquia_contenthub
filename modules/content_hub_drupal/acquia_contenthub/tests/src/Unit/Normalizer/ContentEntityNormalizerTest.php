@@ -88,7 +88,15 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $this->contentEntityViewModesExtractor = $this->getMock('\Drupal\acquia_contenthub\Normalizer\ContentEntityViewModesExtractorInterface');
     $this->moduleHandler = $this->getMock('\Drupal\Core\Extension\ModuleHandlerInterface');
 
-    $this->contentEntityNormalizer = new ContentEntityCdfNormalizer($this->configFactory, $this->contentEntityViewModesExtractor, $this->moduleHandler);
+    $this->entityRepository = $this->getMock('\Drupal\Core\Entity\EntityRepositoryInterface');
+    $this->kernel = $this->getMock('\Symfony\Component\HttpKernel\HttpKernelInterface');
+    $this->renderer = $this->getMock('\Drupal\Core\Render\RendererInterface');
+    $this->entityManager = $this->getMock('\Drupal\acquia_contenthub\EntityManagerInterface');
+    $this->entityTypeManager = $this->getMock('\Drupal\Core\Entity\EntityTypeManagerInterface');
+    $this->exportControler = $this->getMock('\Drupal\acquia_contenthub\Controller\ContentHubEntityExportController', array(), array($this->kernel));
+    $this->languageManager = $this->getMock('\Drupal\Core\Language\LanguageManager');
+
+    $this->contentEntityNormalizer = new ContentEntityCdfNormalizer($this->configFactory, $this->contentEntityViewModesExtractor, $this->moduleHandler, $this->entityRepository, $this->kernel, $this->renderer, $this->entityManager, $this->entityTypeManager, $this->exportControler, $this->languageManager);
 
     // Fake Acquia Content Hub Config.
     $this->contentHubEntityConfig = array(
