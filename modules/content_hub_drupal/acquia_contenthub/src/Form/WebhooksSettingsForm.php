@@ -101,7 +101,7 @@ class WebhooksSettingsForm extends ConfigFormBase {
     $form['webhook_settings']['webhook_url'] = array(
       '#type' => 'textfield',
       '#title' => t('Acquia Content Hub URL'),
-      '#description' => t('Please use a full URL (Ex. http://example.com/webhook). This is the end-point where this site will receive webhooks from Acquia Content Hub.'),
+      '#description' => t('Please use a full URL (Ex. http://example.com/acquia-contenthub/webhook). This is the end-point where this site will receive webhooks from Acquia Content Hub.'),
       '#default_value' => $webhook_url,
       '#required' => TRUE,
     );
