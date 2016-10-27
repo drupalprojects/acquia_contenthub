@@ -14,7 +14,7 @@ use Drupal\acquia_contenthub\ContentHubEntityTypeConfigInterface;
  * Defines a ContentHubEntityConfig configuration entity class.
  *
  * @ConfigEntityType(
- *   id = "entity_type_config",
+ *   id = "acquia_contenthub_entity_config",
  *   label = @Translation("Acquia Content Hub Entity configuration"),
  *   config_prefix = "acquia_contenthub",
  *   admin_permission = "Administer Acquia Content Hub'",
@@ -63,6 +63,10 @@ class ContentHubEntityTypeConfig extends ConfigEntityBase implements ContentHubE
 
   public function getRendering($bundle) {
     return $this->bundles[$bundle]['rendering'];
+  }
+
+  public function setBundles($bundles) {
+    $this->bundles = $bundles;
   }
 
 }

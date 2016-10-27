@@ -30,7 +30,7 @@ acquia_contenthub.entity_config:
       type: string
       label: "Role to use when converting an Entity to a CDF with or without Metadata"
 
-acquia_contenthub.entity_type_config.*:
+acquia_contenthub.entity.*:
   type: config_entity
   label: 'Acquia Content Hub entity type configuration'
   mapping:
@@ -42,10 +42,10 @@ acquia_contenthub.entity_type_config.*:
         label: 'A specific entity bundle configuration'
         mapping:
           enable_index:
-            type: integer
+            type: boolean
             label: 'Defines if this is being sent to Content Hub.'
           enable_viewmodes:
-            type: integer
+            type: boolean
             label: 'Defines if we want to index view modes to Content Hub.'
           rendering:
             type: sequence
