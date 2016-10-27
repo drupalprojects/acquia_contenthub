@@ -153,7 +153,13 @@ class EntityConfigSettingsForm extends ConfigFormBase {
    *   Entities bundle form.
    */
   private function buildEntitiesBundleForm($type, $bundle) {
-    $entities = $this->config('acquia_contenthub.entity_config')->get('entities');
+
+    /** @var \Drupal\rest\RestResourceConfigInterface $contenthub_entity_config_storage */
+    $contenthub_entity_config_storage = $this->entityTypeManager->getStorage('acquia_contenthub_entity_config');
+    $contenthub_entity_configs = $contenthub_entity_config_storage->loadMultiple(array($type));
+    $configured_bundles = isset($contenthub_entity_configs[$type]) ? $contenthub_entity_configs[$type]->getBundles() : FALSE;
+
+    // Building the form.
     $form = array();
     foreach ($bundle as $bundle_id => $bundle_name) {
       $view_modes = $this->entityDisplayRepository->getViewModeOptionsByBundle($type, $bundle_id);
@@ -167,13 +173,14 @@ class EntityConfigSettingsForm extends ConfigFormBase {
         '#title' => $this->t('%entity_type_label » %bundle_name', array('%entity_type_label' => $entity_type_label, '%bundle_name' => $bundle_name)),
         '#collapsible' => TRUE,
       );
-      $enable_viewmodes = 0;
-      $enable_index = 0;
+      $enable_viewmodes = FALSE;
+      $enable_index = FALSE;
       $rendering = array();
-      if (is_array($entities[$type]) && array_key_exists($bundle_id, $entities[$type])) {
-        $enable_viewmodes = array_key_exists('enable_viewmodes', $entities[$type][$bundle_id]) ? $entities[$type][$bundle_id]['enable_viewmodes'] : 0;
-        $enable_index = array_key_exists('enable_index', $entities[$type][$bundle_id]) ? $entities[$type][$bundle_id]['enable_index'] : 0;
-        $rendering = array_key_exists('rendering', $entities[$type][$bundle_id]) ? $entities[$type][$bundle_id]['rendering'] : FALSE;
+
+      if ($configured_bundles) {
+        $enable_viewmodes = array_key_exists('enable_viewmodes', $configured_bundles[$bundle_id]) ? $configured_bundles[$bundle_id]['enable_viewmodes'] : FALSE;
+        $enable_index = array_key_exists('enable_index', $configured_bundles[$bundle_id]) ? $configured_bundles[$bundle_id]['enable_index'] : FALSE;
+        $rendering = array_key_exists('rendering', $configured_bundles[$bundle_id]) ? $configured_bundles[$bundle_id]['rendering'] : FALSE;
       }
 
       $form[$bundle_id]['enable_index'] = [
@@ -203,7 +210,7 @@ class EntityConfigSettingsForm extends ConfigFormBase {
         ),
       ];
 
-      $rendering = $entities[$type][$bundle_id]['rendering'];
+//      $rendering = $configured_bundles[$bundle_id]['rendering'];
       $title = empty($view_modes) ? NULL : $this->t('Do you want to include the result of any of the following view mode(s)?');
       $default_value = (empty($view_modes) || empty($rendering)) ? array() : $rendering;
       $first_element = array(
@@ -271,9 +278,35 @@ class EntityConfigSettingsForm extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     parent::submitForm($form, $form_state);
 
+    /** @var \Drupal\rest\RestResourceConfigInterface $contenthub_entity_config_storage */
+    $contenthub_entity_config_storage = $this->entityTypeManager->getStorage('acquia_contenthub_entity_config');
+    $contenthub_entity_configs = $contenthub_entity_config_storage->loadMultiple();
+
     $values = $form_state->getValues();
+    foreach ($values['entities'] as $entity_type => $bundles) {
+      // Checkboxes come with integer values. Convert them to boolean.
+      foreach ($bundles as $name => $fields) {
+        $bundles[$name]['enable_index'] = (bool) $bundles[$name]['enable_index'];
+        $bundles[$name]['enable_viewmodes'] = $bundles[$name]['enable_index'] ? (bool) $bundles[$name]['enable_viewmodes'] : FALSE;
+      }
+
+      if (!isset($contenthub_entity_configs[$entity_type])) {
+        // If we do not have this configuration entity, then create it.
+        $data = [
+          'id' => $entity_type,
+          'bundles' => $bundles,
+        ];
+        $contenthub_entity_config = $contenthub_entity_config_storage->create($data);
+        $contenthub_entity_config->save();
+      }
+      else {
+        // Update Configuration entity
+        $contenthub_entity_configs[$entity_type]->setBundles($bundles);
+        $contenthub_entity_configs[$entity_type]->save();
+      }
+    }
+
     $config = $this->config('acquia_contenthub.entity_config');
-    $config->set('entities', $values['entities']);
     $config->set('user_role', $values['user_role']);
     $config->save();
   }
