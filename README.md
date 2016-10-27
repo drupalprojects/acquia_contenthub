@@ -2,25 +2,23 @@ Install Drupal 8
 
 The scripts directory includes scripts to build and install Content Hub and Drupal 8.
 
-To build and install a Drupal 8 site with a git clone of the Drupal 8 Content Hub module, make sure
-you run the following script in the location where your site is going to live (there is an
-issue drush otherwise, see https://docs.google.com/document/d/1YpxekJkk0M4LXMH8BBhiOsUlVZ99DMAG3D-vIpoWXxY/edit).
+To build and install a Drupal 8 site with a git clone of the Drupal 8 Content Hub module.
 
 In order for the script to install Drupal, you need to setup some local settings.
 Copy the example.env file to .env and update it.
 
 The main script will do everything for you (build and install). Just provide the
-name of the directory the build should go into:
+name of the directory the build should go into, the branch, where your docroot is, and what version of Drupal core to use:
 ```
-create-drupal-8-ch.sh MYPROJECT
+./create-drupal-8-ch.sh MYPROJECT master /Users/you/sites/ 8.1.*
 ```
 If you just want to build a codebase, or install Drupal on an existing codebase,
 you can run any of these scripts:
 ```
-build-drupal-8-ch.sh MYPROJECT
+./build-drupal-8-ch.sh MYPROJECT
 ```
 ```
-install-drupal-8-ch.sh MYPROJECT
+./install-drupal-8-ch.sh MYPROJECT
 ```
 
 To run PHPUnit tests.
