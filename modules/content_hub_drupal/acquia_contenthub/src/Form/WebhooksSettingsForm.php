@@ -81,11 +81,14 @@ class WebhooksSettingsForm extends ConfigFormBase {
       '#collapsible' => TRUE,
       '#description' => t('Manage Acquia Content Hub Webhooks'),
     );
-
-    $webhook_url = Url::fromUri('internal:/acquia-contenthub/webhook', array(
-      'absolute' => TRUE,
-    ));
-    $webhook_url = $config->get('webhook_url');
+    if ($config->get('webhook_url')) {
+      $webhook_url = $config->get('webhook_url');
+    }
+    else {
+      $webhook_url = Url::fromUri('internal:/acquia-contenthub/webhook', array(
+        'absolute' => TRUE,
+      ))->toString();
+    }
     $webhook_uuid = $config->get('webhook_uuid');
     $readonly = (bool) $webhook_uuid ? ['readonly' => TRUE] : [];
 
@@ -101,8 +104,8 @@ class WebhooksSettingsForm extends ConfigFormBase {
     $form['webhook_settings']['webhook_url'] = array(
       '#type' => 'textfield',
       '#title' => t('Acquia Content Hub URL'),
-      '#description' => t('Please use a full URL (Ex. http://example.com/webhook). This is the end-point where this site will receive webhooks from Acquia Content Hub.'),
-      '#default_value' => $config->get('webhook_url'),
+      '#description' => t('Please use a full URL (Ex. http://example.com/acquia-contenthub/webhook). This is the end-point where this site will receive webhooks from Acquia Content Hub.'),
+      '#default_value' => $webhook_url,
       '#required' => TRUE,
     );
 
