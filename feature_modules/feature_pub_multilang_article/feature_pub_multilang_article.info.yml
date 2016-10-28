@@ -1,5 +1,5 @@
 name: 'Publisher Multilingual Article'
-description: 'Enables article translation on publishing site in 8 languages.'
+description: 'Enables article translation on publishing site in 7 languages.'
 type: module
 core: 8.x
 dependencies:
