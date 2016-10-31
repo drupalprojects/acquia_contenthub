@@ -1,0 +1,21 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - acquia_contenthub
+    - serialization
+    - user
+id: entity.acquia_contenthub_entity_config
+plugin_id: 'entity:acquia_contenthub_entity_config'
+granularity: method
+configuration:
+  GET:
+    supported_formats:
+      - json
+    supported_auth:
+      - cookie
+  POST:
+    supported_formats:
+      - json
+    supported_auth:
+      - cookie
