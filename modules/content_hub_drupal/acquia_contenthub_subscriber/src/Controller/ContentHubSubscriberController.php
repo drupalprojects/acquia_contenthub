@@ -36,6 +36,8 @@ class ContentHubSubscriberController extends ControllerBase {
     $import_endpoint = $config->get('import_endpoint') ? $config->get('import_endpoint') : $GLOBALS['base_url'] . '/acquia-contenthub/';
     $saved_filters_endpoint = $config->get('saved_filters_endpoint') ? $config->get('saved_filters_endpoint') : $GLOBALS['base_url'] . '/acquia_contenthub/contenthub_filter/';
 
+    $languages_supported = array_keys(\Drupal::languageManager()->getLanguages());
+
     $form = array();
     $form['#attached']['library'][] = 'acquia_contenthub_subscriber/acquia_contenthub_subscriber';
     $form['#attached']['drupalSettings']['acquia_contenthub_subscriber']['host'] = $config->get('hostname');
@@ -49,6 +51,7 @@ class ContentHubSubscriberController extends ControllerBase {
     $form["#attached"]['drupalSettings']['acquia_contenthub_subscriber']['saved_filters_endpoint'] = $saved_filters_endpoint;
     $form["#attached"]['drupalSettings']['acquia_contenthub_subscriber']['token'] = $token;
     $form["#attached"]['drupalSettings']['acquia_contenthub_subscriber']['cookie'] = $cookie_header;
+    $form["#attached"]['drupalSettings']['acquia_contenthub_subscriber']['languages_supported_by_subscriber'] = $languages_supported;
 
     if (empty($config->get('origin'))) {
       drupal_set_message(t('Acquia Content Hub must be configured to view any content. Please contact your administrator.'), 'warning');
