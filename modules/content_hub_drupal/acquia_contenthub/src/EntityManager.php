@@ -9,7 +9,7 @@ namespace Drupal\acquia_contenthub;
 
 use Drupal\Component\Render\FormattableMarkup;
 use Drupal\acquia_contenthub\Client\ClientManagerInterface;
-use Drupal\Core\Entity\ContentEntityType;
+use Drupal\Core\Entity\ContentEntityTypeInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\Core\Url;
@@ -569,7 +569,7 @@ class EntityManager {
     foreach ($types as $type => $entity) {
       // We only support content entity types at the moment, since config
       // entities don't implement \Drupal\Core\TypedData\ComplexDataInterface.
-      if ($entity instanceof ContentEntityType) {
+      if ($entity instanceof ContentEntityTypeInterface) {
         // Skip excluded types.
         if (in_array($type, $excluded_types)) {
           continue;
