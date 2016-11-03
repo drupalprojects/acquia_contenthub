@@ -115,7 +115,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   /**
    * The Language Manager.
    *
-   * @var \Drupal\Core\Language\LanguageManager
+   * @var \Drupal\Core\Language\LanguageManagerInterface
    */
   protected $languageManager;
 
@@ -162,7 +162,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
       ->disableOriginalConstructor()
       ->getMock();
 
-//    $this->languageManager = $this->getMock('Drupal\Core\Language\LanguageManager');
+    $this->languageManager = $this->getMock('Drupal\Core\Language\LanguageManagerInterface');
 
     $this->contentHubAdminConfig = $this->getMockBuilder('Drupal\Core\Config\Config')
       ->disableOriginalConstructor()
@@ -172,7 +172,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
       ->with('acquia_contenthub.admin_settings')
       ->willReturn($this->contentHubAdminConfig);
 
-    $this->contentEntityNormalizer = new ContentEntityCdfNormalizer($this->configFactory, $this->contentEntityViewModesExtractor, $this->moduleHandler, $this->entityRepository, $this->kernel, $this->renderer, $this->entityManager, $this->entityTypeManager, $this->exportController);
+    $this->contentEntityNormalizer = new ContentEntityCdfNormalizer($this->configFactory, $this->contentEntityViewModesExtractor, $this->moduleHandler, $this->entityRepository, $this->kernel, $this->renderer, $this->entityManager, $this->entityTypeManager, $this->exportController, $this->languageManager);
 
   }
 
