@@ -228,6 +228,27 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * @covers ::addFieldsToContentHubEntity
    */
   public function testNormalizeOneField() {
+    // Defining Container Service.
+    $container = $this->getMock('Drupal\Core\DependencyInjection\Container');
+
+    $request_stack = $this->getMock('Symfony\Component\HttpFoundation\RequestStack');
+    $request = $this->getMock('Symfony\Component\HttpFoundation\Request');
+
+    $request->expects($this->once())
+      ->method('getRequestUri')
+      ->willReturn('http://localhost/node/1');
+
+    $request_stack->expects($this->once())
+      ->method('getCurrentRequest')
+      ->willReturn($request);
+
+    \Drupal::setContainer($container);
+    $container->expects($this->once())
+      ->method('get')
+      ->with('request_stack')
+      ->willReturn($request_stack);
+
+
     $definitions = array(
       'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, NULL, array('0' => array('value' => 'test'))),
     );
@@ -712,7 +733,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
 
     $serializer->expects($this->any())
       ->method('normalize')
-      ->with($this->containsOnlyInstancesOf('Drupal\Core\Field\FieldItemListInterface'), 'json', ['account' => $user_context, 'entity_type' => 'node'])
+      ->with($this->containsOnlyInstancesOf('Drupal\Core\Field\FieldItemListInterface'), 'json', ['account' => $user_context, 'query_params' => [], 'entity_type' => 'node'])
       ->willReturnCallback(function($field, $format, $context) {
         if ($field) {
           return $field->getValue();
@@ -742,6 +763,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
       'get',
       'getTranslationLanguages',
       'getTranslation',
+      'hasField',
     );
 
     $content_entity_mock = $this->getMockBuilder('Drupal\Core\Entity\ContentEntityBase')
@@ -750,6 +772,9 @@ class ContentEntityNormalizerTest extends UnitTestCase {
       ->getMockForAbstractClass();
 
     $content_entity_mock->method('getFields')->willReturn($definitions);
+
+    $content_entity_mock->method(('hasField'))->with('created')->willReturn(FALSE);
+    $content_entity_mock->method(('get'))->with('changed')->willReturn(FALSE);
 
     // Return the given content.
     $content_entity_mock->method('get')->willReturnCallback(function($name) use ($definitions) {
