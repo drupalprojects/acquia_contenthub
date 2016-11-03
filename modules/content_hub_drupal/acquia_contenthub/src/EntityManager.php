@@ -8,6 +8,7 @@
 namespace Drupal\acquia_contenthub;
 
 use Drupal\Component\Render\FormattableMarkup;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\acquia_contenthub\Client\ClientManagerInterface;
 use Drupal\Core\Entity\ContentEntityTypeInterface;
 use Drupal\Core\Entity\EntityInterface;

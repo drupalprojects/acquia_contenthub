@@ -9,6 +9,7 @@ namespace Drupal\acquia_contenthub\Normalizer;
 
 use Acquia\ContentHubClient\Asset;
 use Acquia\ContentHubClient\Attribute;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Component\Render\FormattableMarkup;
 use Drupal\acquia_contenthub\ContentHubException;
 use Drupal\Component\Utility\UrlHelper;
@@ -17,15 +18,15 @@ use Acquia\ContentHubClient\Entity as ContentHubEntity;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
-use Drupal\Core\Entity\EntityRepository;
+use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Field\FieldItemListInterface;
-use Drupal\Core\Render\Renderer;
+use Drupal\Core\Render\RendererInterface;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Drupal\Core\Url;
 use Drupal\Component\Uuid\Uuid;
 use Drupal\acquia_contenthub\EntityManager as EntityManager;
 use Drupal\acquia_contenthub\Controller\ContentHubEntityExportController;
-use Drupal\Core\Language\LanguageManager;
+use Drupal\Core\Language\LanguageManagerInterface;
 
 /**
  * Converts the Drupal entity object to a Acquia Content Hub CDF array.
@@ -126,7 +127,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
   /**
    * Language Manager.
    *
-   * @var \Drupal\Core\Language\LanguageManager
+   * @var \Drupal\Core\Language\LanguageManagerInterface
    */
   protected $languageManager;
 
@@ -157,18 +158,22 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    *   The content entity view modes normalizer.
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
    *   The module handler to create alter hooks.
-   * @param \Drupal\Core\Entity\EntityRepository $entity_repository
+   * @param \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository
    *   The entity repository.
+   * @param \Symfony\Component\HttpKernel\HttpKernelInterface $kernel
+   *   The Kernel Interface.
+   * @param \Drupal\Core\Render\RendererInterface $renderer
+   *   The Renderer Interface.
    * @param \Drupal\acquia_contenthub\EntityManager $entity_manager
    *   The entity manager.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
    * @param \Drupal\acquia_contenthub\Controller\ContentHubEntityExportController $export_controller
    *   The Export Controller.
-   * @param \Drupal\Core\Language\LanguageManager $language_nanager
+   * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
    *   The Language Manager.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, ContentEntityViewModesExtractorInterface $content_entity_view_modes_normalizer, ModuleHandlerInterface $module_handler, EntityRepository $entity_repository, HttpKernelInterface $kernel, Renderer $renderer, EntityManager $entity_manager, EntityTypeManagerInterface $entity_type_manager, ContentHubEntityExportController $export_controller, LanguageManager $language_nanager) {
+  public function __construct(ConfigFactoryInterface $config_factory, ContentEntityViewModesExtractorInterface $content_entity_view_modes_normalizer, ModuleHandlerInterface $module_handler, EntityRepositoryInterface $entity_repository, HttpKernelInterface $kernel, RendererInterface $renderer, EntityManager $entity_manager, EntityTypeManagerInterface $entity_type_manager, ContentHubEntityExportController $export_controller, LanguageManagerInterface $language_manager) {
     global $base_url;
     $this->baseUrl = $base_url;
     $this->contentHubAdminConfig = $config_factory->get('acquia_contenthub.admin_settings');
@@ -180,7 +185,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     $this->entityManager = $entity_manager;
     $this->entityTypeManager = $entity_type_manager;
     $this->exportController = $export_controller;
-    $this->languageManager = $language_nanager;
+    $this->languageManager = $language_manager;
   }
 
   /**
