@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * @file
+ * Decorator for REST module's RequestHandler.
+ */
+
 namespace Drupal\acquia_contenthub\Controller;
 
 use Drupal\Component\Plugin\PluginManagerInterface;
@@ -65,16 +70,13 @@ class ContentHubEntityRequestHandler extends RequestHandler {
   public function handle(RouteMatchInterface $route_match, Request $request) {
     // We only support one method, one format, and use one of the derivatives of
     // only one resource plugin. (We receive the exact plugin ID via the route
-    // defaults.)
+    // defaults).
     $method = 'GET';
     $format = 'acquia_contenthub_cdf';
     $resource = $this->resourcePluginManager->createInstance($route_match->getRouteObject()->getDefault('_acquia_content_hub_rest_resource_plugin_id'));
 
-
     // EVERYTHING BELOW THIS IS MERE DUPLICATION OF THE DECORATED CLASS IN THE
-    // MOST MINIMAL WAY POSSIBLE, AND REMOVING THE DEPENDENCY ON CONFIG ENTITIES
-
-
+    // MOST MINIMAL WAY POSSIBLE AND REMOVING THE DEPENDENCY ON CONFIG ENTITIES.
     // Determine the request parameters that should be passed to the resource
     // plugin.
     $route_parameters = $route_match->getParameters();

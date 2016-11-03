@@ -7,10 +7,8 @@
 
 namespace Drupal\acquia_contenthub\Routing;
 
-use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Routing\RouteSubscriberBase;
-use Drupal\rest\Plugin\Type\ResourcePluginManager;
 use Drupal\acquia_contenthub\EntityManager;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
@@ -20,24 +18,6 @@ use Symfony\Component\Routing\RouteCollection;
  * Subscriber for Acquia Content Hub REST routes.
  */
 class ResourceRoutes extends RouteSubscriberBase {
-
-  /**
-   * The Drupal configuration factory.
-   *
-   * @var \Drupal\Core\Config\ConfigFactoryInterface
-   *
-   * @todo remove
-   */
-  protected $config;
-
-  /**
-   * The plugin manager for REST plugins.
-   *
-   * @var \Drupal\rest\Plugin\Type\ResourcePluginManager
-   *
-   * @todo remove
-   */
-  protected $manager;
 
   /**
    * The content hub entity manager.
@@ -56,18 +36,12 @@ class ResourceRoutes extends RouteSubscriberBase {
   /**
    * Constructs a ResourceRoutes object.
    *
-   * @param \Drupal\rest\Plugin\Type\ResourcePluginManager $manager
-   *   The resource plugin manager.
-   * @param \Drupal\Core\Config\ConfigFactoryInterface $config
-   *   The configuration factory holding resource settings.
    * @param \Drupal\acquia_contenthub\EntityManager $entity_manager
    *   The entity manager for Content Hub.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
    */
-  public function __construct(ResourcePluginManager $manager, ConfigFactoryInterface $config, EntityManager $entity_manager, EntityTypeManagerInterface $entity_type_manager) {
-    $this->config = $config;
-    $this->manager = $manager;
+  public function __construct(EntityManager $entity_manager, EntityTypeManagerInterface $entity_type_manager) {
     $this->entityManager = $entity_manager;
     $this->entityTypeManager = $entity_type_manager;
   }
@@ -79,10 +53,9 @@ class ResourceRoutes extends RouteSubscriberBase {
    *   The route collection for adding routes.
    */
   protected function alterRoutes(RouteCollection $collection) {
-    // @todo the returned allowed entity types are wrong, see https://www.drupal.org/node/2822033. This means that we're generating routes even for entity types which have not been enabled at /admin/config/services/acquia-contenthub/configuration.
-    $allowed_entity_types = $this->entityManager->getAllowedEntityTypes();
+    $entity_type_ids = $this->entityManager->getContentHubEnabledEntityTypeIds();
 
-    foreach (array_keys($allowed_entity_types) as $entity_type_id) {
+    foreach ($entity_type_ids as $entity_type_id) {
       // Match the behavior of \Drupal\rest\Plugin\rest\resource\EntityResource:
       // use the entity type's canonical link template if it has one, otherwise
       // use EntityResource's generic alternative.

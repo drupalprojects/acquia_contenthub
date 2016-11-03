@@ -452,6 +452,24 @@ class EntityManager {
   }
 
   /**
+   * Returns the list of enabled entity types for Content Hub.
+   *
+   * @return string[]
+   *   A list of enabled entity type IDs.
+   */
+  public function getContentHubEnabledEntityTypeIds() {
+    $entity_type_ids = $this->configFactory->get('acquia_contenthub.entity_config')->get('entities');
+    $enabled_entity_type_ids = [];
+    foreach ($entity_type_ids as $entity_type_id => $bundles) {
+      // For a type to be enabled, it must at least have one bundle enabled.
+      if (!empty(array_filter(array_column($bundles, 'enable_index')))) {
+        $enabled_entity_type_ids[] = $entity_type_id;
+      }
+    }
+    return $enabled_entity_type_ids;
+  }
+
+  /**
    * Loads the Remote Content Hub Entity.
    *
    * @param string $uuid
