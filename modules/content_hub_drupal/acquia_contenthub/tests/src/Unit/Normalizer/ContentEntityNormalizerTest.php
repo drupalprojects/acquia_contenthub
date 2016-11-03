@@ -793,6 +793,12 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $languages = $this->createMockLanguageList($languages);
     $content_entity_mock->method('getTranslationLanguages')->willReturn($languages);
 
+
+    $url = $this->getMockBuilder('Drupal\Core\Url')->disableOriginalConstructor()->getMock();
+    $url->method('getRouteName')->willReturn('node/1');
+    $url->method('getRouteParameters')->willReturn([]);
+    $content_entity_mock->method('toUrl')->willReturn($url);
+
     return $content_entity_mock;
   }
 
