@@ -106,8 +106,7 @@ class EntityManager {
    *    The client manager.
    */
   public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager, ContentHubImportedEntities $acquia_contenthub_imported_entities, EntityTypeManagerInterface $entity_manager, EntityTypeBundleInfoInterface $entity_type_bundle_info_manager, HttpKernelInterface $kernel) {
-    global $base_root;
-    $this->baseRoot = $base_root;
+    $this->baseRoot = isset($GLOBALS['base_root']) ? $GLOBALS['base_root'] : '';
     $this->loggerFactory = $logger_factory;
     $this->configFactory = $config_factory;
     $this->clientManager = $client_manager;

@@ -18,8 +18,6 @@ use Drupal\acquia_contenthub\EntityManager;
  */
 class EntityManagerTest extends UnitTestCase {
 
-  protected $backupGlobals = FALSE;
-
   /**
    * Logger.
    *
@@ -131,7 +129,7 @@ class EntityManagerTest extends UnitTestCase {
   private function getContentHubEntityTypesConfiguration() {
     $entity_configuration = [
       'entity_type_1' => [
-        'bundle_1' => [
+        'bundle_11' => [
           'enable_index' => 1,
           'enable_viewmodes' => 1,
           'rendering' => [
@@ -195,64 +193,6 @@ class EntityManagerTest extends UnitTestCase {
       'entity_type_2',
     ];
     $this->assertEquals($expected_entity_type_ids, $enabled_entity_type_ids);
-  }
-
-  /**
-   * Test for getAllowedEntityTypes() method.
-   *
-   * @covers ::getAllowedEntityTypes
-   */
-  public function testGetAllowedEntityTypes() {
-
-    $entity_manager = new EntityManager($this->loggerFactory, $this->configFactory, $this->clientManager, $this->contentHubImportedEntities, $this->entityTypeManager, $this->entityTypeBundleInfoManager, $this->kernel);
-
-    // Second content entity does not have bundles.
-    $this->contentEntityType->expects($this->once())
-      ->method('getLabel')
-      ->willReturn('content_entity_2');
-
-    $entity_types = [
-      'content_entity_1' => $this->contentEntityType,
-      'content_entity_2' => $this->contentEntityType,
-      'comment' => $this->contentEntityType,
-      'user' => $this->contentEntityType,
-      'config_entity_1' => $this->configEntityType,
-      'config_entity_2' => $this->configEntityType,
-    ];
-
-    $this->entityTypeManager->expects($this->once())
-      ->method('getDefinitions')
-      ->willReturn($entity_types);
-
-    $bundles = [
-      'bundle1' => [
-        'label' => 'bundle1',
-      ],
-      'bundle2' => [
-        'label' => 'bundle2',
-      ],
-    ];
-
-    $this->entityTypeBundleInfoManager->expects($this->at(0))
-      ->method('getBundleInfo')
-      ->with('content_entity_1')
-      ->willReturn($bundles);
-    $this->entityTypeBundleInfoManager->expects($this->at(1))
-      ->method('getBundleInfo')
-      ->with('content_entity_2')
-      ->willReturn(NULL);
-
-    $entity_types = $entity_manager->getAllowedEntityTypes();
-    $expected_entity_types = [
-      'content_entity_1' => [
-        'bundle1' => 'bundle1',
-        'bundle2' => 'bundle2',
-      ],
-      'content_entity_2' => [
-        'content_entity_2' => 'content_entity_2',
-      ],
-    ];
-    $this->assertEquals($expected_entity_types, $entity_types);
   }
 
 }
