@@ -172,6 +172,34 @@ class ContentEntityNormalizerTest extends UnitTestCase {
       ->with('acquia_contenthub.admin_settings')
       ->willReturn($this->contentHubAdminConfig);
 
+    // Defining Container Service.
+    $container = $this->getMock('Drupal\Core\DependencyInjection\Container');
+
+    $request_stack = $this->getMock('Symfony\Component\HttpFoundation\RequestStack');
+    $request = $this->getMock('Symfony\Component\HttpFoundation\Request');
+
+    $request->expects($this->once())
+      ->method('getRequestUri')
+      ->willReturn('http://localhost/node/1');
+
+    $request_stack->expects($this->once())
+      ->method('getCurrentRequest')
+      ->willReturn($request);
+
+    $url_generator = $this->getMock('Drupal\Core\Routing\UrlGeneratorInterface');
+    $url_generator->expects($this->at(0))
+      ->method('generateFromRoute')
+      ->with('entity.node.canonical', ['node' => 1], [], FALSE)
+      ->willReturn('http://localhost/node/1');
+
+    \Drupal::setContainer($container);
+
+    // Defining some services.
+    $container->expects($this->at(0))->method('get')->with('request_stack')->willReturn($request_stack);
+    $container->expects($this->at(1))->method('get')->with('url_generator')->willReturn($url_generator);
+
+
+
     $this->contentEntityNormalizer = new ContentEntityCdfNormalizer($this->configFactory, $this->contentEntityViewModesExtractor, $this->moduleHandler, $this->entityRepository, $this->kernel, $this->renderer, $this->entityManager, $this->entityTypeManager, $this->exportController, $this->languageManager);
 
   }
@@ -228,25 +256,6 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * @covers ::addFieldsToContentHubEntity
    */
   public function testNormalizeOneField() {
-    // Defining Container Service.
-    $container = $this->getMock('Drupal\Core\DependencyInjection\Container');
-
-    $request_stack = $this->getMock('Symfony\Component\HttpFoundation\RequestStack');
-    $request = $this->getMock('Symfony\Component\HttpFoundation\Request');
-
-    $request->expects($this->once())
-      ->method('getRequestUri')
-      ->willReturn('http://localhost/node/1');
-
-    $request_stack->expects($this->once())
-      ->method('getCurrentRequest')
-      ->willReturn($request);
-
-    \Drupal::setContainer($container);
-    $container->expects($this->once())
-      ->method('get')
-      ->with('request_stack')
-      ->willReturn($request_stack);
 
 
     $definitions = array(
@@ -764,6 +773,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
       'getTranslationLanguages',
       'getTranslation',
       'hasField',
+      'toUrl',
     );
 
     $content_entity_mock = $this->getMockBuilder('Drupal\Core\Entity\ContentEntityBase')
@@ -795,8 +805,8 @@ class ContentEntityNormalizerTest extends UnitTestCase {
 
 
     $url = $this->getMockBuilder('Drupal\Core\Url')->disableOriginalConstructor()->getMock();
-    $url->method('getRouteName')->willReturn('node/1');
-    $url->method('getRouteParameters')->willReturn([]);
+    $url->method('getRouteName')->willReturn('entity.node.canonical');
+    $url->method('getRouteParameters')->willReturn(['node' => 1]);
     $content_entity_mock->method('toUrl')->willReturn($url);
 
     return $content_entity_mock;
