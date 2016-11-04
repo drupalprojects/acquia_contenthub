@@ -783,15 +783,19 @@ class ContentEntityNormalizerTest extends UnitTestCase {
 
     $content_entity_mock->method('getFields')->willReturn($definitions);
 
-    $content_entity_mock->method(('hasField'))->with('created')->willReturn(FALSE);
-    $content_entity_mock->method(('get'))->with('changed')->willReturn(FALSE);
-
     // Return the given content.
     $content_entity_mock->method('get')->willReturnCallback(function($name) use ($definitions) {
       if (isset($definitions[$name])) {
         return $definitions[$name];
       }
       return NULL;
+    });
+
+    $content_entity_mock->method(('hasField'))->willReturnCallback(function($name) use ($definitions) {
+      if (isset($definitions[$name])) {
+        return TRUE;
+      }
+      return FALSE;
     });
 
     $content_entity_mock->method('getEntityTypeId')->willReturn('node');
