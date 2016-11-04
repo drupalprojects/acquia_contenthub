@@ -8,16 +8,15 @@
 namespace Drupal\acquia_contenthub\Routing;
 
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Routing\RouteSubscriberBase;
 use Drupal\acquia_contenthub\EntityManager;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
 
 
 /**
- * Subscriber for Acquia Content Hub REST routes.
+ * Defines Acquia Content Hub Dynamic REST routes.
  */
-class ResourceRoutes extends RouteSubscriberBase {
+class ResourceRoutes {
 
   /**
    * The content hub entity manager.
@@ -47,12 +46,10 @@ class ResourceRoutes extends RouteSubscriberBase {
   }
 
   /**
-   * Generates Content Hub REST resource routes every eligible entity type.
-   *
-   * @param \Symfony\Component\Routing\RouteCollection $collection
-   *   The route collection for adding routes.
+   * Generates Content Hub REST resource routes for every eligible entity type.
    */
-  protected function alterRoutes(RouteCollection $collection) {
+  public function routes() {
+    $collection = new RouteCollection();
     $entity_type_ids = $this->entityManager->getContentHubEnabledEntityTypeIds();
 
     foreach ($entity_type_ids as $entity_type_id) {
@@ -86,6 +83,8 @@ class ResourceRoutes extends RouteSubscriberBase {
 
       $collection->add('acquia_contenthub.entity.' . $entity_type_id . '.GET.acquia_contenthub_cdf', $route);
     }
+
+    return $collection;
   }
 
 }

@@ -59,3 +59,6 @@ acquia_contenthub.acquia_contenthub_bulk_cdf:
     _controller: '\Drupal\acquia_contenthub\Controller\ContentHubEntityExportController::getDrupalEntities'
   requirements:
     _contenthub_access_check : 'TRUE'
+
+route_callbacks:
+  - 'acquia_contenthub.resource_routes:routes'
