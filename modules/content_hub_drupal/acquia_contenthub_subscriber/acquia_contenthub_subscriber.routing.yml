@@ -1,5 +1,5 @@
 acquia_contenthub_subscriber.discovery:
-  path: '/acquia-contenthub'
+  path: '/admin/content/acquia-contenthub'
   defaults:
     _controller: '\Drupal\acquia_contenthub_subscriber\Controller\ContentHubSubscriberController::loadDiscovery'
   requirements:
