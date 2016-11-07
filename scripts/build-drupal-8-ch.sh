@@ -28,7 +28,12 @@ destination="$3"
 if [ ! -d $1 ]; then
 
   # dont install yet, just create
-  composer create-project drupal-composer/drupal-project:~8.0 $1 --stability dev --no-interaction --no-install --prefer-dist --profile
+  composer create-project acquia/lightning-project:^8.1.0 $1 --no-interaction
+  # TODO
+  # - allow optional vanilla D8 dev setup too (lighting being default)
+  # - use other command line flags with lightning setup, as you do with D8
+  # - allow other demo frameworks setup (if quick, or follow up story)
+  # composer create-project drupal-composer/drupal-project:~8.0 $1 --stability dev --no-interaction --no-install --prefer-dist --profile
 
   cd $1
 
