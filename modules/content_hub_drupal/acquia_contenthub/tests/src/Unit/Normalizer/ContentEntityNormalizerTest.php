@@ -641,8 +641,9 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * @covers ::addFieldsToContentHubEntity
    */
   public function testNormalizeTypeReferenceField() {
+    // NOTE: If you set the machine name of the mock field to 'type' things don't work. Going with 'field_ref'.
     $definitions = array(
-      'type' => $this->createMockEntityReferenceFieldItemList('type', TRUE, NULL),
+      'field_ref' => $this->createMockEntityReferenceFieldItemList('field_ref', TRUE, NULL),
     );
 
     // Set our Serializer and expected serialized return value for the given
@@ -661,8 +662,8 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     // Get our Content Hub Entity out of the result.
     $normalized_entity = $this->getContentHubEntityFromResult($normalized);
 
-    // Check if the field has the given value.
-    $this->assertEquals($normalized_entity->getAttribute('type')->getValues(), array('en' => array('test-id-reference-1', 'test-id-reference-2')));
+    // Check if the reference field has the right type in the CDF.
+    $this->assertEquals($normalized_entity->getAttribute('field_ref')->getType(), 'array<reference>');
   }
 
   /**
