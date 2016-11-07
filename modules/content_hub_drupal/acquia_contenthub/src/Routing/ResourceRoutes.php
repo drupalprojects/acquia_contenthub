@@ -7,31 +7,16 @@
 
 namespace Drupal\acquia_contenthub\Routing;
 
-use Drupal\Core\Config\ConfigFactoryInterface;
-use Drupal\Core\Routing\RouteSubscriberBase;
-use Drupal\rest\Plugin\Type\ResourcePluginManager;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\acquia_contenthub\EntityManager;
+use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
 
 
 /**
- * Subscriber for REST-style routes.
+ * Defines Acquia Content Hub Dynamic REST routes.
  */
-class ResourceRoutes extends RouteSubscriberBase {
-
-  /**
-   * The Drupal configuration factory.
-   *
-   * @var \Drupal\Core\Config\ConfigFactoryInterface
-   */
-  protected $config;
-
-  /**
-   * The plugin manager for REST plugins.
-   *
-   * @var \Drupal\rest\Plugin\Type\ResourcePluginManager
-   */
-  protected $manager;
+class ResourceRoutes {
 
   /**
    * The content hub entity manager.
@@ -41,77 +26,65 @@ class ResourceRoutes extends RouteSubscriberBase {
   protected $entityManager;
 
   /**
-   * Constructs a RouteSubscriber object.
+   * The entity type manager.
    *
-   * @param \Drupal\rest\Plugin\Type\ResourcePluginManager $manager
-   *   The resource plugin manager.
-   * @param \Drupal\Core\Config\ConfigFactoryInterface $config
-   *   The configuration factory holding resource settings.
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
+
+  /**
+   * Constructs a ResourceRoutes object.
+   *
    * @param \Drupal\acquia_contenthub\EntityManager $entity_manager
    *   The entity manager for Content Hub.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager.
    */
-  public function __construct(ResourcePluginManager $manager, ConfigFactoryInterface $config, EntityManager $entity_manager) {
-    $this->config = $config;
-    $this->manager = $manager;
+  public function __construct(EntityManager $entity_manager, EntityTypeManagerInterface $entity_type_manager) {
     $this->entityManager = $entity_manager;
+    $this->entityTypeManager = $entity_type_manager;
   }
 
   /**
-   * Alters existing routes for a specific collection.
-   *
-   * @param \Symfony\Component\Routing\RouteCollection $collection
-   *   The route collection for adding routes.
+   * Generates Content Hub REST resource routes for every eligible entity type.
    */
-  protected function alterRoutes(RouteCollection $collection) {
+  public function routes() {
+    $collection = new RouteCollection();
+    $entity_type_ids = $this->entityManager->getContentHubEnabledEntityTypeIds();
 
-    $allowed_entity_types = $this->entityManager->getAllowedEntityTypes();
-    // ResourcePluginManager $manager.
-    /* @var \Drupal\rest\Plugin\ResourceInterface[] $resources */
-    $resources = $this->manager->getDefinitions();
+    foreach ($entity_type_ids as $entity_type_id) {
+      // Match the behavior of \Drupal\rest\Plugin\rest\resource\EntityResource:
+      // use the entity type's canonical link template if it has one, otherwise
+      // use EntityResource's generic alternative.
+      $entity_type = $this->entityTypeManager->getDefinition($entity_type_id);
+      $canonical_path = $entity_type->hasLinkTemplate('canonical')
+        ? $entity_type->getLinkTemplate('canonical')
+        : '/entity/' . $entity_type_id . '/{' . $entity_type_id . '}';
 
-    // Iterate over all enabled resource plugins.
-    foreach ($resources as $id => $enabled_methods) {
-      /* @var \Drupal\rest\Plugin\rest\resource\EntityResource $plugin */
-      $plugin = $this->manager->getInstance(array('id' => $id));
+      $route = new Route($canonical_path, [
+        '_controller' => '\Drupal\acquia_contenthub\Controller\ContentHubEntityRequestHandler::handle',
+        // @see \Drupal\acquia_contenthub\Controller\ContentHubEntityRequestHandler
+        // @todo Remove this when https://www.drupal.org/node/2822201 lands, and this module is able to require Drupal 8.3.x.
+        '_acquia_content_hub_rest_resource_plugin_id' => 'entity:' . $entity_type_id,
+      ]);
+      $route->setOption('parameters', [
+        $entity_type_id => [
+          'type' => 'entity:' . $entity_type_id,
+        ],
+      ]);
+      // Only allow the Acquia Content Hub CDF format.
+      $route->setRequirement('_format', 'acquia_contenthub_cdf');
+      // Only allow access to the CDF if the request is coming from a logged
+      // in user with 'Administer Acquia Content Hub' permission or if it
+      // is coming from Acquia Content Hub (validates the HMAC signature).
+      $route->setRequirement('_contenthub_access_check', 'TRUE');
+      // Only allow GET.
+      $route->setMethods(['GET']);
 
-      /* @var \Symfony\Component\Routing\Route $route */
-      foreach ($plugin->routes() as $name => $route) {
-        // @todo: Are multiple methods possible here?
-        $methods = $route->getMethods();
-        // Only expose routes where the method is GET.
-        if ($methods[0] != "GET") {
-          continue;
-        }
-        // We have a couple of GET's in the list (XML, JSON, and potentially
-        // content_hubOnly add it once, so filter on the JSON one to make sure
-        // we only add it once.
-        if ($route->getRequirement('_format') !== 'json') {
-          continue;
-        }
-        // Unset routes that are not in our list.
-        if (!in_array($plugin->getDerivativeId(), array_keys($allowed_entity_types))) {
-          $route_name = 'acquia_contenthub.entity.' . $plugin->getDerivativeId() . '.GET.acquia_contenthub_cdf';
-          $collection->remove($route_name);
-          continue;
-        }
-
-        $route->setRequirement('_format', 'acquia_contenthub_cdf');
-
-        // Only allow access to the CDF if the request is coming from a logged
-        // in user with 'Administer Acquia Content Hub' permission or if it
-        // is coming from Acquia Content Hub (validates the HMAC signature).
-        $route->setRequirement('_contenthub_access_check', 'TRUE');
-
-        // Remove the permission required. Open for all and controlled by
-        // entity_access.
-        $requirements = $route->getRequirements();
-        unset($requirements['_permission']);
-        $route->setRequirements($requirements);
-
-        $route_name = 'acquia_contenthub.entity.' . $plugin->getDerivativeId() . '.GET.acquia_contenthub_cdf';
-        $collection->add($route_name, $route);
-      }
+      $collection->add('acquia_contenthub.entity.' . $entity_type_id . '.GET.acquia_contenthub_cdf', $route);
     }
+
+    return $collection;
   }
 
 }

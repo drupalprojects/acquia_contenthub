@@ -67,9 +67,7 @@ services:
 
   acquia_contenthub.resource_routes:
     class: Drupal\acquia_contenthub\Routing\ResourceRoutes
-    arguments: ['@plugin.manager.rest', '@config.factory', '@acquia_contenthub.entity_manager']
-    tags:
-      - { name: 'event_subscriber' }
+    arguments: ['@acquia_contenthub.entity_manager', '@entity_type.manager']
 
   access_check.acquia_contenthub.contenthub_access_check:
     class: Drupal\acquia_contenthub\Access\ContentHubAccessCheck
