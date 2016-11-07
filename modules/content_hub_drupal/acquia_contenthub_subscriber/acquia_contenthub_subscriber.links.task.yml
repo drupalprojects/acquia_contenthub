@@ -3,3 +3,9 @@ acquia_contenthub_subscriber.contenthub_filter:
   title: 'Content Hub Filters'
   weight: 150
   base_route: acquia_contenthub.admin_settings
+
+acquia_contenthub_subscriber.discovery:
+  route_name: acquia_contenthub_subscriber.discovery
+  title: 'Acquia Content Hub'
+  weight: 10
+  base_route: system.admin_content
