@@ -763,6 +763,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    */
   protected function excludedProperties(ContentEntityInterface $entity) {
     $excluded_fields = [
+      // Globally excluded fields (for all entity types).
       'global' => [
         // The following properties are always included in constructor, so we do
         // not need to check them again.
@@ -772,11 +773,6 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         'created',
         'changed',
         'uri',
-
-        // Getting rid of workflow fields.
-        'status',
-        'sticky',
-        'promote',
 
         // Getting rid of identifiers and others.
         'nid',
@@ -800,10 +796,17 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         'comment_count',
         'comment_count_new',
       ],
+
+      // Excluded fields for nodes.
       'node' => [
         // In the cases of nodes, exclude the revision ID.
         'vid',
-      ]
+
+        // Getting rid of workflow fields.
+        'status',
+        'sticky',
+        'promote',
+      ],
     ];
 
     // Provide excluded properties per entity type.
