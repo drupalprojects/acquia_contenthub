@@ -1,9 +1,11 @@
 acquia_contenthub_subscriber.discovery:
-  path: '/acquia-contenthub'
+  path: '/admin/content/acquia-contenthub'
   defaults:
     _controller: '\Drupal\acquia_contenthub_subscriber\Controller\ContentHubSubscriberController::loadDiscovery'
   requirements:
     _permission: 'administer acquia content hub'
+  options:
+    _admin_route: TRUE
 
 entity.contenthub_filter.collection:
   path: '/admin/config/services/acquia-contenthub/contenthub_filter'

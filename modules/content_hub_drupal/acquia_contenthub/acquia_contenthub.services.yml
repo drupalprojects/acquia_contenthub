@@ -29,7 +29,7 @@ services:
 
   acquia_contenthub.normalizer.entity.acquia_contenthub_cdf:
     class: Drupal\acquia_contenthub\Normalizer\ContentEntityCdfNormalizer
-    arguments: ['@config.factory', '@acquia_contenthub.normalizer.content_entity_view_modes_extractor', '@module_handler', '@entity.repository', '@http_kernel.basic', '@renderer', '@acquia_contenthub.entity_manager', '@entity_type.manager', '@acquia_contenthub.acquia_contenthub_export_entities']
+    arguments: ['@config.factory', '@acquia_contenthub.normalizer.content_entity_view_modes_extractor', '@module_handler', '@entity.repository', '@http_kernel.basic', '@renderer', '@acquia_contenthub.entity_manager', '@entity_type.manager', '@acquia_contenthub.acquia_contenthub_export_entities', '@language_manager']
     tags:
       - { name: normalizer, priority: 10 }
 
@@ -67,9 +67,7 @@ services:
 
   acquia_contenthub.resource_routes:
     class: Drupal\acquia_contenthub\Routing\ResourceRoutes
-    arguments: ['@plugin.manager.rest', '@config.factory', '@acquia_contenthub.entity_manager']
-    tags:
-      - { name: 'event_subscriber' }
+    arguments: ['@acquia_contenthub.entity_manager', '@entity_type.manager']
 
   access_check.acquia_contenthub.contenthub_access_check:
     class: Drupal\acquia_contenthub\Access\ContentHubAccessCheck

@@ -9,7 +9,7 @@ namespace Drupal\acquia_contenthub;
 
 use Drupal\Component\Render\FormattableMarkup;
 use Drupal\acquia_contenthub\Client\ClientManagerInterface;
-use Drupal\Core\Entity\ContentEntityType;
+use Drupal\Core\Entity\ContentEntityTypeInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\Core\Url;
@@ -106,8 +106,7 @@ class EntityManager {
    *    The client manager.
    */
   public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager, ContentHubImportedEntities $acquia_contenthub_imported_entities, EntityTypeManagerInterface $entity_manager, EntityTypeBundleInfoInterface $entity_type_bundle_info_manager, HttpKernelInterface $kernel) {
-    global $base_root;
-    $this->baseRoot = $base_root;
+    $this->baseRoot = isset($GLOBALS['base_root']) ? $GLOBALS['base_root'] : '';
     $this->loggerFactory = $logger_factory;
     $this->configFactory = $config_factory;
     $this->clientManager = $client_manager;
@@ -452,6 +451,24 @@ class EntityManager {
   }
 
   /**
+   * Returns the list of enabled entity types for Content Hub.
+   *
+   * @return string[]
+   *   A list of enabled entity type IDs.
+   */
+  public function getContentHubEnabledEntityTypeIds() {
+    $entity_type_ids = $this->configFactory->get('acquia_contenthub.entity_config')->get('entities');
+    $enabled_entity_type_ids = [];
+    foreach ($entity_type_ids as $entity_type_id => $bundles) {
+      // For a type to be enabled, it must at least have one bundle enabled.
+      if (!empty(array_filter(array_column($bundles, 'enable_index')))) {
+        $enabled_entity_type_ids[] = $entity_type_id;
+      }
+    }
+    return $enabled_entity_type_ids;
+  }
+
+  /**
    * Loads the Remote Content Hub Entity.
    *
    * @param string $uuid
@@ -551,7 +568,7 @@ class EntityManager {
     foreach ($types as $type => $entity) {
       // We only support content entity types at the moment, since config
       // entities don't implement \Drupal\Core\TypedData\ComplexDataInterface.
-      if ($entity instanceof ContentEntityType) {
+      if ($entity instanceof ContentEntityTypeInterface) {
         // Skip excluded types.
         if (in_array($type, $excluded_types)) {
           continue;
