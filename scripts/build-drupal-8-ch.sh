@@ -28,7 +28,7 @@ destination="$3"
 if [ ! -d $1 ]; then
 
   # dont install yet, just create
-  composer create-project acquia/lightning-project:^8.1.0 $1 --no-interaction
+  composer create-project acquia/lightning-project:^8.1.0 $1 --no-interaction --no-install
   # TODO
   # - allow optional vanilla D8 dev setup too (lighting being default)
   # - use other command line flags with lightning setup, as you do with D8
@@ -64,7 +64,7 @@ fi
 
 # Contrib modules required for development
 composer require drupal/devel:1.0.0-alpha1 --profile
-composer require drupal/features:3.0.0-beta9 --profile
+composer require drupal/features:^8.3.0 --profile
 
 # setup the content-hub-d8 module and change branch if needed
 if [ ! -d web/modules/contrib/content-hub-d8 ]; then
