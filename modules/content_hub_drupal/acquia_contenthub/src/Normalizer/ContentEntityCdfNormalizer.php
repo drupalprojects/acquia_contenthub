@@ -853,7 +853,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
 
     $contenthub_entity = new ContentHubEntity($data);
     $entity_type = $contenthub_entity->getType();
-    $bundle = reset($contenthub_entity->getAttribute('type')['value']);
+    $bundle = $contenthub_entity->getAttribute('type') ? reset($contenthub_entity->getAttribute('type')['value']) : NULL;
     $langcodes = $contenthub_entity->getAttribute('langcode')['value'];
 
     // Does this entity exist in this site already?
@@ -863,8 +863,10 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       // Transforming Content Hub Entity into a Drupal Entity.
       $values = [
         'uuid' => $contenthub_entity->getUuid(),
-        'type' => $bundle,
       ];
+      if ($bundle) {
+        $values['type'] = $bundle;
+      }
 
       // Special treatment according to entity types.
       switch ($entity_type) {
