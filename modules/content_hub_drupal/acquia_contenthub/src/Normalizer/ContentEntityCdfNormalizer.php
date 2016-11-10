@@ -18,6 +18,7 @@ use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Entity\EntityRepository;
+use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Render\Renderer;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Drupal\Core\Url;
@@ -622,32 +623,35 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         'video',
       );
 
-      $field = $fields[$name];
+      $field = isset($fields[$name]) ? $fields[$name] : NULL;
       if (isset($field)) {
         // Try to map it to a known field type.
         $field_type = $field->getFieldDefinition()->getType();
         $value = $attribute['value'][$langcode];
-        $output = [];
+        $field->setValue([]);
 
         if ($field instanceof \Drupal\Core\Field\EntityReferenceFieldItemListInterface) {
           foreach ($value as $delta => $item) {
             $uuid = in_array($field_type, $file_types) ? $this->removeBracketsUuid($item) : $item;
             $entity_type = $field->getFieldDefinition()->getSettings()['target_type'];
-            $output[$delta] = $this->entityRepository->loadEntityByUuid($entity_type, $uuid)->id();
+            $referenced_entity = $this->entityRepository->loadEntityByUuid($entity_type, $uuid);
+            if ($referenced_entity) {
+              $field->appendItem($referenced_entity);
+            }
           }
-          $value = $output;
         }
         else {
-          if (strpos($type_mapping[$field_type], 'array') !== FALSE) {
-            foreach ($value as $item) {
+          if ($field instanceof FieldItemListInterface && is_array($value)) {
+            foreach ($value as $delta => $json_item) {
               // Assigning the output.
-              $output = json_decode($item, TRUE);
+              $item = json_decode($json_item, TRUE) ?: $json_item;
+              $field->appendItem($item);
             }
-            $value = $output;
+          }
+          else {
+            $field->setValue($value);
           }
         }
-
-        $entity->$name = $value;
       }
     }
 
