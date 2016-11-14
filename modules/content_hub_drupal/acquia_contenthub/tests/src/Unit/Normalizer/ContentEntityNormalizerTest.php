@@ -31,11 +31,6 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   protected $container;
 
   /**
-   * @var
-   */
-  protected $container_service;
-
-  /**
    * The mock serializer.
    *
    * @var \Symfony\Component\Serializer\SerializerInterface|\PHPUnit_Framework_MockObject_MockObject
@@ -78,7 +73,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   protected $entityRepository;
 
   /**
-   * The Kernel Interface
+   * The Kernel Interface.
    *
    * @var \Symfony\Component\HttpKernel\HttpKernelInterface
    */
@@ -136,7 +131,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     \Drupal::setContainer($this->container);
 
     $this->configFactory = $this->getMock('Drupal\Core\Config\ConfigFactoryInterface');
-    $this->configFactory->expects($this->any())
+    $this->configFactory
       ->method('get')
       ->with('acquia_contenthub.admin_settings')
       ->will($this->returnValue($this->createMockForContentHubAdminConfig()));
@@ -147,9 +142,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
 
     $this->contentEntityViewModesExtractor = $this->getMock('Drupal\acquia_contenthub\Normalizer\ContentEntityViewModesExtractorInterface');
     $this->moduleHandler = $this->getMock('Drupal\Core\Extension\ModuleHandlerInterface');
-
     $this->entityRepository = $this->getMock('Drupal\Core\Entity\EntityRepositoryInterface');
-
     $this->kernel = $this->getMock('Symfony\Component\HttpKernel\HttpKernelInterface');
     $this->renderer = $this->getMock('Drupal\Core\Render\RendererInterface');
 
@@ -164,44 +157,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
 
     $this->languageManager = $this->getMock('Drupal\Core\Language\LanguageManagerInterface');
 
-    $this->contentHubAdminConfig = $this->getMockBuilder('Drupal\Core\Config\Config')
-      ->disableOriginalConstructor()
-      ->getMock();
-    $this->configFactory->expects($this->at(0))
-      ->method('get')
-      ->with('acquia_contenthub.admin_settings')
-      ->willReturn($this->contentHubAdminConfig);
-
-    // Defining Container Service.
-    $container = $this->getMock('Drupal\Core\DependencyInjection\Container');
-
-    $request_stack = $this->getMock('Symfony\Component\HttpFoundation\RequestStack');
-    $request = $this->getMock('Symfony\Component\HttpFoundation\Request');
-
-    $request->expects($this->once())
-      ->method('getRequestUri')
-      ->willReturn('http://localhost/node/1');
-
-    $request_stack->expects($this->once())
-      ->method('getCurrentRequest')
-      ->willReturn($request);
-
-    $url_generator = $this->getMock('Drupal\Core\Routing\UrlGeneratorInterface');
-    $url_generator->expects($this->at(0))
-      ->method('generateFromRoute')
-      ->with('entity.node.canonical', ['node' => 1], [], FALSE)
-      ->willReturn('http://localhost/node/1');
-
-    \Drupal::setContainer($container);
-
-    // Defining some services.
-    $container->expects($this->at(0))->method('get')->with('request_stack')->willReturn($request_stack);
-    $container->expects($this->at(1))->method('get')->with('url_generator')->willReturn($url_generator);
-
-
-
     $this->contentEntityNormalizer = new ContentEntityCdfNormalizer($this->configFactory, $this->contentEntityViewModesExtractor, $this->moduleHandler, $this->entityRepository, $this->kernel, $this->renderer, $this->entityManager, $this->entityTypeManager, $this->exportController, $this->languageManager);
-
   }
 
   /**
@@ -257,6 +213,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    */
   public function testNormalizeOneField() {
 
+    $this->createMockContainerResponse();
 
     $definitions = array(
       'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, NULL, array('0' => array('value' => 'test'))),
@@ -304,6 +261,8 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * @covers ::appendToAttribute
    */
   public function testNormalizeOneFieldMultiValued() {
+    $this->createMockContainerResponse();
+
     $definitions = array(
       'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, NULL, array(array('value' => 'test'), array('value' => 'test2'))),
     );
@@ -354,6 +313,8 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * @covers ::excludedProperties
    */
   public function testNormalizeWithCreatedAndChanged() {
+    $this->createMockContainerResponse();
+
     $definitions = array(
       'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, NULL, array('0' => array('value' => 'test'))),
       'created' => $this->createMockFieldListItem('created', 'timestamp', TRUE, NULL, array('0' => array('value' => '1458811508'))),
@@ -397,6 +358,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * @covers ::addFieldsToContentHubEntity
    */
   public function testNormalizeWithNoFieldValue() {
+    $this->createMockContainerResponse();
     $definitions = array(
       'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, NULL, array()),
     );
@@ -432,6 +394,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * @covers ::addFieldsToContentHubEntity
    */
   public function testNormalizeWithFieldNameAsType() {
+    $this->createMockContainerResponse();
     $definitions = array(
       'title' => $this->createMockFieldListItem('title', 'string', TRUE, NULL, array('0' => array('value' => 'test'))),
     );
@@ -465,6 +428,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * @covers ::addFieldsToContentHubEntity
    */
   public function testNormalizeWithNonStringFieldType() {
+    $this->createMockContainerResponse();
     $definitions = array(
       'voted' => $this->createMockFieldListItem('voted', 'boolean', TRUE, NULL, array('0' => array('value' => TRUE))),
     );
@@ -498,6 +462,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * @covers ::addFieldsToContentHubEntity
    */
   public function testNormalizeWithComplexFieldValues() {
+    $this->createMockContainerResponse();
     $definitions = array(
       'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, NULL, array('0' => array('value' => 'test', 'random_key' => 'random_data'))),
     );
@@ -530,6 +495,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * @covers ::addFieldsToContentHubEntity
    */
   public function testNormalizeWithFieldWithoutAccess() {
+    $this->createMockContainerResponse();
     $definitions = array(
       'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, NULL, array('0' => array('value' => 'test'))),
       'field_2' => $this->createMockFieldListItem('field_2', 'string', FALSE, NULL, array('0' => array('value' => 'test'))),
@@ -566,6 +532,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * @covers ::addFieldsToContentHubEntity
    */
   public function testNormalizeWithAccountContext() {
+    $this->createMockContainerResponse();
     $mock_account = $this->getMock('Drupal\Core\Session\AccountInterface');
     $context = ['account' => $mock_account];
 
@@ -607,6 +574,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * @covers ::addFieldsToContentHubEntity
    */
   public function testNormalizeReferenceField() {
+    $this->createMockContainerResponse();
     $definitions = array(
       'field_ref' => $this->createMockEntityReferenceFieldItemList('field_ref', TRUE, NULL),
     );
@@ -641,7 +609,9 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * @covers ::addFieldsToContentHubEntity
    */
   public function testNormalizeTypeReferenceField() {
-    // NOTE: If you set the machine name of the mock field to 'type' things don't work. Going with 'field_ref'.
+    $this->createMockContainerResponse();
+    // NOTE: If you set the machine name of the mock field to 'type' things
+    // don't work. Going with 'field_ref'.
     $definitions = array(
       'field_ref' => $this->createMockEntityReferenceFieldItemList('field_ref', TRUE, NULL),
     );
@@ -734,6 +704,9 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    *   The field definitions.
    * @param array $user_context
    *   The user context such as the account.
+   *
+   * @return \Symfony\Component\Serializer\Serializer|\PHPUnit_Framework_MockObject_MockObject
+   *   The Serializer.
    */
   protected function getFieldsSerializer(array $definitions, $user_context = NULL) {
     $serializer = $this->getMockBuilder('Symfony\Component\Serializer\Serializer')
@@ -741,9 +714,17 @@ class ContentEntityNormalizerTest extends UnitTestCase {
       ->setMethods(array('normalize'))
       ->getMock();
 
-    $serializer->expects($this->any())
+    $serializer
       ->method('normalize')
-      ->with($this->containsOnlyInstancesOf('Drupal\Core\Field\FieldItemListInterface'), 'json', ['account' => $user_context, 'query_params' => [], 'entity_type' => 'node'])
+      ->with($this->containsOnlyInstancesOf(
+        'Drupal\Core\Field\FieldItemListInterface'),
+        'json',
+        [
+          'account' => $user_context,
+          'query_params' => [],
+          'entity_type' => 'node',
+        ]
+      )
       ->willReturnCallback(function($field, $format, $context) {
         if ($field) {
           return $field->getValue();
@@ -808,7 +789,6 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $languages = $this->createMockLanguageList($languages);
     $content_entity_mock->method('getTranslationLanguages')->willReturn($languages);
 
-
     $url = $this->getMockBuilder('Drupal\Core\Url')->disableOriginalConstructor()->getMock();
     $url->method('getRouteName')->willReturn('entity.node.canonical');
     $url->method('getRouteParameters')->willReturn(['node' => 1]);
@@ -828,7 +808,6 @@ class ContentEntityNormalizerTest extends UnitTestCase {
       ->disableOriginalConstructor()
       ->setMethods(array('get'))
       ->getMockForAbstractClass();
-
     $contenthub_admin_config->method('get')->with('origin')->willReturn('test-origin');
 
     return $contenthub_admin_config;
@@ -913,6 +892,37 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     }
 
     return $language_objects;
+  }
+
+  /**
+   * Builds a Container Response.
+   */
+  protected function createMockContainerResponse() {
+    // Defining Container Service.
+    $container = $this->getMock('Drupal\Core\DependencyInjection\Container');
+
+    $request_stack = $this->getMock('Symfony\Component\HttpFoundation\RequestStack');
+    $request = $this->getMock('Symfony\Component\HttpFoundation\Request');
+
+    $request
+      ->method('getRequestUri')
+      ->willReturn('http://localhost/node/1');
+
+    $request_stack
+      ->method('getCurrentRequest')
+      ->willReturn($request);
+
+    $url_generator = $this->getMock('Drupal\Core\Routing\UrlGeneratorInterface');
+    $url_generator
+      ->method('generateFromRoute')
+      ->with('entity.node.canonical', ['node' => 1], [], FALSE)
+      ->willReturn('http://localhost/node/1');
+
+    \Drupal::setContainer($container);
+
+    // Defining some services.
+    $container->expects($this->at(0))->method('get')->with('request_stack')->willReturn($request_stack);
+    $container->expects($this->at(1))->method('get')->with('url_generator')->willReturn($url_generator);
   }
 
 }
