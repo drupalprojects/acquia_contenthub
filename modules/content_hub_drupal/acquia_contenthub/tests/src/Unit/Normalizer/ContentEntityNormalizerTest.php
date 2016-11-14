@@ -565,6 +565,48 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   }
 
   /**
+   * Tests the normalize() method for node revisions.
+   *
+   * Tests 2 fields given a passed user context. Field 1 is accessible, field 2
+   * is a node revision id 'vid' which should be stripped out.
+   *
+   * @covers ::normalize
+   * @covers ::addFieldsToContentHubEntity
+   */
+  public function testNormalizeWithRevisionId() {
+    $this->createMockContainerResponse();
+    $mock_account = $this->getMock('Drupal\Core\Session\AccountInterface');
+    $context = ['account' => $mock_account];
+
+    // The mock account should get passed directly into the access() method on
+    // field items from $context['account'].
+    $definitions = array(
+      'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, $mock_account, array('0' => array('value' => 'test'))),
+      'vid' => $this->createMockFieldListItem('vid', 'string', TRUE, $mock_account, array('0' => array('value' => '1'))),
+    );
+
+    // Set our Serializer and expected serialized return value for the given
+    // fields.
+    $serializer = $this->getFieldsSerializer($definitions, $mock_account);
+    $this->contentEntityNormalizer->setSerializer($serializer);
+
+    // Create our Content Entity with English support.
+    $content_entity_mock = $this->createMockForContentEntity($definitions, array('en'));
+
+    // Normalize the Content Entity with the class that we are testing.
+    $normalized = $this->contentEntityNormalizer->normalize($content_entity_mock, 'acquia_contenthub_cdf', $context);
+
+    // Check if valid result.
+    $this->doTestValidResultForOneEntity($normalized);
+    // Get our Content Hub Entity out of the result.
+    $normalized_entity = $this->getContentHubEntityFromResult($normalized);
+    // Check if field_1 has the correct values.
+    $this->assertEquals($normalized_entity->getAttribute('field_1')->getValues(), array('en' => array('test')));
+    // Field 2 should not be part of the resultset.
+    $this->assertFalse($normalized_entity->getAttribute('vid'));
+  }
+
+  /**
    * Tests the normalize() method.
    *
    * Tests 1 entity reference field and checks if it appears in the normalized
