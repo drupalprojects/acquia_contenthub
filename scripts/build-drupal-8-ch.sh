@@ -79,6 +79,7 @@ else
   git fetch
   echo "> checking out $branch"
   git checkout $branch
+  git branch --set-upstream-to origin/$branch
   git pull
 fi
 
