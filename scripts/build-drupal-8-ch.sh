@@ -85,6 +85,14 @@ fi
 # back to the root
 cd ../../../../..
 
+# Override `lightning.extend.yml` so that lightning profile gets installed
+# without the lightning_workflow features.
+cd $1/web
+chmod +w sites/default
+cp profiles/contrib/lightning/lightning.extend.yml sites/default/lightning.extend.yml
+sed -i '' 's/- lightning_workflow/# - lightning_workflow/g' sites/default/lightning.extend.yml
+cd ../..
+
 # now go into $1/web and create a tarball
 if [ -a ./$1.tar ]; then
  rm $1.tar
