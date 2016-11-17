@@ -60,8 +60,7 @@ class IntegrationTest extends WebTestBase {
    * Create some basic sample content so that we can later verify if the CDF.
    */
   public function createSampleContent() {
-
-    // Add two articles and a page.
+    // Add one article and a page.
     $this->article = $this->drupalCreateNode(array('type' => 'article'));
     $this->page = $this->drupalCreateNode(array('type' => 'page'));
   }
@@ -90,7 +89,7 @@ class IntegrationTest extends WebTestBase {
     $this->assertResponse(200);
 
     // Remove all caches then make sure that they are cleared.
-    // @TODO: This line will have to deleted after CHMS-1061 is completed.
+    // @TODO: Delete this line after CHMS-1061 is completed.
     drupal_flush_all_caches();
   }
 
@@ -139,7 +138,7 @@ class IntegrationTest extends WebTestBase {
     $this->assertResponse(200);
 
     // Remove all caches then make sure that they are cleared.
-    // @TODO: This line will have to deleted after CHMS-1061 is completed.
+    // @TODO: Delete this line after CHMS-1061 is completed.
     drupal_flush_all_caches();
   }
 
