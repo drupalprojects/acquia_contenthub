@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\search_api\Tests\IntegrationTest.
+ * Contains \Drupal\acquia_contenthub\Tests\IntegrationTest.
  */
 
 namespace Drupal\acquia_contenthub\Tests;
