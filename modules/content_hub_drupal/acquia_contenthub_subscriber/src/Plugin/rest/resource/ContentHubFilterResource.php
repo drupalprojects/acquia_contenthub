@@ -38,6 +38,13 @@ use Drupal\Component\Render\FormattableMarkup;
 class ContentHubFilterResource extends ResourceBase {
 
   /**
+   * Permission to allow access to this resource.
+   *
+   * @var string
+   */
+  protected $permission = 'administer acquia content hub';
+
+  /**
    * A curent user instance.
    *
    * @var \Drupal\Core\Session\AccountProxyInterface
@@ -150,8 +157,7 @@ class ContentHubFilterResource extends ResourceBase {
    * @throws \Symfony\Component\HttpKernel\Exception\HttpException
    */
   public function get($contenthub_filter = NULL) {
-    $permission = 'Administer Acquia Content Hub';
-    if (!$this->currentUser->hasPermission($permission)) {
+    if (!$this->currentUser->hasPermission($this->permission)) {
       throw new AccessDeniedHttpException();
     }
 
@@ -192,8 +198,7 @@ class ContentHubFilterResource extends ResourceBase {
    *   The Content Hub Filter after it has been saved.
    */
   public function post(ContentHubFilterInterface $contenthub_filter = NULL) {
-    $permission = 'Administer Acquia Content Hub';
-    if (!$this->currentUser->hasPermission($permission)) {
+    if (!$this->currentUser->hasPermission($this->permission)) {
       throw new AccessDeniedHttpException();
     }
 
@@ -256,8 +261,7 @@ class ContentHubFilterResource extends ResourceBase {
    *   The Content Hub Filter after it has been saved.
    */
   public function patch(ContentHubFilterInterface $original_contenthub_filter, ContentHubFilterInterface $contenthub_filter = NULL) {
-    $permission = 'Administer Acquia Content Hub';
-    if (!$this->currentUser->hasPermission($permission)) {
+    if (!$this->currentUser->hasPermission($this->permission)) {
       throw new AccessDeniedHttpException();
     }
 
