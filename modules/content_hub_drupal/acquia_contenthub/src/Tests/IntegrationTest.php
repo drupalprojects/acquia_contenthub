@@ -76,7 +76,7 @@ class IntegrationTest extends WebTestBase {
 
     $edit = array();
     foreach ($bundles as $bundle) {
-      $edit['entities[' . $entity_type . '][' . $bundle . '][enabled]'] = TRUE;
+      $edit['entities[' . $entity_type . '][' . $bundle . '][enable_index]'] = TRUE;
     }
 
     $this->drupalPostForm(NULL, $edit, $this->t('Save configuration'));
@@ -122,6 +122,7 @@ class IntegrationTest extends WebTestBase {
     $this->assertResponse(200);
 
     $edit = array(
+      'entities[' . $entity_type . '][' . $bundle . '][enable_viewmodes]' => TRUE,
       'entities[' . $entity_type . '][' . $bundle . '][rendering][]' => array($view_mode),
     );
     $this->drupalPostForm(NULL, $edit, $this->t('Save configuration'));
