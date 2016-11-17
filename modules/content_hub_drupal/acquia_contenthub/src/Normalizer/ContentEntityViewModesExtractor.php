@@ -160,7 +160,7 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
     $entity_type_id = $object->getEntityTypeId();
     $entity_bundle_id = $object->bundle();
     $config = $this->entityConfig->get('entities.' . $entity_type_id . '.' . $entity_bundle_id);
-    if (!isset($config['enable_viewmodes']) && !isset($config['rendering'])) {
+    if (empty($config['enable_viewmodes']) || empty($config['rendering'])) {
       return NULL;
     }
     // Normalize.
