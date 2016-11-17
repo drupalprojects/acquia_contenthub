@@ -44,11 +44,14 @@ class IntegrationTest extends WebTestBase {
     $this->dumpHeaders = TRUE;
     $this->drupalLogin($this->adminUser);
 
+    // Create sample content.
     $this->createSampleContent();
 
+    // Configure Acquia Content Hub for article nodes with view modes.
     $this->configureContentHubContentTypes('node', array('article'));
     $this->checkCdfOutput($this->article);
 
+    // Enable view-modes for article nodes.
     $this->enableViewModeFor('node', 'article', 'teaser');
     $this->checkCdfOutput($this->article, 'teaser');
   }
@@ -57,6 +60,7 @@ class IntegrationTest extends WebTestBase {
    * Create some basic sample content so that we can later verify if the CDF.
    */
   public function createSampleContent() {
+
     // Add two articles and a page.
     $this->article = $this->drupalCreateNode(array('type' => 'article'));
     $this->page = $this->drupalCreateNode(array('type' => 'page'));
@@ -76,7 +80,7 @@ class IntegrationTest extends WebTestBase {
 
     $edit = array();
     foreach ($bundles as $bundle) {
-      $edit['entities[' . $entity_type . '][' . $bundle . '][enable_index]'] = TRUE;
+      $edit['entities[' . $entity_type . '][' . $bundle . '][enable_index]'] = 1;
     }
 
     $this->drupalPostForm(NULL, $edit, $this->t('Save configuration'));
@@ -85,6 +89,9 @@ class IntegrationTest extends WebTestBase {
     $this->drupalGet('admin/config/services/acquia-contenthub/configuration');
     $this->assertResponse(200);
 
+    // Remove all caches then make sure that they are cleared.
+    // @TODO: This line will have to deleted after CHMS-1061 is completed.
+    drupal_flush_all_caches();
   }
 
   /**
@@ -130,6 +137,10 @@ class IntegrationTest extends WebTestBase {
 
     $this->drupalGet('admin/config/services/acquia-contenthub/configuration');
     $this->assertResponse(200);
+
+    // Remove all caches then make sure that they are cleared.
+    // @TODO: This line will have to deleted after CHMS-1061 is completed.
+    drupal_flush_all_caches();
   }
 
 }
