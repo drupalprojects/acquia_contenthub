@@ -51,3 +51,17 @@ acquia_contenthub.entity_config:
               sequence:
                 type: string
                 label: 'An enabled view mode'
+
+acquia_contenthub.preview_image_config:
+  type: sequence
+  label: 'Acquia Content Hub Preview Image settings'
+  sequence:
+    type: config_object
+    label: 'A Content type that this settings is for.'
+    mapping:
+      field:
+        type: string
+        label: 'A mapping string to the field which holds the image file.'
+      style:
+        type: string
+        label: 'A image style machine name.'
