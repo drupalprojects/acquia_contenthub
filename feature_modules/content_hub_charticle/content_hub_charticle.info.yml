@@ -3,7 +3,6 @@ description: 'Provides CH-Article content type and related configuration. Use <e
 type: module
 core: 8.x
 dependencies:
-  - comment
   - datetime
   - field
   - file
