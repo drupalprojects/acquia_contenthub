@@ -3,7 +3,6 @@ status: true
 dependencies:
   config:
     - field.field.node.charticle.body
-    - field.field.node.charticle.comment
     - field.field.node.charticle.field_bool
     - field.field.node.charticle.field_date
     - field.field.node.charticle.field_email
@@ -41,7 +40,6 @@ dependencies:
     - image.style.thumbnail
     - node.type.charticle
   module:
-    - comment
     - datetime
     - file
     - image
@@ -60,11 +58,6 @@ content:
       rows: 9
       summary_rows: 3
       placeholder: ''
-    third_party_settings: {  }
-  comment:
-    type: comment_default
-    weight: 36
-    settings: {  }
     third_party_settings: {  }
   created:
     type: datetime_timestamp

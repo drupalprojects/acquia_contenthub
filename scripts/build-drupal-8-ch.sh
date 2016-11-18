@@ -28,7 +28,12 @@ destination="$3"
 if [ ! -d $1 ]; then
 
   # dont install yet, just create
-  composer create-project drupal-composer/drupal-project:~8.0 $1 --stability dev --no-interaction --no-install --prefer-dist --profile
+  composer create-project acquia/lightning-project:^8.1.0 $1 --no-interaction --no-install
+  # TODO
+  # - allow optional vanilla D8 dev setup too (lighting being default)
+  # - use other command line flags with lightning setup, as you do with D8
+  # - allow other demo frameworks setup (if quick, or follow up story)
+  # composer create-project drupal-composer/drupal-project:~8.0 $1 --stability dev --no-interaction --no-install --prefer-dist --profile
 
   cd $1
 
@@ -59,7 +64,7 @@ fi
 
 # Contrib modules required for development
 composer require drupal/devel:1.0.0-alpha1 --profile
-composer require drupal/features:3.0.0-beta9 --profile
+composer require drupal/features:^8.3.0 --profile
 
 # setup the content-hub-d8 module and change branch if needed
 if [ ! -d web/modules/contrib/content-hub-d8 ]; then
@@ -74,11 +79,20 @@ else
   git fetch
   echo "> checking out $branch"
   git checkout $branch
+  git branch --set-upstream-to origin/$branch
   git pull
 fi
 
 # back to the root
 cd ../../../../..
+
+# Override `lightning.extend.yml` so that lightning profile gets installed
+# without the lightning_workflow features.
+cd $1/web
+chmod +w sites/default
+cp profiles/contrib/lightning/lightning.extend.yml sites/default/lightning.extend.yml
+sed -i '' 's/- lightning_workflow/# - lightning_workflow/g' sites/default/lightning.extend.yml
+cd ../..
 
 # now go into $1/web and create a tarball
 if [ -a ./$1.tar ]; then
