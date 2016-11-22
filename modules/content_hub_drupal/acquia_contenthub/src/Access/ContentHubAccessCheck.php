@@ -74,7 +74,7 @@ class ContentHubAccessCheck implements AccessInterface {
   public function access(Route $route, Request $request, AccountInterface $account) {
     // Check permissions and combine that with any custom access checking
     // needed. Pass forward parameters from the route and/or request as needed.
-    if ($account->hasPermission(('Administer Acquia Content Hub'))) {
+    if ($account->hasPermission(('administer acquia content hub'))) {
       // If this is a logged in user with 'Administer Acquia Content Hub'
       // permission then grant access.
       return AccessResult::allowed();

@@ -74,3 +74,7 @@ services:
     tags:
       - { name: access_check, applies_to: _contenthub_access_check }
     arguments: ['@logger.factory', '@acquia_contenthub.client_manager', '@acquia_contenthub.acquia_contenthub_subscription']
+
+  acquia_contenthub.form.node_type_preview_image_form:
+    class: Drupal\acquia_contenthub\Form\NodeTypePreviewImageForm
+    arguments: ['@config.factory', '@entity.manager']

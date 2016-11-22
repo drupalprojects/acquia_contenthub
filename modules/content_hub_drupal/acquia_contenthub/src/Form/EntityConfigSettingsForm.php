@@ -15,6 +15,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Entity\EntityDisplayRepository;
 use Drupal\Core\Cache\CacheTagsInvalidator;
+use Drupal\Core\Url;
+use Drupal\Core\Link;
 use Drupal\acquia_contenthub\EntityManager;
 
 /**
@@ -181,6 +183,12 @@ class EntityConfigSettingsForm extends ConfigFormBase {
         '#description' => $this->t("Enable if you want to index this content into Content Hub."),
       ];
 
+      // Preview image is currently only allow for 'node' type.
+      if ($type === 'node') {
+        $preview_image_link = $this->getContentTypePreviewImageLink($bundle_id);
+        $form[$bundle_id]['enable_index']['#description'] .= ' ' . $this->t("Optionally, you can also configure the content's @preview_image_link.", ['@preview_image_link' => $preview_image_link]);
+      }
+
       $form[$bundle_id]['enable_viewmodes'] = [
         '#type' => 'checkbox',
         '#title' => $this->t('Publish View modes'),
@@ -190,7 +198,7 @@ class EntityConfigSettingsForm extends ConfigFormBase {
         '#states' => array(
           // Only show this field when the 'enable_index' checkbox is enabled.
           'visible' => array(
-            ':input[name="entities[' . $type . '][' . $bundle_id . '][enable_index]"]' => array('checked' => TRUE),
+            ':input[name="entities[' . $type . '][' . $bundle_id . '][enable_index]"]' => ['checked' => TRUE],
           ),
         ),
       ];
@@ -209,6 +217,7 @@ class EntityConfigSettingsForm extends ConfigFormBase {
         '#default_value' => empty($default_value) ? $first_element : $default_value,
         '#states' => [
           'visible' => [
+            ':input[name="entities[' . $type . '][' . $bundle_id . '][enable_index]"]' => ['checked' => TRUE],
             ':input[name="entities[' . $type . '][' . $bundle_id . '][enable_viewmodes]"]' => ['checked' => TRUE],
           ],
         ],
@@ -216,6 +225,23 @@ class EntityConfigSettingsForm extends ConfigFormBase {
       );
     }
     return $form;
+  }
+
+  /**
+   * Get Content Type preview image link.
+   *
+   * @param string $bundle_id
+   *   Bundle Id.
+   *
+   * @return \Drupal\Core\GeneratedLink
+   *   Link object to the node page and its preview image tab.
+   */
+  private function getContentTypePreviewImageLink($bundle_id) {
+    $link_text = $this->t('preview image');
+    $link_attributes = ['attributes' => ['target' => '_blank'], 'fragment' => 'edit-acquia-contenthub'];
+    $url = Url::fromRoute('entity.node_type.edit_form', ['node_type' => $bundle_id], $link_attributes);
+    $link = Link::fromTextAndUrl($link_text, $url)->toString();
+    return $link;
   }
 
   /**

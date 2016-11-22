@@ -8,6 +8,7 @@
 namespace Drupal\acquia_contenthub;
 
 use Drupal\Component\Render\FormattableMarkup;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\acquia_contenthub\Client\ClientManagerInterface;
 use Drupal\Core\Entity\ContentEntityTypeInterface;
 use Drupal\Core\Entity\EntityInterface;
@@ -458,6 +459,7 @@ class EntityManager {
    */
   public function getContentHubEnabledEntityTypeIds() {
     $entity_type_ids = $this->configFactory->get('acquia_contenthub.entity_config')->get('entities');
+    $entity_type_ids = is_array($entity_type_ids) ? $entity_type_ids : [];
     $enabled_entity_type_ids = [];
     foreach ($entity_type_ids as $entity_type_id => $bundles) {
       // For a type to be enabled, it must at least have one bundle enabled.

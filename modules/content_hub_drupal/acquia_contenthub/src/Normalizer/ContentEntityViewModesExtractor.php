@@ -8,15 +8,16 @@
 namespace Drupal\acquia_contenthub\Normalizer;
 
 use Drupal\Component\Utility\Crypt;
-use Drupal\Core\Config\ConfigFactory;
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
-use Drupal\Core\Entity\EntityDisplayRepository;
-use Drupal\Core\Entity\EntityTypeManager;
+use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Render\Markup;
-use Drupal\Core\Render\Renderer;
+use Drupal\Core\Render\RendererInterface;
 use Drupal\Core\Session\AccountProxyInterface;
-use Drupal\Core\Session\AccountSwitcher;
+use Drupal\Core\Session\AccountSwitcherInterface;
 use Drupal\Core\Url;
+use Drupal\image\Entity\ImageStyle;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 
@@ -41,14 +42,21 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
   /**
    * The entity manager.
    *
-   * @var \Drupal\Core\Entity\EntityDisplayRepository
+   * @var \Drupal\Core\Entity\EntityDisplayRepositoryInterface
    */
   protected $entityDisplayRepository;
 
   /**
+   * The entity type manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
+
+  /**
    * The renderer.
    *
-   * @var \Drupal\Core\Render\Renderer
+   * @var \Drupal\Core\Render\RendererInterface
    */
   protected $renderer;
 
@@ -60,6 +68,13 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
   protected $entityConfig;
 
   /**
+   * The preview image config.
+   *
+   * @var \Drupal\Core\Config\ImmutableConfig
+   */
+  protected $previewImageConfig;
+
+  /**
    * The Basic HTTP Kernel to make requests.
    *
    * @var \Symfony\Component\HttpKernel\HttpKernelInterface
@@ -69,7 +84,7 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
   /**
    * The account switcher service.
    *
-   * @var \Drupal\Core\Session\AccountSwitcher
+   * @var \Drupal\Core\Session\AccountSwitcherInterface
    */
   protected $accountSwitcher;
 
@@ -78,22 +93,23 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
    *
    * @param \Drupal\Core\Session\AccountProxyInterface $current_user
    *   The current session user.
-   * @param \Drupal\Core\Config\ConfigFactory $config_factory
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The config factory.
-   * @param \Drupal\Core\Entity\EntityDisplayRepository $entity_display_repository
+   * @param \Drupal\Core\Entity\EntityDisplayRepositoryInterface $entity_display_repository
    *   The entity display repository.
-   * @param \Drupal\Core\Entity\EntityTypeManager $entity_type_manager
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
-   * @param \Drupal\Core\Render\Renderer $renderer
+   * @param \Drupal\Core\Render\RendererInterface $renderer
    *   The renderer.
    * @param \Symfony\Component\HttpKernel\HttpKernelInterface $kernel
-   *   The renderer.
-   * @param \Drupal\Core\Session\AccountSwitcher $account_switcher
+   *   The Kernel.
+   * @param \Drupal\Core\Session\AccountSwitcherInterface $account_switcher
    *   The Account Switcher Service.
    */
-  public function __construct(AccountProxyInterface $current_user, ConfigFactory $config_factory, EntityDisplayRepository $entity_display_repository, EntityTypeManager $entity_type_manager, Renderer $renderer, HttpKernelInterface $kernel, AccountSwitcher $account_switcher) {
+  public function __construct(AccountProxyInterface $current_user, ConfigFactoryInterface $config_factory, EntityDisplayRepositoryInterface $entity_display_repository, EntityTypeManagerInterface $entity_type_manager, RendererInterface $renderer, HttpKernelInterface $kernel, AccountSwitcherInterface $account_switcher) {
     $this->currentUser = $current_user;
     $this->entityConfig = $config_factory->get('acquia_contenthub.entity_config');
+    $this->previewImageConfig = $config_factory->get('acquia_contenthub.preview_image_config');
     $this->entityDisplayRepository = $entity_display_repository;
     $this->entityTypeManager = $entity_type_manager;
     $this->renderer = $renderer;
@@ -144,11 +160,14 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
     $entity_type_id = $object->getEntityTypeId();
     $entity_bundle_id = $object->bundle();
     $config = $this->entityConfig->get('entities.' . $entity_type_id . '.' . $entity_bundle_id);
-    if (!isset($config['enable_viewmodes']) && !isset($config['rendering'])) {
+    if (empty($config['enable_viewmodes']) || empty($config['rendering'])) {
       return NULL;
     }
     // Normalize.
     $view_modes = $this->entityDisplayRepository->getViewModes($entity_type_id);
+
+    // Generate preview image URL, if possible.
+    $preview_image_url = $this->getPreviewImageUrl($object);
 
     foreach ($view_modes as $view_mode_id => $view_mode) {
       if (!in_array($view_mode_id, $config['rendering'])) {
@@ -169,6 +188,7 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
 
       $normalized[$view_mode_id] = [
         'id' => $view_mode_id,
+        'preview_image' => $preview_image_url,
         'label' => $view_mode['label'],
         'url' => $url,
         'html' => $response->getContent(),
@@ -176,6 +196,53 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
     }
 
     return $normalized;
+  }
+
+  /**
+   * Get preview image URL.
+   *
+   * @param \Drupal\Core\Entity\ContentEntityInterface $entity
+   *   The Content Entity object.
+   *
+   * @return string
+   *   Preview image URL.
+   */
+  protected function getPreviewImageUrl(ContentEntityInterface $entity) {
+    $entity_type = $entity->getEntityTypeId();
+    $bundle = $entity->bundle();
+    $entity_type_preview_image_config = $this->previewImageConfig->get($entity_type . '.' . $bundle);
+
+    // Don't set, if no preview image has been configured.
+    if (!isset($entity_type_preview_image_config)) {
+      return '';
+    }
+
+    $preview_image_config_array = explode('->', $entity_type_preview_image_config['field']);
+    foreach ($preview_image_config_array as $field_key) {
+      // Don't set, if node has no such field or field has no such entity.
+      if (empty($entity->{$field_key}->entity) ||
+        method_exists($entity->{$field_key}, 'isEmpty') && $entity->{$field_key}->isEmpty()
+      ) {
+        return '';
+      }
+      $entity = $entity->{$field_key}->entity;
+    }
+
+    if ($entity->bundle() !== 'file') {
+      return '';
+    }
+    $file_uri = $entity->getFileUri();
+
+    // Process Image style.
+    $image_style = ImageStyle::load($entity_type_preview_image_config['style']);
+    // Return empty if no such image style.
+    if (empty($image_style)) {
+      return '';
+    }
+
+    // Return preview image URL.
+    $preview_image_uri = $image_style->buildUrl($file_uri);
+    return file_create_url($preview_image_uri);
   }
 
   /**
