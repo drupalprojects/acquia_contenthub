@@ -10,7 +10,6 @@ env:
   # - DRUPAL=8.1.x
   - DRUPAL=8.2.x
   # - DRUPAL=8.3.x
-  - GITHUB_OAUTH_TOKEN=da89ea5e32ff1f8d3589b592b1aea478b1db2ce2
 
 matrix:
   allow_failures:
@@ -28,7 +27,7 @@ mysql:
   encoding: utf8
 
 before_install:
-  - git config --global github.accesstoken $GITHUB_OAUTH_TOKEN
+  # - git config --global github.accesstoken $GITHUB_OAUTH_TOKEN
   # - sudo apt-get update & /dev/null
   - composer self-update
 
