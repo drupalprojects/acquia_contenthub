@@ -9,48 +9,49 @@ php:
 env:
   # - DRUPAL=8.1.x
   - DRUPAL=8.2.x
-  - DRUPAL=8.3.x
+  # - DRUPAL=8.3.x
+  - GITHUB_OAUTH_TOKEN=da89ea5e32ff1f8d3589b592b1aea478b1db2ce2
 
 matrix:
   allow_failures:
     - env: DRUPAL=8.3.x
+  fast_finish: true
 
 sudo: false
 
-git:
-  depth: 3
+services:
+  - mysql
 
-before_script:
+mysql:
+  database: drupal
+  username: travis
+  encoding: utf8
+
+before_install:
+  - git config --global github.accesstoken $GITHUB_OAUTH_TOKEN
+  # - sudo apt-get update & /dev/null
   - composer self-update
+
+  # items for phpcs
   - composer require --dev squizlabs/php_codesniffer:2.5.1
   - composer require drupal/coder:8.2.6
   - composer install
   - vendor/bin/phpcs --config-set installed_paths vendor/drupal/coder/coder_sniffer
 
-  # Require content_hub_drupal module.
-  - composer require --prefer-source "drupal/content_hub_drupal @dev"
+install:
+  - composer create-project acquia/lightning-project:^8.1.0 drupal --no-interaction --no-install
+  - cd drupal
+  - composer config --global repo.packagist composer https://packagist.org
+  # see https://github.com/drupal-composer/drupal-project/issues/175
+  - composer config --global repositories.0 composer https://packages.drupal.org/8
+  - composer require drupal/core:$DRUPAL --no-update
+  - composer config repositories.acquia-content-hub-d8 path ../
+  - composer update
+  #- composer install
+before_script:
+
 
 script:
   - vendor/bin/phpcs --standard=vendor/drupal/coder/coder_sniffer/Drupal --extensions=php,module,inc,install,test,profile,theme,js,css,info,txt ./modules/content_hub_drupal/
-  - vendor/bin/phpunit --configuration modules/content_hub_drupal/phpunit.xml --bootstrap core/tests/bootstrap.php --coverage-text=$TRAVIS_BUILD_DIR/coverage.txt
-
-
-install:
-  # - git config --global github.accesstoken $GITHUB_OAUTH_TOKEN
-
-  # Download Drupal and dependencies.
-  - TESTDIR=$(pwd)
-  - cd ..
-  - git clone --depth 1 --branch ${DRUPAL} http://git.drupal.org/project/drupal.git drupal
-  - cd drupal
-
-  # Download Drupal core dependencies via lock file.
-  - composer install
-
-  # Add composer test dependencies to Drupal.
-  - composer config repositories.drupal composer https://packages.drupal.org/8
-  - composer config repositories.content_hub_drupal path $TESTDIR
-
-after_script:
-  # Print out coverage report.
-  - head $TRAVIS_BUILD_DIR/coverage.txt
+  # - cd drupal/modules/content_hub_drupal/acquia_contenthub
+  # - vendor/bin/phpunit --configuration phpunit.xml --bootstrap core/tests/bootstrap.php
