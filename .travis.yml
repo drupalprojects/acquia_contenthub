@@ -36,7 +36,7 @@ script:
 
 
 install:
-  - git config --global github.accesstoken $GITHUB_OAUTH_TOKEN
+  # - git config --global github.accesstoken $GITHUB_OAUTH_TOKEN
 
   # Download Drupal and dependencies.
   - TESTDIR=$(pwd)
