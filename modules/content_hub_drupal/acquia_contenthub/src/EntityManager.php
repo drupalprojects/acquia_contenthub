@@ -458,10 +458,14 @@ class EntityManager {
    *   A list of enabled entity type IDs.
    */
   public function getContentHubEnabledEntityTypeIds() {
-    $entity_type_ids = $this->configFactory->get('acquia_contenthub.entity_config')->get('entities');
-    $entity_type_ids = is_array($entity_type_ids) ? $entity_type_ids : [];
+    /** @var \Drupal\rest\RestResourceConfigInterface $contenthub_entity_config_storage */
+    $contenthub_entity_config_storage = $this->entityTypeManager->getStorage('acquia_contenthub_entity_config');
+    $entity_type_ids = $contenthub_entity_config_storage->loadMultiple();
+
     $enabled_entity_type_ids = [];
-    foreach ($entity_type_ids as $entity_type_id => $bundles) {
+    foreach ($entity_type_ids as $entity_type_id => $entity_type_config) {
+      $bundles = $entity_type_config->getBundles();
+
       // For a type to be enabled, it must at least have one bundle enabled.
       if (!empty(array_filter(array_column($bundles, 'enable_index')))) {
         $enabled_entity_type_ids[] = $entity_type_id;
