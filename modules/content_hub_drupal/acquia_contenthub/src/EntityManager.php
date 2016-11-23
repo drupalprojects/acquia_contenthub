@@ -11,6 +11,7 @@ use Drupal\Component\Render\FormattableMarkup;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\acquia_contenthub\Client\ClientManagerInterface;
 use Drupal\Core\Entity\ContentEntityTypeInterface;
+use Drupal\Core\Config\Entity\ConfigEntityInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\Core\Url;
@@ -417,6 +418,11 @@ class EntityManager {
    *   to content hub.
    */
   public function isEligibleEntity(EntityInterface $entity) {
+    // Currently Content Hub does not support configuration entities.
+    if ($entity instanceof \Drupal\Core\Config\Entity\ConfigEntityInterface) {
+      return FALSE;
+    }
+
     /** @var \Drupal\rest\RestResourceConfigInterface $contenthub_entity_config_storage */
     $contenthub_entity_config_storage = $this->entityTypeManager->getStorage('acquia_contenthub_entity_config');
     $contenthub_entity_config_ids = $contenthub_entity_config_storage->loadMultiple(array($entity->getEntityTypeId()));
