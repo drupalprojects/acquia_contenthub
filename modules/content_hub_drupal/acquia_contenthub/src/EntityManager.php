@@ -419,8 +419,8 @@ class EntityManager {
   public function isEligibleEntity(EntityInterface $entity) {
     /** @var \Drupal\rest\RestResourceConfigInterface $contenthub_entity_config_storage */
     $contenthub_entity_config_storage = $this->entityTypeManager->getStorage('acquia_contenthub_entity_config');
-    $contenthub_entity_configs = $contenthub_entity_config_storage->loadMultiple(array($entity->getEntityTypeId()));
-    $entity_type_config = isset($contenthub_entity_configs[$entity->getEntityTypeId()]) ? $contenthub_entity_configs[$entity->getEntityTypeId()]->getBundles() : NULL;
+    $contenthub_entity_config_ids = $contenthub_entity_config_storage->loadMultiple(array($entity->getEntityTypeId()));
+    $entity_type_config = isset($contenthub_entity_config_ids[$entity->getEntityTypeId()]) ? $contenthub_entity_config_ids[$entity->getEntityTypeId()]->getBundles() : NULL;
 
     $bundle_id = $entity->bundle();
     if (empty($entity_type_config) || empty($entity_type_config[$bundle_id]) || empty($entity_type_config[$bundle_id]['enable_index'])) {
