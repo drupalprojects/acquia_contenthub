@@ -66,7 +66,7 @@ class ContentHubEntityTypeConfig extends ConfigEntityBase implements ContentHubE
    *   TRUE if enabled, FALSE otherwise.
    */
   public function isEnableIndex($bundle) {
-    return $this->bundles[$bundle]['enable_index'];
+    return isset($this->bundles[$bundle]['enable_index']) ? $this->bundles[$bundle]['enable_index'] : FALSE;
   }
 
   /**
@@ -78,8 +78,8 @@ class ContentHubEntityTypeConfig extends ConfigEntityBase implements ContentHubE
    * @return bool
    *   TRUE if enabled, FALSE otherwise.
    */
-  public function isEnableViewModes($bundle) {
-    return $this->bundles[$bundle]['enable_viewmodes'];
+  public function isEnabledViewModes($bundle) {
+    return isset($this->bundles[$bundle]['enable_viewmodes']) ? $this->bundles[$bundle]['enable_viewmodes'] : FALSE;
   }
 
   /**
@@ -94,7 +94,7 @@ class ContentHubEntityTypeConfig extends ConfigEntityBase implements ContentHubE
    *   An array of rendering view modes.
    */
   public function getRenderingViewModes($bundle) {
-    return $this->bundles[$bundle]['rendering'];
+    return isset($this->bundles[$bundle]['rendering']) ? $this->bundles[$bundle]['rendering'] : [];
   }
 
   /**
@@ -126,7 +126,7 @@ class ContentHubEntityTypeConfig extends ConfigEntityBase implements ContentHubE
         $this->addDependency($config_bundle['type'], $config_bundle['name']);
 
         // Add dependencies on all enabled view modes.
-        if ($this->isEnableViewModes($bundle)) {
+        if ($this->isEnabledViewModes($bundle)) {
           $view_modes = $this->getRenderingViewModes($bundle);
           foreach ($view_modes as $view_mode) {
             // Enable dependency on these view modes.

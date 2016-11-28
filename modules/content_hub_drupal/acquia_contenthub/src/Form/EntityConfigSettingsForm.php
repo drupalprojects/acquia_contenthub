@@ -144,10 +144,10 @@ class EntityConfigSettingsForm extends ConfigFormBase {
   /**
    * Build entities bundle form.
    *
-   * @param array $type
-   *   Type.
+   * @param string $type
+   *   Entity Type.
    * @param array $bundle
-   *   Bundle.
+   *   Entity Bundle.
    *
    * @return array
    *   Entities bundle form.
@@ -156,8 +156,9 @@ class EntityConfigSettingsForm extends ConfigFormBase {
 
     /** @var \Drupal\rest\RestResourceConfigInterface $contenthub_entity_config_storage */
     $contenthub_entity_config_storage = $this->entityTypeManager->getStorage('acquia_contenthub_entity_config');
-    $contenthub_entity_configs = $contenthub_entity_config_storage->loadMultiple(array($type));
-    $configured_bundles = isset($contenthub_entity_configs[$type]) ? $contenthub_entity_configs[$type]->getBundles() : FALSE;
+    /** @var \Drupal\acquia_contenthub\Entity\ContentHubEntityTypeConfig[] $contenthub_entity_config_ids */
+    $contenthub_entity_config_ids = $contenthub_entity_config_storage->loadMultiple(array($type));
+    $contenthub_entity_config_id = isset($contenthub_entity_config_ids[$type]) ? $contenthub_entity_config_ids[$type] : FALSE;
 
     // Building the form.
     $form = array();
@@ -177,10 +178,10 @@ class EntityConfigSettingsForm extends ConfigFormBase {
       $enable_index = FALSE;
       $rendering = array();
 
-      if ($configured_bundles) {
-        $enable_viewmodes = array_key_exists('enable_viewmodes', $configured_bundles[$bundle_id]) ? $configured_bundles[$bundle_id]['enable_viewmodes'] : FALSE;
-        $enable_index = array_key_exists('enable_index', $configured_bundles[$bundle_id]) ? $configured_bundles[$bundle_id]['enable_index'] : FALSE;
-        $rendering = array_key_exists('rendering', $configured_bundles[$bundle_id]) ? $configured_bundles[$bundle_id]['rendering'] : FALSE;
+      if ($contenthub_entity_config_id) {
+        $enable_viewmodes = $contenthub_entity_config_id->isEnabledViewModes($bundle_id);
+        $enable_index = $contenthub_entity_config_id->isEnableIndex($bundle_id);
+        $rendering = $contenthub_entity_config_id->getRenderingViewModes($bundle_id);
       }
 
       $form[$bundle_id]['enable_index'] = [
