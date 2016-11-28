@@ -17,7 +17,7 @@ use Drupal\Core\Entity\Entity\EntityViewDisplay;
  * @ConfigEntityType(
  *   id = "acquia_contenthub_entity_config",
  *   label = @Translation("Acquia Content Hub Entity configuration"),
- *   config_prefix = "acquia_contenthub",
+ *   config_prefix = "entity",
  *   admin_permission = "Administer Acquia Content Hub'",
  *   label_callback = "getLabelFromPlugin",
  *   entity_keys = {

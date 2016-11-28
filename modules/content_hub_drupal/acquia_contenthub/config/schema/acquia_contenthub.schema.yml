@@ -34,6 +34,9 @@ acquia_contenthub.entity.*:
   type: config_entity
   label: 'Acquia Content Hub entity type configuration'
   mapping:
+    id:
+      type: string
+      label: 'REST resource config ID'
     bundles:
       type: sequence
       label: 'Entity bundle configuration'

@@ -153,12 +153,8 @@ class EntityConfigSettingsForm extends ConfigFormBase {
    *   Entities bundle form.
    */
   private function buildEntitiesBundleForm($type, $bundle) {
-
-    /** @var \Drupal\rest\RestResourceConfigInterface $contenthub_entity_config_storage */
-    $contenthub_entity_config_storage = $this->entityTypeManager->getStorage('acquia_contenthub_entity_config');
-    /** @var \Drupal\acquia_contenthub\Entity\ContentHubEntityTypeConfig[] $contenthub_entity_config_ids */
-    $contenthub_entity_config_ids = $contenthub_entity_config_storage->loadMultiple(array($type));
-    $contenthub_entity_config_id = isset($contenthub_entity_config_ids[$type]) ? $contenthub_entity_config_ids[$type] : FALSE;
+    /** @var \Drupal\acquia_contenthub\Entity\ContentHubEntityTypeConfig $contenthub_entity_config_id */
+    $contenthub_entity_config_id = $this->entityManager->getContentHubEntityTypeConfigurationEntity($type);
 
     // Building the form.
     $form = array();
@@ -280,7 +276,8 @@ class EntityConfigSettingsForm extends ConfigFormBase {
 
     /** @var \Drupal\rest\RestResourceConfigInterface $contenthub_entity_config_storage */
     $contenthub_entity_config_storage = $this->entityTypeManager->getStorage('acquia_contenthub_entity_config');
-    $contenthub_entity_configs = $contenthub_entity_config_storage->loadMultiple();
+    /** @var \Drupal\acquia_contenthub\Entity\ContentHubEntityTypeConfig[] $contenthub_entity_config_ids */
+    $contenthub_entity_config_ids = $contenthub_entity_config_storage->loadMultiple();
 
     $values = $form_state->getValues();
     foreach ($values['entities'] as $entity_type => $bundles) {
@@ -290,7 +287,7 @@ class EntityConfigSettingsForm extends ConfigFormBase {
         $bundles[$name]['enable_viewmodes'] = $bundles[$name]['enable_index'] ? (bool) $bundles[$name]['enable_viewmodes'] : FALSE;
       }
 
-      if (!isset($contenthub_entity_configs[$entity_type])) {
+      if (!isset($contenthub_entity_config_ids[$entity_type])) {
         // If we do not have this configuration entity, then create it.
         $data = [
           'id' => $entity_type,
@@ -301,8 +298,8 @@ class EntityConfigSettingsForm extends ConfigFormBase {
       }
       else {
         // Update Configuration entity.
-        $contenthub_entity_configs[$entity_type]->setBundles($bundles);
-        $contenthub_entity_configs[$entity_type]->save();
+        $contenthub_entity_config_ids[$entity_type]->setBundles($bundles);
+        $contenthub_entity_config_ids[$entity_type]->save();
       }
     }
 

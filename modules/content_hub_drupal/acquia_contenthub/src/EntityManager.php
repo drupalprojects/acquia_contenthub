@@ -468,9 +468,8 @@ class EntityManager {
    *   A list of enabled entity type IDs.
    */
   public function getContentHubEnabledEntityTypeIds() {
-    /** @var \Drupal\rest\RestResourceConfigInterface $contenthub_entity_config_storage */
-    $contenthub_entity_config_storage = $this->entityTypeManager->getStorage('acquia_contenthub_entity_config');
-    $entity_type_ids = $contenthub_entity_config_storage->loadMultiple();
+    /** @var \Drupal\acquia_contenthub\Entity\ContentHubEntityTypeConfig[] $contenthub_entity_config_ids */
+    $entity_type_ids = $this->getContentHubEntityTypeConfigurationEntities();
 
     $enabled_entity_type_ids = [];
     foreach ($entity_type_ids as $entity_type_id => $entity_type_config) {
@@ -482,6 +481,40 @@ class EntityManager {
       }
     }
     return $enabled_entity_type_ids;
+  }
+
+  /**
+   * Returns the Content Hub configuration entity for this entity type.
+   *
+   * @param string $entity_type_id
+   *   The Entity type ID.
+   *
+   * @return bool|\Drupal\acquia_contenthub\ContentHubEntityTypeConfigInterface
+   *   The Configuration entity if exists, FALSE otherwise.
+   */
+  public function getContentHubEntityTypeConfigurationEntity($entity_type_id) {
+    /** @var \Drupal\rest\RestResourceConfigInterface $contenthub_entity_config_storage */
+    $contenthub_entity_config_storage = $this->entityTypeManager->getStorage('acquia_contenthub_entity_config');
+
+    /** @var \Drupal\acquia_contenthub\ContentHubEntityTypeConfigInterface[] $contenthub_entity_config_ids */
+    $contenthub_entity_config_ids = $contenthub_entity_config_storage->loadMultiple(array($entity_type_id));
+    $contenthub_entity_config_id = isset($contenthub_entity_config_ids[$entity_type_id]) ? $contenthub_entity_config_ids[$entity_type_id] : FALSE;
+    return $contenthub_entity_config_id;
+  }
+
+  /**
+   * Returns the list of configured Content Hub configuration entities.
+   *
+   * @return \Drupal\acquia_contenthub\ContentHubEntityTypeConfigInterface[]
+   *   An array of Content Hub Configuration entities
+   */
+  public function getContentHubEntityTypeConfigurationEntities() {
+    /** @var \Drupal\rest\RestResourceConfigInterface $contenthub_entity_config_storage */
+    $contenthub_entity_config_storage = $this->entityTypeManager->getStorage('acquia_contenthub_entity_config');
+
+    /** @var \Drupal\acquia_contenthub\ContentHubEntityTypeConfigInterface[] $contenthub_entity_config_ids */
+    $contenthub_entity_config_ids = $contenthub_entity_config_storage->loadMultiple();
+    return $contenthub_entity_config_ids;
   }
 
   /**

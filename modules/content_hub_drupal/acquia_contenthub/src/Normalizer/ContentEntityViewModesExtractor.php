@@ -61,13 +61,6 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
   protected $renderer;
 
   /**
-   * The entity config.
-   *
-   * @var \Drupal\Core\Config\ImmutableConfig
-   */
-  protected $entityConfig;
-
-  /**
    * The preview image config.
    *
    * @var \Drupal\Core\Config\ImmutableConfig
@@ -108,7 +101,6 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
    */
   public function __construct(AccountProxyInterface $current_user, ConfigFactoryInterface $config_factory, EntityDisplayRepositoryInterface $entity_display_repository, EntityTypeManagerInterface $entity_type_manager, RendererInterface $renderer, HttpKernelInterface $kernel, AccountSwitcherInterface $account_switcher) {
     $this->currentUser = $current_user;
-    $this->entityConfig = $config_factory->get('acquia_contenthub.entity_config');
     $this->previewImageConfig = $config_factory->get('acquia_contenthub.preview_image_config');
     $this->entityDisplayRepository = $entity_display_repository;
     $this->entityTypeManager = $entity_type_manager;
@@ -159,10 +151,21 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
     // Exit if the object is configured not to be rendered.
     $entity_type_id = $object->getEntityTypeId();
     $entity_bundle_id = $object->bundle();
-    $config = $this->entityConfig->get('entities.' . $entity_type_id . '.' . $entity_bundle_id);
-    if (empty($config['enable_viewmodes']) || empty($config['rendering'])) {
+
+    /** @var \Drupal\rest\RestResourceConfigInterface $contenthub_entity_config_storage */
+    $contenthub_entity_config_storage = $this->entityTypeManager->getStorage('acquia_contenthub_entity_config');
+    /** @var \Drupal\acquia_contenthub\ContentHubEntityTypeConfigInterface[] $contenthub_entity_config_ids */
+    $contenthub_entity_config_ids = $contenthub_entity_config_storage->loadMultiple(array($entity_type_id));
+    $contenthub_entity_config_id = isset($contenthub_entity_config_ids[$entity_type_id]) ? $contenthub_entity_config_ids[$entity_type_id] : FALSE;
+
+    // Stop processing if 'view modes' are not configured for this entity type.
+    if ($contenthub_entity_config_id->isEnabledViewModes($entity_bundle_id) === FALSE) {
       return NULL;
     }
+
+    // Obtain the list of view modes.
+    $configured_view_modes = $contenthub_entity_config_id->getRenderingViewModes($entity_bundle_id);
+
     // Normalize.
     $view_modes = $this->entityDisplayRepository->getViewModes($entity_type_id);
 
@@ -170,7 +173,7 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
     $preview_image_url = $this->getPreviewImageUrl($object);
 
     foreach ($view_modes as $view_mode_id => $view_mode) {
-      if (!in_array($view_mode_id, $config['rendering'])) {
+      if (!in_array($view_mode_id, $configured_view_modes)) {
         continue;
       }
       // Generate our URL where the isolated rendered view mode lives.
@@ -266,9 +269,7 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
     $this->accountSwitcher->switchTo(new \Drupal\Core\Session\AnonymousUserSession());
     $build = $this->entityTypeManager->getViewBuilder($object->getEntityTypeId())
       ->view($object, $view_mode);
-    // Add our cacheableDependency. If this config changes, clear the render
-    // cache.
-    $this->renderer->addCacheableDependency($build, $this->entityConfig);
+
     // Wrap our view mode in the most minimal HTML possible.
     $html = $this->getMinimalHtml($build);
     // Restore user account.
