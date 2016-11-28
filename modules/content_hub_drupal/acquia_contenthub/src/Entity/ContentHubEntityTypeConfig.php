@@ -90,6 +90,7 @@ class ContentHubEntityTypeConfig extends ConfigEntityBase implements ContentHubE
    *
    * @param string $bundle
    *   The entity bundle.
+   *
    * @return array
    *   An array of rendering view modes.
    */
@@ -146,10 +147,10 @@ class ContentHubEntityTypeConfig extends ConfigEntityBase implements ContentHubE
    * Gets the entity type manager.
    *
    * @return \Drupal\Core\Entity\EntityTypeManagerInterface
+   *   Returns the EntityTypeManager service.
    */
   protected function entityTypeManager() {
     return \Drupal::entityTypeManager();
   }
-
 
 }

@@ -25,7 +25,7 @@ function acquia_contenthub_post_update_create_acquia_contenthub_entity_config_en
     foreach ($bundles as $type => $bundle) {
       $bundles[$type]['enable_index'] = boolval($bundle['enable_index']);
       $bundles[$type]['enable_viewmodes'] = boolval($bundle['enable_viewmodes']);
-     }
+    }
     // Saving configuration entities.
     $contenthub_entity_config = ContentHubEntityTypeConfig::create([
       'id' => $entity_type,

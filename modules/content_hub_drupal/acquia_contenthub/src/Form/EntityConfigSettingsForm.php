@@ -211,7 +211,6 @@ class EntityConfigSettingsForm extends ConfigFormBase {
         ),
       ];
 
-//      $rendering = $configured_bundles[$bundle_id]['rendering'];
       $title = empty($view_modes) ? NULL : $this->t('Do you want to include the result of any of the following view mode(s)?');
       $default_value = (empty($view_modes) || empty($rendering)) ? array() : $rendering;
       $first_element = array(
@@ -301,7 +300,7 @@ class EntityConfigSettingsForm extends ConfigFormBase {
         $contenthub_entity_config->save();
       }
       else {
-        // Update Configuration entity
+        // Update Configuration entity.
         $contenthub_entity_configs[$entity_type]->setBundles($bundles);
         $contenthub_entity_configs[$entity_type]->save();
       }
