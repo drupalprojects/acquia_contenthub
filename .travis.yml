@@ -29,9 +29,9 @@ mysql:
 before_install:
 
   # first clone everything also into a subfolder, via a parent build folder
-  mkdir ../build
-  cp -R * ../build/
-  mv ../build/ ./
+  - mkdir ../build
+  - cp -R * ../build/
+  - mv ../build/ ./
 
   # - git config --global github.accesstoken $GITHUB_OAUTH_TOKEN
   # - sudo apt-get update & /dev/null
