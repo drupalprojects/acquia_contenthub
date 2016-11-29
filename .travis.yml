@@ -64,9 +64,10 @@ script:
   - cd drupal/docroot
   - mkdir themes
   - cd modules/contrib/
+  # composer seems to ignore symlink:false flag
   - mkdir content-hub-d8_
   - cp -R content-hub-d8/* content-hub-d8_
   - mv content-hub-d8_ content-hub-d8
   # - sed -i.bak 's/core/..\/core/' phpunit.xml
   # - vendor/bin/phpunit --configuration phpunit.xml --bootstrap core/tests/bootstrap.php
-  - phpunit --configuration phpunit.xml
+  - phpunit .  --debug --verbose --coverage-html ~/contenthub_coverage
