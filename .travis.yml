@@ -65,8 +65,9 @@ install:
   - composer update
   - composer install
   - phpenv rehash
+  - cd docroot
   - drush --verbose site-install --db-url=mysql://root:@127.0.0.1/drupal --yes
-  - cd ..
+  - cd ../..
 
 before_script:
   - phpenv config-rm xdebug.ini
