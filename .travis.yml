@@ -23,7 +23,7 @@ services:
 
 mysql:
   database: drupal
-  username: travis
+  username: root
   encoding: utf8
 
 before_install:
@@ -32,6 +32,9 @@ before_install:
   - mkdir ../build
   - cp -R * ../build/
   - mv ../build/ ./
+
+  # drop xdebug (need to readd this for code coverage)
+  - phpenv config-rm xdebug.ini
 
   # - git config --global github.accesstoken $GITHUB_OAUTH_TOKEN
   # - sudo apt-get update & /dev/null
@@ -53,21 +56,28 @@ install:
   - composer config repositories.acquia-content-hub-d8 path ../build
   - composer config repositories.acquia-content-hub-d8.symlink false
   - composer require acquia/content-hub-d8
-  # - composer update
+  - composer update
   - composer install
+  - phpenv rehash
+  - drush --verbose site-install --db-url=mysql://root:@127.0.0.1/drupal --yes
   - cd ..
-before_script:
 
+before_script:
+  - phpenv config-rm xdebug.ini
 
 script:
   - vendor/bin/phpcs -v --standard=vendor/drupal/coder/coder_sniffer/Drupal --extensions=php,module,inc,install,test,profile,theme,js,css,info,txt ./modules/content_hub_drupal/
-  - cd drupal/docroot
-  - mkdir themes
-  - cd modules/contrib/
+  # below here is some shuffling and our
+  # - mkdir themes
+  # run all phpunit tests (no code coverage generated)
+  - phpunit --group acquia_contenthub
+  # run just
+  # - cd modules/contrib/
   # composer seems to ignore symlink:false flag
-  - mkdir content-hub-d8_
-  - cp -R content-hub-d8/* content-hub-d8_
-  - mv content-hub-d8_ content-hub-d8
+  # - mkdir content-hub-d8_
+  # - cp -R content-hub-d8/* content-hub-d8_
+  # - mv content-hub-d8_ content-hub-d8
   # - sed -i.bak 's/core/..\/core/' phpunit.xml
   # - vendor/bin/phpunit --configuration phpunit.xml --bootstrap core/tests/bootstrap.php
-  - phpunit .  --debug --verbose --coverage-html ~/contenthub_coverage
+  # - phpunit .  --debug --verbose --coverage-html ~/contenthub_coverage
+  # - phpunit .  --debug --verbose
