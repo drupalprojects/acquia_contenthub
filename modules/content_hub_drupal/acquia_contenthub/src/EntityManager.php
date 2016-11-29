@@ -468,7 +468,7 @@ class EntityManager {
    *   A list of enabled entity type IDs.
    */
   public function getContentHubEnabledEntityTypeIds() {
-    /** @var \Drupal\acquia_contenthub\Entity\ContentHubEntityTypeConfig[] $contenthub_entity_config_ids */
+    /** @var \Drupal\acquia_contenthub\Entity\ContentHubEntityTypeConfig[] $entity_type_ids */
     $entity_type_ids = $this->getContentHubEntityTypeConfigurationEntities();
 
     $enabled_entity_type_ids = [];
@@ -509,7 +509,7 @@ class EntityManager {
    *   An array of Content Hub Configuration entities
    */
   public function getContentHubEntityTypeConfigurationEntities() {
-    /** @var \Drupal\rest\RestResourceConfigInterface $contenthub_entity_config_storage */
+    /** @var \Drupal\Core\Entity\EntityStorageInterface $contenthub_entity_config_storage */
     $contenthub_entity_config_storage = $this->entityTypeManager->getStorage('acquia_contenthub_entity_config');
 
     /** @var \Drupal\acquia_contenthub\ContentHubEntityTypeConfigInterface[] $contenthub_entity_config_ids */
