@@ -47,7 +47,7 @@ before_install:
   - vendor/bin/phpcs --config-set installed_paths vendor/drupal/coder/coder_sniffer
 
   # drush
-  - composer global require drush/drush:6.*
+  - composer global require drush/drush:8.*
   # add composer's global bin directory to the path
   # see: https://github.com/drush-ops/drush#install---composer
   - export PATH="$HOME/.composer/vendor/bin:$PATH"
@@ -66,7 +66,7 @@ install:
   - composer install
   - phpenv rehash
   - cd docroot
-  - drush --verbose site-install --db-url=mysql://root:@127.0.0.1/drupal --yes
+  - drush site-install lightning --db-url=mysql://root:@127.0.0.1/drupal --yes
   - cd ../..
 
 before_script:
@@ -77,6 +77,7 @@ script:
   # below here is some shuffling and our
   # - mkdir themes
   # run all phpunit tests (no code coverage generated)
+  - cd drupal/docroot/core
   - phpunit --group acquia_contenthub
   # run just
   # - cd modules/contrib/
