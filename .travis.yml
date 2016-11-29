@@ -1,15 +1,15 @@
 language: php
 
 php:
-  #- 5.5
+  - 5.5
   - 5.6
-  #- 7.0
-  #- hhvm
+  - 7.0
+  - hhvm
 
 env:
   # - DRUPAL=8.1.x
   - DRUPAL=8.2.x
-  # - DRUPAL=8.3.x
+  - DRUPAL=8.3.x
 
 matrix:
   allow_failures:
@@ -33,11 +33,8 @@ before_install:
   - cp -R * ../build/
   - mv ../build/ ./
 
-  # drop xdebug (need to readd this for code coverage)
+  # drop xdebug (need to read this for code coverage)
   - phpenv config-rm xdebug.ini
-
-  # - git config --global github.accesstoken $GITHUB_OAUTH_TOKEN
-  # - sudo apt-get update & /dev/null
   - composer self-update
 
   # items for phpcs
@@ -73,19 +70,8 @@ before_script:
 
 script:
   - vendor/bin/phpcs -v --standard=vendor/drupal/coder/coder_sniffer/Drupal --extensions=php,module,inc,install,test,profile,theme,js,css,info,txt ./modules/content_hub_drupal/
-  # below here is some shuffling and our
   - cd drupal/docroot
   - mkdir themes
   # run all phpunit tests (no code coverage generated)
   - cd core
-  - phpunit --group acquia_contenthub
-  # run just
-  # - cd modules/contrib/
-  # composer seems to ignore symlink:false flag
-  # - mkdir content-hub-d8_
-  # - cp -R content-hub-d8/* content-hub-d8_
-  # - mv content-hub-d8_ content-hub-d8
-  # - sed -i.bak 's/core/..\/core/' phpunit.xml
-  # - vendor/bin/phpunit --configuration phpunit.xml --bootstrap core/tests/bootstrap.php
-  # - phpunit .  --debug --verbose --coverage-html ~/contenthub_coverage
-  # - phpunit .  --debug --verbose
+  - phpunit --debug --group acquia_contenthub
