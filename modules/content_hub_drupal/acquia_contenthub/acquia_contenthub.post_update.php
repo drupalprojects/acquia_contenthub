@@ -20,12 +20,27 @@ use Drupal\acquia_contenthub\Entity\ContentHubEntityTypeConfig;
 function acquia_contenthub_post_update_create_acquia_contenthub_entity_config_entities() {
   /** @var \Drupal\Core\Config\Entity\ConfigEntityInterface $contenthub_entity_config_old */
   $contenthub_entity_config_old = \Drupal::state()->get('acquia_contenthub_update_8201_entity_config', []);
+  $contenthub_preview_image_config_old = \Drupal::state()->get('acquia_contenthub_update_8201_preview_image_config', []);
+
   foreach ($contenthub_entity_config_old as $entity_type => $bundles) {
     // Convert integer value to boolean.
     foreach ($bundles as $type => $bundle) {
       $bundles[$type]['enable_index'] = boolval($bundle['enable_index']);
       $bundles[$type]['enable_viewmodes'] = boolval($bundle['enable_viewmodes']);
+
+      // Preview image only works for node entities.
+      if ($entity_type == 'node') {
+        $image_field = isset($contenthub_preview_image_config_old[$entity_type][$bundle]['field']) ? $contenthub_preview_image_config_old[$entity_type][$bundle]['field'] : FALSE;
+        if ($image_field) {
+          $bundles[$type]['preview_image_field'] = $image_field;
+        }
+        $image_style = isset($contenthub_preview_image_config_old[$entity_type][$bundle]['style']) ? $contenthub_preview_image_config_old[$entity_type][$bundle]['style'] : FALSE;
+        if ($image_style) {
+          $bundles[$type]['preview_image_style'] = $image_style;
+        }
+      }
     }
+
     // Saving configuration entities.
     $contenthub_entity_config = ContentHubEntityTypeConfig::create([
       'id' => $entity_type,

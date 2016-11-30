@@ -85,10 +85,17 @@ function acquia_contenthub_update_8201() {
       'bundles',
     ],
   ]));
+
+  // Saving entity_config simple configuration for later processing.
   \Drupal::state()->set('acquia_contenthub_update_8201_entity_config', \Drupal::config('acquia_contenthub.entity_config')->get('entities'));
   \Drupal::configFactory()->getEditable('acquia_contenthub.entity_config')
     ->clear('entities')
     ->save();
+
+  // Saving preview_image_config simple configuration for later processing and
+  // getting rid of it.
+  \Drupal::state()->set('acquia_contenthub_update_8201_preview_image_config', \Drupal::config('acquia_contenthub.preview_image_config')->get('node'));
+  \Drupal::configFactory()->getEditable('acquia_contenthub.preview_image_config')->delete();
 }
 
 /**
