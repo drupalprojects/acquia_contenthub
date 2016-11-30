@@ -10,6 +10,7 @@ namespace Drupal\acquia_contenthub\Entity;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\acquia_contenthub\ContentHubEntityTypeConfigInterface;
 use Drupal\Core\Entity\Entity\EntityViewDisplay;
+use Drupal\image\Entity\ImageStyle;
 
 /**
  * Defines a ContentHubEntityConfig configuration entity class.
@@ -109,6 +110,49 @@ class ContentHubEntityTypeConfig extends ConfigEntityBase implements ContentHubE
   }
 
   /**
+   * Obtains the Preview Image Field for this particular bundle.
+   *
+   * @param string $bundle
+   *   The entity bundle.
+   *
+   * @return string|null
+   *   The preview image field if exists, NULL otherwise.
+   */
+  public function getPreviewImageField($bundle) {
+    return isset($this->bundles[$bundle]['preview_image_field']) ? $this->bundles[$bundle]['preview_image_field'] : NULL;
+  }
+
+  /**
+   * Obtains the Preview Image Style for this particular bundle.
+   *
+   * @param string $bundle
+   *   The entity bundle.
+   *
+   * @return string|null
+   *   The preview image style if exists, NULL otherwise.
+   */
+  public function getPreviewImageStyle($bundle) {
+    return isset($this->bundles[$bundle]['preview_image_style']) ? $this->bundles[$bundle]['preview_image_style'] : NULL;
+  }
+
+  /**
+   * Sets the preview image field and style for a specific bundle.
+   *
+   * @param string $bundle
+   *   The entity bundle.
+   * @param string $image_field
+   *   The preview image field.
+   * @param string $image_style
+   *   The preview image style.
+   */
+  public function setPreviewImage($bundle, $image_field, $image_style) {
+    if ($this->isEnableIndex($bundle)) {
+      $this->bundles[$bundle]['preview_image_field'] = $image_field;
+      $this->bundles[$bundle]['preview_image_style'] = $image_style;
+    }
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function calculateDependencies() {
@@ -134,7 +178,31 @@ class ContentHubEntityTypeConfig extends ConfigEntityBase implements ContentHubE
             /** @var \Drupal\Core\Entity\Display\EntityViewDisplayInterface $display */
             $viewmode = "{$entity_type->id()}.$bundle.$view_mode";
             if ($display = EntityViewDisplay::load($viewmode)) {
-              $this->addDependency($display->getConfigDependencyKey(), $display->getConfigDependencyName());
+              $this->addDependencies($display->getDependencies());
+            }
+          }
+        }
+
+        // Add dependencies on preview image fields and styles.
+        $entity_field_manager = $this->entityFieldManager();
+        $preview_image_field = $this->getPreviewImageField($bundle);
+        $preview_image_style = $this->getPreviewImageStyle($bundle);
+
+        // Calculate dependencies for preview image field.
+        if (isset($preview_image_field)) {
+          /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $fields */
+          $fields = $entity_field_manager->getFieldDefinitions($this->id(), $bundle);
+          $field_config = isset($fields[$preview_image_field]) ? $fields[$preview_image_field]->getConfig($bundle) : FALSE;
+          if ($field_config) {
+            $this->addDependencies($field_config->getDependencies());
+          }
+
+          // Calculate dependencies for preview image style.
+          if (isset($preview_image_style)) {
+            $image_style = ImageStyle::load($preview_image_style);
+            if (isset($image_style)) {
+              $this->addDependency($image_style->getConfigDependencyKey(), $image_style->getConfigDependencyName());
+              $this->addDependencies($image_style->getDependencies());
             }
           }
         }
@@ -144,13 +212,23 @@ class ContentHubEntityTypeConfig extends ConfigEntityBase implements ContentHubE
   }
 
   /**
-   * Gets the entity type manager.
+   * Gets the entity type manager service.
    *
    * @return \Drupal\Core\Entity\EntityTypeManagerInterface
    *   Returns the EntityTypeManager service.
    */
   protected function entityTypeManager() {
     return \Drupal::entityTypeManager();
+  }
+
+  /**
+   * Gets the entity field manager service.
+   *
+   * @return \Drupal\Core\Entity\EntityFieldManagerInterface
+   *   Returns the EntityFieldManager service.
+   */
+  protected function entityFieldManager() {
+    return \Drupal::getContainer()->get('entity_field.manager');
   }
 
 }

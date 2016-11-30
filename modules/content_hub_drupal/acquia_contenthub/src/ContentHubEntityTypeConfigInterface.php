@@ -57,4 +57,38 @@ interface ContentHubEntityTypeConfigInterface {
    */
   public function setBundles($bundles);
 
+  /**
+   * Obtains the Preview Image Field for this particular bundle.
+   *
+   * @param string $bundle
+   *   The entity bundle.
+   *
+   * @return string|null
+   *   The preview image field if exists, NULL otherwise.
+   */
+  public function getPreviewImageField($bundle);
+
+  /**
+   * Obtains the Preview Image Style for this particular bundle.
+   *
+   * @param string $bundle
+   *   The entity bundle.
+   *
+   * @return string|null
+   *   The preview image style if exists, NULL otherwise.
+   */
+  public function getPreviewImageStyle($bundle);
+
+  /**
+   * Sets the preview image field and style for a specific bundle.
+   *
+   * @param string $bundle
+   *   The entity bundle.
+   * @param string $image_field
+   *   The preview image field.
+   * @param string $image_style
+   *   The preview image style.
+   */
+  public function setPreviewImage($bundle, $image_field, $image_style);
+
 }
