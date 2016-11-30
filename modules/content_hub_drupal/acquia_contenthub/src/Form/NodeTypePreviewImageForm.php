@@ -37,7 +37,7 @@ class NodeTypePreviewImageForm {
    *
    * @var \Drupal\acquia_contenthub\ContentHubEntityTypeConfigInterface
    */
-  private $contenthub_entity_config;
+  private $contenthubEntityConfig;
 
   /**
    * Processed field hashes.
@@ -77,7 +77,7 @@ class NodeTypePreviewImageForm {
     // We are assuming this is ONLY working for 'node' entities. If preview
     // images are to be supported for entities other than nodes, we will need
     // to change this line.
-    $this->contenthub_entity_config = $entity_manager->getContentHubEntityTypeConfigurationEntity('node');
+    $this->contenthubEntityConfig = $entity_manager->getContentHubEntityTypeConfigurationEntity('node');
     $this->entityTypeManager = $entity_type_manager;
     $this->entityFieldManager = $entity_field_manager;
   }
@@ -119,8 +119,8 @@ class NodeTypePreviewImageForm {
     }
 
     // Obtaining preview image field and style from the configuration entity.
-    $preview_image_field = $this->contenthub_entity_config->getPreviewImageField($node_type);
-    $preview_image_style = $this->contenthub_entity_config->getPreviewImageStyle($node_type);
+    $preview_image_field = $this->contenthubEntityConfig->getPreviewImageField($node_type);
+    $preview_image_style = $this->contenthubEntityConfig->getPreviewImageStyle($node_type);
 
     // Building the form.
     $form['field'] = [
@@ -213,8 +213,8 @@ class NodeTypePreviewImageForm {
     }
 
     // Saving configuration entity.
-    $this->contenthub_entity_config->setPreviewImage($node_type, $settings['field'], $settings['style']);
-    $this->contenthub_entity_config->save();
+    $this->contenthubEntityConfig->setPreviewImage($node_type, $settings['field'], $settings['style']);
+    $this->contenthubEntityConfig->save();
   }
 
   /**
