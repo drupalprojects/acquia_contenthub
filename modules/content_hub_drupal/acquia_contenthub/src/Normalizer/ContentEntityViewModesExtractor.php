@@ -275,9 +275,15 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
    */
   public function getViewModeMinimalHtml(ContentEntityInterface $object, $view_mode) {
     // Switch to anonymous user for rendering as configured role.
+    $entity_type_id = $object->getEntityTypeId();
     $this->accountSwitcher->switchTo(new \Drupal\Core\Session\AnonymousUserSession());
-    $build = $this->entityTypeManager->getViewBuilder($object->getEntityTypeId())
+    $build = $this->entityTypeManager->getViewBuilder($entity_type_id)
       ->view($object, $view_mode);
+
+    // Add our cacheableDependency. If this config changes, clear the render
+    // cache.
+    $contenthub_entity_config_id = $this->getContentHubEntityTypeConfigEntity($entity_type_id);
+    $this->renderer->addCacheableDependency($build, $contenthub_entity_config_id);
 
     // Wrap our view mode in the most minimal HTML possible.
     $html = $this->getMinimalHtml($build);
