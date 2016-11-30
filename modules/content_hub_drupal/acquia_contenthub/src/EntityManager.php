@@ -422,14 +422,12 @@ class EntityManager {
       return FALSE;
     }
 
-    /** @var \Drupal\rest\RestResourceConfigInterface $contenthub_entity_config_storage */
-    $contenthub_entity_config_storage = $this->entityTypeManager->getStorage('acquia_contenthub_entity_config');
-    $contenthub_entity_config_ids = $contenthub_entity_config_storage->loadMultiple(array($entity->getEntityTypeId()));
     $entity_type_id = $entity->getEntityTypeId();
-    $entity_type_config = isset($contenthub_entity_config_ids[$entity_type_id]) ? $contenthub_entity_config_ids[$entity_type_id]->getBundles() : NULL;
+    /** @var \Drupal\acquia_contenthub\ContentHubEntityTypeConfigInterface $entity_type_config */
+    $entity_type_config = $this->getContentHubEntityTypeConfigurationEntity($entity_type_id);
 
     $bundle_id = $entity->bundle();
-    if (empty($entity_type_config) || empty($entity_type_config[$bundle_id]) || empty($entity_type_config[$bundle_id]['enable_index'])) {
+    if (empty($entity_type_config) || empty($entity_type_config->isEnableIndex($bundle_id))) {
       return FALSE;
     }
 
