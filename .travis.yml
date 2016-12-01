@@ -79,4 +79,4 @@ script:
   - cd core
   - phpunit --debug --group acquia_contenthub
   # run all the simple tests
-  - php core/scripts/run-tests.sh --browser --verbose --url http://localhost:8080 --class "Drupal\acquia_contenthub\Tests\IntegrationTest"
+  - php scripts/run-tests.sh --browser --verbose --url http://localhost:8080 --class "Drupal\acquia_contenthub\Tests\IntegrationTest"
