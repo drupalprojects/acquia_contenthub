@@ -417,7 +417,8 @@ class EntityManager {
    *   to content hub.
    */
   public function isEligibleEntity(EntityInterface $entity) {
-    // Currently Content Hub does not support configuration entities.
+    // Currently Content Hub does not support configuration entities to be
+    // exported. Only content entities can be exported to Content Hub.
     if ($entity instanceof \Drupal\Core\Config\Entity\ConfigEntityInterface) {
       return FALSE;
     }

@@ -10,7 +10,9 @@ namespace Drupal\acquia_contenthub\Entity;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\acquia_contenthub\ContentHubEntityTypeConfigInterface;
 use Drupal\Core\Entity\Entity\EntityViewDisplay;
+use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\image\Entity\ImageStyle;
+use Drupal\Core\Entity\EntityFieldManagerInterface;
 
 /**
  * Defines a ContentHubEntityConfig configuration entity class.
@@ -178,48 +180,87 @@ class ContentHubEntityTypeConfig extends ConfigEntityBase implements ContentHubE
     foreach ($bundles as $bundle) {
       if ($this->isEnableIndex($bundle)) {
         // Add dependency on this particular bundle.
-        $config_bundle = $entity_type->getBundleConfigDependency($bundle);
-        $this->addDependency($config_bundle['type'], $config_bundle['name']);
+        $this->calculateDependenciesForBundle($entity_type, $bundle);
 
         // Add dependencies on all enabled view modes.
         if ($this->isEnabledViewModes($bundle)) {
-          $view_modes = $this->getRenderingViewModes($bundle);
-          foreach ($view_modes as $view_mode) {
-            // Enable dependency on these view modes.
-            /** @var \Drupal\Core\Entity\Display\EntityViewDisplayInterface $display */
-            $viewmode = "{$entity_type->id()}.$bundle.$view_mode";
-            if ($display = EntityViewDisplay::load($viewmode)) {
-              $this->addDependencies($display->getDependencies());
-            }
-          }
+          $this->calculateDependenciesForViewModes($entity_type, $bundle);
         }
 
         // Add dependencies on preview image fields and styles.
         $entity_field_manager = $this->entityFieldManager();
-        $preview_image_field = $this->getPreviewImageField($bundle);
-        $preview_image_style = $this->getPreviewImageStyle($bundle);
+        $this->calculateDependenciesForPreviewImage($entity_field_manager, $bundle);
 
-        // Calculate dependencies for preview image field.
-        if (isset($preview_image_field)) {
-          /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $fields */
-          $fields = $entity_field_manager->getFieldDefinitions($this->id(), $bundle);
-          $field_config = isset($fields[$preview_image_field]) ? $fields[$preview_image_field]->getConfig($bundle) : FALSE;
-          if ($field_config) {
-            $this->addDependencies($field_config->getDependencies());
-          }
-
-          // Calculate dependencies for preview image style.
-          if (isset($preview_image_style)) {
-            $image_style = ImageStyle::load($preview_image_style);
-            if (isset($image_style)) {
-              $this->addDependency($image_style->getConfigDependencyKey(), $image_style->getConfigDependencyName());
-              $this->addDependencies($image_style->getDependencies());
-            }
-          }
-        }
       }
     }
     return $this;
+  }
+
+  /**
+   * Calculates dependencies for bundle.
+   *
+   * @param \Drupal\Core\Entity\EntityTypeInterface $entity_type
+   *   The Entity Type object.
+   * @param string $bundle
+   *   The entity bundle.
+   */
+  protected function calculateDependenciesForBundle(EntityTypeInterface $entity_type, $bundle) {
+    $config_bundle = $entity_type->getBundleConfigDependency($bundle);
+    $this->addDependency($config_bundle['type'], $config_bundle['name']);
+  }
+
+  /**
+   * Calculate dependencies for view modes.
+   *
+   * @param \Drupal\Core\Entity\EntityTypeInterface $entity_type
+   *   The Entity Type object.
+   * @param string $bundle
+   *   The entity bundle.
+   */
+  protected function calculateDependenciesForViewModes(EntityTypeInterface $entity_type, $bundle) {
+    if ($this->isEnabledViewModes($bundle)) {
+      $view_modes = $this->getRenderingViewModes($bundle);
+      foreach ($view_modes as $view_mode) {
+        // Enable dependency on these view modes.
+        /** @var \Drupal\Core\Entity\Display\EntityViewDisplayInterface $display */
+        $viewmode = "{$entity_type->id()}.$bundle.$view_mode";
+        if ($display = EntityViewDisplay::load($viewmode)) {
+          $this->addDependencies($display->getDependencies());
+        }
+      }
+    }
+  }
+
+  /**
+   * Calculates dependencies for Preview Image.
+   *
+   * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entity_field_manager
+   *   The Entity Field Manager service.
+   * @param string $bundle
+   *   The entity bundle.
+   */
+  protected function calculateDependenciesForPreviewImage(EntityFieldManagerInterface $entity_field_manager, $bundle) {
+    $preview_image_field = $this->getPreviewImageField($bundle);
+    $preview_image_style = $this->getPreviewImageStyle($bundle);
+
+    // Calculate dependencies for preview image field.
+    if (!empty($preview_image_field)) {
+      /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $fields */
+      $fields = $entity_field_manager->getFieldDefinitions($this->id(), $bundle);
+      $field_config = isset($fields[$preview_image_field]) ? $fields[$preview_image_field]->getConfig($bundle) : FALSE;
+      if ($field_config) {
+        $this->addDependencies($field_config->getDependencies());
+      }
+
+      // Calculate dependencies for preview image style.
+      if (!empty($preview_image_style)) {
+        $image_style = ImageStyle::load($preview_image_style);
+        if (isset($image_style)) {
+          $this->addDependency($image_style->getConfigDependencyKey(), $image_style->getConfigDependencyName());
+          $this->addDependencies($image_style->getDependencies());
+        }
+      }
+    }
   }
 
   /**
