@@ -48,7 +48,11 @@ class ContentHubEntityRequestHandler extends RequestHandler {
    */
   protected $resourcePluginManager;
 
-
+  /**
+   * The Content Hub Entity Manager.
+   *
+   * @var \Drupal\acquia_contenthub\EntityManager
+   */
   protected $entityManager;
 
   /**
