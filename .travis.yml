@@ -76,7 +76,8 @@ script:
   - cd core
   - phpunit --debug --group acquia_contenthub
   - cd ..
-  - drush pm-enable acquia_contenthub_subscriber -y
+  # fix this first: The always_populate_raw_post_data PHP setting should be set to -1
+  #- drush pm-enable acquia_contenthub_subscriber -y
   - drush pm-enable simpletest -y
   - nohup php -S localhost:8080 > /dev/null 2>&1 &
   - php core/scripts/run-tests.sh --php /home/travis/.phpenv/shims/php --verbose --url http://localhost:8080 --module acquia_contenthub
