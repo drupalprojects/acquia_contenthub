@@ -14,7 +14,7 @@ use Drupal\Core\Routing\RouteBuilderInterface;
 /**
  * A subscriber to rebuild routes whenever there is a change in configuration.
  *
- * Class ConfigRebuildRoutes
+ * Class ConfigRebuildRoutes.
  *
  * @package Drupal\acquia_contenthub\EventSubscriber
  */
@@ -23,7 +23,10 @@ class ConfigRebuildRoutes implements EventSubscriberInterface {
   protected $routeBuilder;
 
   /**
+   * Public constructor.
+   *
    * @param \Drupal\Core\Routing\RouteBuilderInterface $route_builder
+   *   The Route Builder service.
    */
   public function __construct(RouteBuilderInterface $route_builder) {
     $this->routeBuilder = $route_builder;
@@ -58,4 +61,5 @@ class ConfigRebuildRoutes implements EventSubscriberInterface {
     $events[ConfigEvents::SAVE][] = ['onSave'];
     return $events;
   }
+
 }
