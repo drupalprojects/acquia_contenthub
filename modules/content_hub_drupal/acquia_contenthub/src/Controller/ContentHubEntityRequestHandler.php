@@ -118,6 +118,10 @@ class ContentHubEntityRequestHandler extends RequestHandler {
 
     // Adding cacheable dependency on the config entity for this particular
     // entity type.
+    // All requests served by this route will have the cache tag of the config
+    // entity that provided the response so if that config entity changes, then
+    // this will automatically invalidate the caches of all responses
+    // associated with it.
     $entity_type_id = $data->getEntityTypeId();
     if ($content_hub_config_entity = $this->entityManager->getContentHubEntityTypeConfigurationEntity($entity_type_id)) {
       $response->addCacheableDependency($content_hub_config_entity);
