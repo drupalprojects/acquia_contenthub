@@ -35,6 +35,7 @@ before_install:
 
   # drop xdebug (need to read this for code coverage)
   - phpenv config-rm xdebug.ini
+  - export realphp=`which php`
   - alias php="php -d default_socket_timeout=1 -d xdebug.remote_enable=0"
   - composer self-update
 
@@ -79,4 +80,4 @@ script:
   - cd core
   - phpunit --debug --group acquia_contenthub
   # run all the simple tests
-  - php scripts/run-tests.sh --browser --verbose --url http://localhost:8080 --class "Drupal\acquia_contenthub\Tests\IntegrationTest"
+  - php scripts/run-tests.sh --browser --verbose --url http://localhost:8080 --class "Drupal\acquia_contenthub\Tests\IntegrationTest" --php $realphp
