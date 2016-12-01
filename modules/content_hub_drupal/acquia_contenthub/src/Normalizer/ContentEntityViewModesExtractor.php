@@ -225,7 +225,7 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
     $preview_image_style = $contenthub_entity_config_id->getPreviewImageStyle($bundle);
 
     // Don't set, if no preview image has been configured.
-    if (!isset($preview_image_field) || !isset($preview_image_style)) {
+    if (empty($preview_image_field) || empty($preview_image_style)) {
       return '';
     }
 

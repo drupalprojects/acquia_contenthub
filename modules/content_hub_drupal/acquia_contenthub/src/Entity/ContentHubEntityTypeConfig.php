@@ -67,7 +67,7 @@ class ContentHubEntityTypeConfig extends ConfigEntityBase implements ContentHubE
    *   TRUE if enabled, FALSE otherwise.
    */
   public function isEnableIndex($bundle) {
-    return isset($this->bundles[$bundle]['enable_index']) ? $this->bundles[$bundle]['enable_index'] : FALSE;
+    return !empty($this->bundles[$bundle]['enable_index']);
   }
 
   /**
@@ -80,7 +80,7 @@ class ContentHubEntityTypeConfig extends ConfigEntityBase implements ContentHubE
    *   TRUE if enabled, FALSE otherwise.
    */
   public function isEnabledViewModes($bundle) {
-    return isset($this->bundles[$bundle]['enable_viewmodes']) ? $this->bundles[$bundle]['enable_viewmodes'] : FALSE;
+    return !empty($this->bundles[$bundle]['enable_viewmodes']);
   }
 
   /**
@@ -136,18 +136,29 @@ class ContentHubEntityTypeConfig extends ConfigEntityBase implements ContentHubE
   }
 
   /**
-   * Sets the preview image field and style for a specific bundle.
+   * Sets the preview image field for a specific bundle.
    *
    * @param string $bundle
    *   The entity bundle.
    * @param string $image_field
    *   The preview image field.
+   */
+  public function setPreviewImageField($bundle, $image_field) {
+    if ($this->isEnableIndex($bundle)) {
+      $this->bundles[$bundle]['preview_image_field'] = $image_field;
+    }
+  }
+
+  /**
+   * Sets the preview image style for a specific bundle.
+   *
+   * @param string $bundle
+   *   The entity bundle.
    * @param string $image_style
    *   The preview image style.
    */
-  public function setPreviewImage($bundle, $image_field, $image_style) {
+  public function setPreviewImageStyle($bundle, $image_style) {
     if ($this->isEnableIndex($bundle)) {
-      $this->bundles[$bundle]['preview_image_field'] = $image_field;
       $this->bundles[$bundle]['preview_image_style'] = $image_style;
     }
   }

@@ -130,7 +130,7 @@ class EntityManagerTest extends UnitTestCase {
    * @return \Drupal\acquia_contenthub\Entity\ContentHubEntityTypeConfig
    *   The Configuration entity.
    */
-  private function getContentHubEntityTypeConfigEntity($id) {
+  protected function getContentHubEntityTypeConfigEntity($id) {
     $bundles = [
       'entity_type_1' => [
         'bundle_11' => [

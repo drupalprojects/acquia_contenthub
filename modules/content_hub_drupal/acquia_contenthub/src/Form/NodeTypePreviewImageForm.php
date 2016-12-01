@@ -213,7 +213,8 @@ class NodeTypePreviewImageForm {
     }
 
     // Saving configuration entity.
-    $this->contenthubEntityConfig->setPreviewImage($node_type, $settings['field'], $settings['style']);
+    $this->contenthubEntityConfig->setPreviewImageField($node_type, $settings['field']);
+    $this->contenthubEntityConfig->setPreviewImageStyle($node_type, $settings['style']);
     $this->contenthubEntityConfig->save();
   }
 
