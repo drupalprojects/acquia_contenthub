@@ -7,6 +7,7 @@
 
 namespace Drupal\acquia_contenthub\Controller;
 
+use Drupal\acquia_contenthub\EntityManager;
 use Drupal\Component\Plugin\PluginManagerInterface;
 use Drupal\Core\Render\RenderContext;
 use Drupal\Core\Routing\RouteMatchInterface;
@@ -48,20 +49,30 @@ class ContentHubEntityRequestHandler extends RequestHandler {
   protected $resourcePluginManager;
 
   /**
+   * The Content Hub Entity Manager.
+   *
+   * @var \Drupal\acquia_contenthub\EntityManager
+   */
+  protected $entityManager;
+
+  /**
    * Creates a new RequestHandler instance.
    *
    * @param \Drupal\Component\Plugin\PluginManagerInterface $resource_plugin_manager
    *   The resource plugin manager.
+   * @param \Drupal\acquia_contenthub\EntityManager $entity_manager
+   *   The Content Hub Entity Manager.
    */
-  public function __construct(PluginManagerInterface $resource_plugin_manager) {
+  public function __construct(PluginManagerInterface $resource_plugin_manager, EntityManager $entity_manager) {
     $this->resourcePluginManager = $resource_plugin_manager;
+    $this->entityManager = $entity_manager;
   }
 
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    return new static($container->get('plugin.manager.rest'));
+    return new static($container->get('plugin.manager.rest'), $container->get('acquia_contenthub.entity_manager'));
   }
 
   /**
@@ -104,6 +115,18 @@ class ContentHubEntityRequestHandler extends RequestHandler {
     if (!$context->isEmpty()) {
       $response->addCacheableDependency($context->pop());
     }
+
+    // Adding cacheable dependency on the config entity for this particular
+    // entity type.
+    // All requests served by this route will have the cache tag of the config
+    // entity that provided the response so if that config entity changes, then
+    // this will automatically invalidate the caches of all responses
+    // associated with it.
+    $entity_type_id = $data->getEntityTypeId();
+    if ($content_hub_config_entity = $this->entityManager->getContentHubEntityTypeConfigurationEntity($entity_type_id)) {
+      $response->addCacheableDependency($content_hub_config_entity);
+    }
+
     $response->setContent($output);
     $response->headers->set('Content-Type', $request->getMimeType($format));
 

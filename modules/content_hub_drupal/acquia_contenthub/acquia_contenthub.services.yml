@@ -47,9 +47,9 @@ services:
     tags:
       - { name: event_subscriber }
 
-  acquia_contenthub.config_cache_tag:
-    class: Drupal\acquia_contenthub\EventSubscriber\ConfigCacheTag
-    arguments: ['@cache_tags.invalidator']
+  acquia_contenthub.config_rebuild_routes:
+    class: Drupal\acquia_contenthub\EventSubscriber\ConfigRebuildRoutes
+    arguments: ['@router.builder']
     tags:
       - { name: event_subscriber }
 

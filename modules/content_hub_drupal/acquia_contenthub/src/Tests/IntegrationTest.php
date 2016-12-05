@@ -87,10 +87,6 @@ class IntegrationTest extends WebTestBase {
 
     $this->drupalGet('admin/config/services/acquia-contenthub/configuration');
     $this->assertResponse(200);
-
-    // Remove all caches then make sure that they are cleared.
-    // @TODO: Delete this line after CHMS-1061 is completed.
-    drupal_flush_all_caches();
   }
 
   /**
@@ -136,10 +132,6 @@ class IntegrationTest extends WebTestBase {
 
     $this->drupalGet('admin/config/services/acquia-contenthub/configuration');
     $this->assertResponse(200);
-
-    // Remove all caches then make sure that they are cleared.
-    // @TODO: Delete this line after CHMS-1061 is completed.
-    drupal_flush_all_caches();
   }
 
 }
