@@ -27,6 +27,7 @@ use Drupal\Component\Uuid\Uuid;
 use Drupal\acquia_contenthub\EntityManager as EntityManager;
 use Drupal\acquia_contenthub\Controller\ContentHubEntityExportController;
 use Drupal\Core\Language\LanguageManagerInterface;
+use Drupal\Core\Language\LanguageInterface;
 
 /**
  * Converts the Drupal entity object to a Acquia Content Hub CDF array.
@@ -599,7 +600,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    * @return \Drupal\Core\Entity\ContentEntityInterface
    *   The Drupal Entity after integrating data from Content Hub.
    */
-  protected function addFieldsToDrupalEntity(\Drupal\Core\Entity\ContentEntityInterface $entity, ContentHubEntity $contenthub_entity, $langcode = 'und', array $context = array()) {
+  protected function addFieldsToDrupalEntity(\Drupal\Core\Entity\ContentEntityInterface $entity, ContentHubEntity $contenthub_entity, $langcode = LanguageInterface::LANGCODE_NOT_SPECIFIED, array $context = array()) {
     /** @var \Drupal\Core\Field\FieldItemListInterface[] $fields */
     $fields = $entity->getFields();
 
@@ -610,8 +611,13 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     // Ignore the entity ID and revision ID.
     // Excluded comes here.
     $excluded_fields = $this->excludedProperties($entity);
-    $excluded_fields[] = 'langcode';
     $excluded_fields[] = 'type';
+    // We ignore `langcode` selectively because und i.e LANGCODE_NOT_SPECIFIED
+    // and zxx i.e LANGCODE_NOT_APPLICABLE content requires `langcode` field
+    // to *not* be excluded for such content to be importable.
+    if ($entity->hasTranslation($langcode)) {
+      $excluded_fields[] = 'langcode';
+    }
 
     // Iterate over all attributes.
     foreach ($contenthub_entity->getAttributes() as $name => $attribute) {
@@ -925,19 +931,24 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
 
     // We have to iterate over the entity translations and add all the
     // translations versions.
-    $languages = $this->languageManager->getLanguages();
+    $languages = $this->languageManager->getLanguages(LanguageInterface::STATE_ALL);
     foreach ($languages as $language => $languagedata) {
       // Make sure the entity language is one of the language contained in the
       // Content Hub Entity.
       if (in_array($language, $langcodes)) {
         if ($entity->hasTranslation($language)) {
           $localized_entity = $entity->getTranslation($language);
-          $entity = $this->addFieldsToDrupalEntity($localized_entity, $contenthub_entity, $language, $context);
+          $entity = $this->addFieldsToDrupalEntity($entity, $contenthub_entity, $language, $context);
         }
         else {
-          $localized_entity = $entity->addTranslation($language, $entity->toArray());
-          $localized_entity->content_translation_source = $entity->language()->getId();
-          $entity = $this->addFieldsToDrupalEntity($localized_entity, $contenthub_entity, $language, $context);
+          if ($language == LanguageInterface::LANGCODE_NOT_SPECIFIED || $language == LanguageInterface::LANGCODE_NOT_APPLICABLE) {
+            $entity = $this->addFieldsToDrupalEntity($entity, $contenthub_entity, $language, $context);
+          }
+          else {
+            $localized_entity = $entity->addTranslation($language, $entity->toArray());
+            $localized_entity->content_translation_source = $entity->language()->getId();
+            $entity = $this->addFieldsToDrupalEntity($localized_entity, $contenthub_entity, $language, $context);
+          }
         }
       }
     }
