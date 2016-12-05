@@ -4,6 +4,9 @@
  * Install, update and uninstall functions for the acquia_contenthub module.
  */
 
+use Drupal\Core\Config\Entity\ConfigEntityType;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+
 /**
  * Implements hook_schema().
  *
@@ -57,3 +60,44 @@ function acquia_contenthub_schema() {
   );
   return $schema;
 }
+
+/**
+ * @defgroup updates-8.2.x-config-entities
+ * @{
+ * Update functions to Configuration Entities.
+ */
+
+/**
+ * Install the Content Hub config entity type and fix old settings-based config.
+ *
+ * @see acquia_contenthub_post_update_create_acquia_contenthub_entity_config_entities()
+ */
+function acquia_contenthub_update_8201() {
+  \Drupal::entityDefinitionUpdateManager()->installEntityType(new ConfigEntityType([
+    'id' => 'acquia_contenthub_entity_config',
+    'label' => new TranslatableMarkup('Acquia Content Hub Entity configuration'),
+    'config_prefix' => 'acquia_contenthub',
+    'admin_permission' => 'Administer Acquia Content Hub',
+    'label_callback' => 'getLabelFromPlugin',
+    'entity_keys' => ['id' => 'id'],
+    'config_export' => [
+      'id',
+      'bundles',
+    ],
+  ]));
+
+  // Saving entity_config simple configuration for later processing.
+  \Drupal::state()->set('acquia_contenthub_update_8201_entity_config', \Drupal::config('acquia_contenthub.entity_config')->get('entities'));
+  \Drupal::configFactory()->getEditable('acquia_contenthub.entity_config')
+    ->clear('entities')
+    ->save();
+
+  // Saving preview_image_config simple configuration for later processing and
+  // getting rid of it.
+  \Drupal::state()->set('acquia_contenthub_update_8201_preview_image_config', \Drupal::config('acquia_contenthub.preview_image_config')->get('node'));
+  \Drupal::configFactory()->getEditable('acquia_contenthub.preview_image_config')->delete();
+}
+
+/**
+ * @} End of "defgroup updates-8.2.x-config-entities".
+ */

@@ -130,8 +130,18 @@ function acquia_contenthub_get_vocabulary_by_name($vocabulary_name) {
  */
 function acquia_contenthub_form_node_type_form_alter(array &$form, FormStateInterface &$form_state) {
   $node_type = $form_state->getFormObject()->getEntity()->id();
-  $form['acquia_contenthub'] = \Drupal::service('acquia_contenthub.form.node_type_preview_image_form')->getForm($node_type);
-  $form['actions']['submit']['#submit'][] = 'acquia_contenthub_form_node_type_form_submit';
+
+  /** @var \Drupal\acquia_contenthub\EntityManager $entity_manager */
+  $entity_manager = \Drupal::service('acquia_contenthub.entity_manager');
+  /** @var \Drupal\acquia_contenthub\Entity\ContentHubEntityTypeConfig $entity_type_config */
+  $entity_type_config = $entity_manager->getContentHubEntityTypeConfigurationEntity('node');
+
+  // Only enable selection of preview images for entities that have been
+  // previously selected to work with Acquia Content Hub.
+  if ($entity_type_config->isEnableIndex($node_type)) {
+    $form['acquia_contenthub'] = \Drupal::service('acquia_contenthub.form.node_type_preview_image_form')->getForm($node_type);
+    $form['actions']['submit']['#submit'][] = 'acquia_contenthub_form_node_type_form_submit';
+  }
 }
 
 /**

@@ -6,6 +6,7 @@
 
 namespace Drupal\Tests\acquia_contenthub\Unit;
 
+use Drupal\acquia_contenthub\Entity\ContentHubEntityTypeConfig;
 use Drupal\Tests\UnitTestCase;
 use Drupal\acquia_contenthub\EntityManager;
 
@@ -121,13 +122,16 @@ class EntityManagerTest extends UnitTestCase {
   }
 
   /**
-   * Defines the Content Hub Entity Types Configuration.
+   * Builds a ContentHubEntityTypeConfig entity.
    *
-   * @return array
-   *   An array of Content Hub Entity Types configuration.
+   * @param string $id
+   *   The Configuration entity ID.
+   *
+   * @return \Drupal\acquia_contenthub\Entity\ContentHubEntityTypeConfig
+   *   The Configuration entity.
    */
-  private function getContentHubEntityTypesConfiguration() {
-    $entity_configuration = [
+  protected function getContentHubEntityTypeConfigEntity($id) {
+    $bundles = [
       'entity_type_1' => [
         'bundle_11' => [
           'enable_index' => 1,
@@ -166,7 +170,35 @@ class EntityManagerTest extends UnitTestCase {
         ],
       ],
     ];
-    return $entity_configuration;
+    $values = [
+      'id' => $id,
+    ];
+    $config_entity = new ContentHubEntityTypeConfig($values, 'acquia_contenthub_entity_config');
+    $config_entity->setBundles($bundles[$id]);
+    return $config_entity;
+  }
+
+  /**
+   * Defines the Content Hub Entity Types Configuration.
+   *
+   * @return array
+   *   An array of Content Hub Entity Types configuration.
+   */
+  private function getContentHubConfigStorage() {
+    // Creating Configuration Entities.
+    $config_entity1 = $this->getContentHubEntityTypeConfigEntity('entity_type_1');
+    $config_entity2 = $this->getContentHubEntityTypeConfigEntity('entity_type_2');
+    $config_entity3 = $this->getContentHubEntityTypeConfigEntity('entity_type_3');
+
+    // Grouping configuration entities.
+    $config_entities = [
+      'entity_type_1' => $config_entity1,
+      'entity_type_2' => $config_entity2,
+      'entity_type_3' => $config_entity3,
+    ];
+    $config_storage = $this->getMock('Drupal\Core\Entity\EntityStorageInterface');
+    $config_storage->method('loadMultiple')->willReturn($config_entities);
+    return $config_storage;
   }
 
   /**
@@ -177,15 +209,8 @@ class EntityManagerTest extends UnitTestCase {
   public function testGetContentHubEnabledEntityTypeIds() {
     $entity_manager = new EntityManager($this->loggerFactory, $this->configFactory, $this->clientManager, $this->contentHubImportedEntities, $this->entityTypeManager, $this->entityTypeBundleInfoManager, $this->kernel);
 
-    $entity_configuration = $this->getContentHubEntityTypesConfiguration();
-    $this->settings->expects($this->once())
-      ->method('get')
-      ->with('entities')
-      ->willReturn($entity_configuration);
-    $this->configFactory->expects($this->once())
-      ->method('get')
-      ->with('acquia_contenthub.entity_config')
-      ->willReturn($this->settings);
+    $config_storage = $this->getContentHubConfigStorage();
+    $this->entityTypeManager->method('getStorage')->with('acquia_contenthub_entity_config')->willReturn($config_storage);
 
     $enabled_entity_type_ids = $entity_manager->getContentHubEnabledEntityTypeIds();
     $expected_entity_type_ids = [
