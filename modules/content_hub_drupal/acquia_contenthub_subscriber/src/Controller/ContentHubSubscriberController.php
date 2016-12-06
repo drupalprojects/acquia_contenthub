@@ -8,6 +8,7 @@ namespace Drupal\acquia_contenthub_subscriber\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\HttpFoundation\Request;
+use Drupal\Core\Language\LanguageInterface;
 
 /**
  * Controller for Content Hub Discovery page.
@@ -36,7 +37,13 @@ class ContentHubSubscriberController extends ControllerBase {
     $import_endpoint = $config->get('import_endpoint') ? $config->get('import_endpoint') : $GLOBALS['base_url'] . '/acquia-contenthub/';
     $saved_filters_endpoint = $config->get('saved_filters_endpoint') ? $config->get('saved_filters_endpoint') : $GLOBALS['base_url'] . '/acquia_contenthub/contenthub_filter/';
 
-    $languages_supported = array_keys(\Drupal::languageManager()->getLanguages());
+    $languages_supported = array_keys(\Drupal::languageManager()->getLanguages(LanguageInterface::STATE_ALL));
+    // We move default language to the top of the array.
+    // Refer: CHMS-994.
+    $default_language_id = \Drupal::languageManager()->getDefaultLanguage()->getId();
+    $i = array_search($default_language_id, $languages_supported);
+    unset($languages_supported[$i]);
+    array_unshift($languages_supported, $default_language_id);
 
     $form = array();
     $form['#attached']['library'][] = 'acquia_contenthub_subscriber/acquia_contenthub_subscriber';

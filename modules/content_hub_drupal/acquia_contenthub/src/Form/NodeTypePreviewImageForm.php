@@ -6,8 +6,9 @@
 
 namespace Drupal\acquia_contenthub\Form;
 
-use Drupal\Core\Entity\EntityManagerInterface;
-use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\acquia_contenthub\EntityManager;
+use Drupal\Core\Entity\EntityFieldManagerInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\image\Entity\ImageStyle;
 
 /**
@@ -18,18 +19,25 @@ class NodeTypePreviewImageForm {
   const PREVIEW_IMAGE_ADD_DEFAULT_KEY = 'acquia_contenthub_preview_image_add';
 
   /**
-   * Settings.
+   * Entity Field Manager.
    *
-   * @var \Drupal\Core\Config\Config
+   * @var \Drupal\Core\Entity\EntityFieldManagerInterface
    */
-  private $settings;
+  private $entityFieldManager;
 
   /**
-   * Entity manager.
+   * Entity Type Manager.
    *
-   * @var \Drupal\Core\Entity\EntityManagerInterface
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
-  private $entityManager;
+  private $entityTypeManager;
+
+  /**
+   * Content Hub Configuration Entity.
+   *
+   * @var \Drupal\acquia_contenthub\ContentHubEntityTypeConfigInterface
+   */
+  private $contenthubEntityConfig;
 
   /**
    * Processed field hashes.
@@ -58,14 +66,20 @@ class NodeTypePreviewImageForm {
   /**
    * Constructor.
    *
-   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
+   * @param \Drupal\acquia_contenthub\EntityManager $entity_manager
    *   The config factory service.
-   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
-   *   Entity type manager.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The Entity Type Manager.
+   * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entity_field_manager
+   *   Entity Field Manager.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, EntityManagerInterface $entity_manager) {
-    $this->settings = $config_factory->getEditable('acquia_contenthub.preview_image_config');
-    $this->entityManager = $entity_manager;
+  public function __construct(EntityManager $entity_manager, EntityTypeManagerInterface $entity_type_manager, EntityFieldManagerInterface $entity_field_manager) {
+    // We are assuming this is ONLY working for 'node' entities. If preview
+    // images are to be supported for entities other than nodes, we will need
+    // to change this line.
+    $this->contenthubEntityConfig = $entity_manager->getContentHubEntityTypeConfigurationEntity('node');
+    $this->entityTypeManager = $entity_type_manager;
+    $this->entityFieldManager = $entity_field_manager;
   }
 
   /**
@@ -100,19 +114,20 @@ class NodeTypePreviewImageForm {
 
     // If the default option is not in the system, offer to create and use the
     // Acquia Content Hub default style.
-    if (!isset($image_styles[SELF::PREVIEW_IMAGE_DEFAULT_KEY])) {
-      $image_styles = [SELF::PREVIEW_IMAGE_ADD_DEFAULT_KEY => t('Acquia Content Hub Preview Image (150×150)')] + $image_styles;
+    if (!isset($image_styles[self::PREVIEW_IMAGE_DEFAULT_KEY])) {
+      $image_styles = [self::PREVIEW_IMAGE_ADD_DEFAULT_KEY => t('Acquia Content Hub Preview Image (150×150)')] + $image_styles;
     }
 
-    $node_type_setting = $this->settings->get('node.' . $node_type);
-    $node_type_preview_image_settings = isset($node_type_setting) ?
-      $node_type_setting :
-      ['field' => '', 'style' => ''];
+    // Obtaining preview image field and style from the configuration entity.
+    $preview_image_field = $this->contenthubEntityConfig->getPreviewImageField($node_type);
+    $preview_image_style = $this->contenthubEntityConfig->getPreviewImageStyle($node_type);
+
+    // Building the form.
     $form['field'] = [
       '#type' => 'select',
       '#title' => t("Select content type's preview image."),
       '#options' => $this->imageFields,
-      '#default_value' => $node_type_preview_image_settings['field'],
+      '#default_value' => (isset($preview_image_field) ? $preview_image_field : ''),
       '#empty_option' => t('None'),
       '#empty_value' => '',
     ];
@@ -120,7 +135,7 @@ class NodeTypePreviewImageForm {
       '#type' => 'select',
       '#title' => t("Select the preview image's style."),
       '#options' => $image_styles,
-      '#default_value' => $node_type_preview_image_settings['style'],
+      '#default_value' => (isset($preview_image_style) ? $preview_image_style : ''),
       '#empty_option' => t('None'),
       '#empty_value' => '',
       '#states' => [
@@ -149,7 +164,7 @@ class NodeTypePreviewImageForm {
    *   The concatenated entity labels that has been traversed through.
    */
   private function collectImageFields($target_type, $type, $key_prefix = '', $label_prefix = '') {
-    $field_definitions = $this->entityManager->getFieldDefinitions($target_type, $type);
+    $field_definitions = $this->entityFieldManager->getFieldDefinitions($target_type, $type);
     foreach ($field_definitions as $field_key => $field_definition) {
       $field_type = $field_definition->getType();
       $field_target_type = $field_definition->getSetting('target_type');
@@ -171,7 +186,7 @@ class NodeTypePreviewImageForm {
 
       // 2) Entity Reference type whose entity is Fieldable.
       if ($field_type === 'entity_reference' &&
-        $this->entityManager->getDefinition($field_target_type)->isSubclassOf('\Drupal\Core\Entity\FieldableEntityInterface')
+        $this->entityTypeManager->getDefinition($field_target_type)->isSubclassOf('\Drupal\Core\Entity\FieldableEntityInterface')
       ) {
         // Track this field, since it is about to be processed.
         $this->processedFieldHashes[$field_hash] = TRUE;
@@ -192,12 +207,15 @@ class NodeTypePreviewImageForm {
    *   Settings.
    */
   public function saveSettings($node_type, $settings) {
-    if ($settings['style'] === SELF::PREVIEW_IMAGE_ADD_DEFAULT_KEY) {
+    if ($settings['style'] === self::PREVIEW_IMAGE_ADD_DEFAULT_KEY) {
       $this->createDefaultImageStyle();
-      $settings['style'] = SELF::PREVIEW_IMAGE_DEFAULT_KEY;
+      $settings['style'] = self::PREVIEW_IMAGE_DEFAULT_KEY;
     }
 
-    $this->settings->set('node.' . $node_type, $settings)->save();
+    // Saving configuration entity.
+    $this->contenthubEntityConfig->setPreviewImageField($node_type, $settings['field']);
+    $this->contenthubEntityConfig->setPreviewImageStyle($node_type, $settings['style']);
+    $this->contenthubEntityConfig->save();
   }
 
   /**
@@ -205,7 +223,7 @@ class NodeTypePreviewImageForm {
    */
   public function createDefaultImageStyle() {
     $image_style = ImageStyle::create([
-      'name' => SELF::PREVIEW_IMAGE_DEFAULT_KEY,
+      'name' => self::PREVIEW_IMAGE_DEFAULT_KEY,
       'label' => t('Acquia Content Hub Preview Image (150×150)'),
     ]);
     $image_style->addImageEffect([

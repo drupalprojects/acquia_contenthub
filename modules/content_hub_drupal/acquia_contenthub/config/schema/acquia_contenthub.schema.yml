@@ -29,39 +29,36 @@ acquia_contenthub.entity_config:
     user_role:
       type: string
       label: "Role to use when converting an Entity to a CDF with or without Metadata"
-    entities:
-      type: sequence
-      label: "Entity Configuration"
-      sequence:
-        type: sequence
-        label: 'A specific entity type configuration'
-        sequence:
-          type: mapping
-          label: 'A specific entity bundle configuration'
-          mapping:
-            enable_index:
-              type: integer
-              label: 'Defines if this is being sent to Content Hub.'
-            enable_viewmodes:
-              type: integer
-              label: 'Defines if we want to index view modes to Content Hub.'
-            rendering:
-              type: sequence
-              label: 'Defines which view modes are enabled for this entity bundle.'
-              sequence:
-                type: string
-                label: 'An enabled view mode'
 
-acquia_contenthub.preview_image_config:
-  type: sequence
-  label: 'Acquia Content Hub Preview Image settings'
-  sequence:
-    type: config_object
-    label: 'A Content type that this settings is for.'
-    mapping:
-      field:
-        type: string
-        label: 'A mapping string to the field which holds the image file.'
-      style:
-        type: string
-        label: 'A image style machine name.'
+acquia_contenthub.entity.*:
+  type: config_entity
+  label: 'Acquia Content Hub entity type configuration'
+  mapping:
+    id:
+      type: string
+      label: 'REST resource config ID'
+    bundles:
+      type: sequence
+      label: 'Entity bundle configuration'
+      sequence:
+        type: mapping
+        label: 'A specific entity bundle configuration'
+        mapping:
+          enable_index:
+            type: boolean
+            label: 'Defines if this is being sent to Content Hub.'
+          enable_viewmodes:
+            type: boolean
+            label: 'Defines if we want to index view modes to Content Hub.'
+          rendering:
+            type: sequence
+            label: 'Defines which view modes are enabled for this entity bundle.'
+            sequence:
+              type: string
+              label: 'An enabled view mode'
+          preview_image_field:
+            type: string
+            label: 'A mapping string to the field which holds the image file.'
+          preview_image_style:
+            type: string
+            label: 'A image style machine name.'

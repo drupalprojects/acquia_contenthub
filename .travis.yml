@@ -1,17 +1,83 @@
 language: php
 
 php:
-  - 5.5
+  # - 5.5
   - 5.6
   - 7.0
-  - hhvm
+  # - hhvm
 
-before_script:
+env:
+  # - DRUPAL=8.1.x
+  - DRUPAL=8.2.x
+  - DRUPAL=8.3.x
+
+matrix:
+  allow_failures:
+    - env: DRUPAL=8.3.x
+  fast_finish: true
+
+sudo: false
+
+services:
+  - mysql
+
+mysql:
+  database: drupal
+  username: root
+  encoding: utf8
+
+before_install:
+
+  # first clone everything also into a subfolder, via a parent build folder
+  - mkdir ../build
+  - cp -R * ../build/
+  - mv ../build/ ./
+
+  # drop xdebug (need to read this for code coverage)
+  - phpenv config-rm xdebug.ini
+  - alias php="php -d default_socket_timeout=1 -d xdebug.remote_enable=0"
   - composer self-update
+
+  # items for phpcs
   - composer require --dev squizlabs/php_codesniffer:2.5.1
   - composer require drupal/coder:8.2.6
   - composer install
   - vendor/bin/phpcs --config-set installed_paths vendor/drupal/coder/coder_sniffer
 
+  # drush
+  - composer global require drush/drush:8.*
+  # add composer's global bin directory to the path
+  # see: https://github.com/drush-ops/drush#install---composer
+  - export PATH="$HOME/.composer/vendor/bin:$PATH"
+
+install:
+  - composer create-project acquia/lightning-project:^8.1.0 drupal --no-interaction --no-install
+  - cd drupal
+  - composer config --global repo.packagist composer https://packagist.org
+  # see https://github.com/drupal-composer/drupal-project/issues/175
+  - composer config --global repositories.0 composer https://packages.drupal.org/8
+  - composer require drupal/core:$DRUPAL --no-update
+  - composer config repositories.acquia-content-hub-d8 path ../build
+  - composer config repositories.acquia-content-hub-d8.symlink false
+  - composer require acquia/content-hub-d8
+  - composer update
+  - composer install
+  - phpenv rehash
+  - cd docroot
+  - drush site-install lightning --db-url=mysql://root:@127.0.0.1/drupal --yes
+  - cd ../..
+
+before_script:
+
 script:
-  - vendor/bin/phpcs --standard=vendor/drupal/coder/coder_sniffer/Drupal --extensions=php,module,inc,install,test,profile,theme,js,css,info,txt ./modules/content_hub_drupal/
+  - vendor/bin/phpcs -v --standard=vendor/drupal/coder/coder_sniffer/Drupal --extensions=php,module,inc,install,test,profile,theme,js,css,info,txt ./modules/content_hub_drupal/
+  - cd drupal/docroot
+  - mkdir themes
+  - cd core
+  - phpunit --debug --group acquia_contenthub
+  - cd ..
+  # fix this first: The always_populate_raw_post_data PHP setting should be set to -1
+  #- drush pm-enable acquia_contenthub_subscriber -y
+  - drush pm-enable simpletest -y
+  - nohup php -S localhost:8080 > /dev/null 2>&1 &
+  - php core/scripts/run-tests.sh --php /home/travis/.phpenv/shims/php --verbose --url http://localhost:8080 --module acquia_contenthub

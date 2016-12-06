@@ -417,9 +417,18 @@ class EntityManager {
    *   to content hub.
    */
   public function isEligibleEntity(EntityInterface $entity) {
-    $entity_type_config = $this->configFactory->get('acquia_contenthub.entity_config')->get('entities.' . $entity->getEntityTypeId());
+    // Currently Content Hub does not support configuration entities to be
+    // exported. Only content entities can be exported to Content Hub.
+    if ($entity instanceof \Drupal\Core\Config\Entity\ConfigEntityInterface) {
+      return FALSE;
+    }
+
+    $entity_type_id = $entity->getEntityTypeId();
+    /** @var \Drupal\acquia_contenthub\ContentHubEntityTypeConfigInterface $entity_type_config */
+    $entity_type_config = $this->getContentHubEntityTypeConfigurationEntity($entity_type_id);
+
     $bundle_id = $entity->bundle();
-    if (empty($entity_type_config) || empty($entity_type_config[$bundle_id]) || empty($entity_type_config[$bundle_id]['enable_index'])) {
+    if (empty($entity_type_config) || empty($entity_type_config->isEnableIndex($bundle_id))) {
       return FALSE;
     }
 
@@ -458,16 +467,53 @@ class EntityManager {
    *   A list of enabled entity type IDs.
    */
   public function getContentHubEnabledEntityTypeIds() {
-    $entity_type_ids = $this->configFactory->get('acquia_contenthub.entity_config')->get('entities');
-    $entity_type_ids = is_array($entity_type_ids) ? $entity_type_ids : [];
+    /** @var \Drupal\acquia_contenthub\Entity\ContentHubEntityTypeConfig[] $entity_type_ids */
+    $entity_type_ids = $this->getContentHubEntityTypeConfigurationEntities();
+
     $enabled_entity_type_ids = [];
-    foreach ($entity_type_ids as $entity_type_id => $bundles) {
+    foreach ($entity_type_ids as $entity_type_id => $entity_type_config) {
+      $bundles = $entity_type_config->getBundles();
+
       // For a type to be enabled, it must at least have one bundle enabled.
       if (!empty(array_filter(array_column($bundles, 'enable_index')))) {
         $enabled_entity_type_ids[] = $entity_type_id;
       }
     }
     return $enabled_entity_type_ids;
+  }
+
+  /**
+   * Returns the Content Hub configuration entity for this entity type.
+   *
+   * @param string $entity_type_id
+   *   The Entity type ID.
+   *
+   * @return bool|\Drupal\acquia_contenthub\ContentHubEntityTypeConfigInterface
+   *   The Configuration entity if exists, FALSE otherwise.
+   */
+  public function getContentHubEntityTypeConfigurationEntity($entity_type_id) {
+    /** @var \Drupal\rest\RestResourceConfigInterface $contenthub_entity_config_storage */
+    $contenthub_entity_config_storage = $this->entityTypeManager->getStorage('acquia_contenthub_entity_config');
+
+    /** @var \Drupal\acquia_contenthub\ContentHubEntityTypeConfigInterface[] $contenthub_entity_config_ids */
+    $contenthub_entity_config_ids = $contenthub_entity_config_storage->loadMultiple(array($entity_type_id));
+    $contenthub_entity_config_id = isset($contenthub_entity_config_ids[$entity_type_id]) ? $contenthub_entity_config_ids[$entity_type_id] : FALSE;
+    return $contenthub_entity_config_id;
+  }
+
+  /**
+   * Returns the list of configured Content Hub configuration entities.
+   *
+   * @return \Drupal\acquia_contenthub\ContentHubEntityTypeConfigInterface[]
+   *   An array of Content Hub Configuration entities
+   */
+  public function getContentHubEntityTypeConfigurationEntities() {
+    /** @var \Drupal\Core\Entity\EntityStorageInterface $contenthub_entity_config_storage */
+    $contenthub_entity_config_storage = $this->entityTypeManager->getStorage('acquia_contenthub_entity_config');
+
+    /** @var \Drupal\acquia_contenthub\ContentHubEntityTypeConfigInterface[] $contenthub_entity_config_ids */
+    $contenthub_entity_config_ids = $contenthub_entity_config_storage->loadMultiple();
+    return $contenthub_entity_config_ids;
   }
 
   /**
