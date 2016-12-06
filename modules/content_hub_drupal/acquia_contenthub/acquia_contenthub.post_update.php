@@ -22,6 +22,11 @@ function acquia_contenthub_post_update_create_acquia_contenthub_entity_config_en
   $contenthub_entity_config_old = \Drupal::state()->get('acquia_contenthub_update_8201_entity_config', []);
   $contenthub_preview_image_config_old = \Drupal::state()->get('acquia_contenthub_update_8201_preview_image_config', []);
 
+  $entity_type_manager = \Drupal::entityTypeManager();
+  /** @var \Drupal\acquia_contenthub\Entity\ContentHubEntityTypeConfig[] $contenthub_entity_config_ids */
+  $contenthub_entity_config_ids = $entity_type_manager->getStorage('acquia_contenthub_entity_config')->loadMultiple();
+
+
   foreach ($contenthub_entity_config_old as $entity_type => $bundles) {
     // Convert integer value to boolean.
     foreach ($bundles as $type => $bundle) {
@@ -41,12 +46,14 @@ function acquia_contenthub_post_update_create_acquia_contenthub_entity_config_en
       }
     }
 
-    // Saving configuration entities.
-    $contenthub_entity_config = ContentHubEntityTypeConfig::create([
-      'id' => $entity_type,
-      'bundles' => $bundles,
-    ]);
-    $contenthub_entity_config->save();
+    // Saving configuration entities, only if they don't exist yet.
+    if (!isset($contenthub_entity_config_ids[$entity_type])) {
+      $contenthub_entity_config = ContentHubEntityTypeConfig::create([
+        'id' => $entity_type,
+        'bundles' => $bundles,
+      ]);
+      $contenthub_entity_config->save();
+    }
   }
 }
 
