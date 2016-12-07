@@ -138,7 +138,7 @@ function acquia_contenthub_form_node_type_form_alter(array &$form, FormStateInte
 
   // Only enable selection of preview images for entities that have been
   // previously selected to work with Acquia Content Hub.
-  if ($entity_type_config->isEnableIndex($node_type)) {
+  if (!empty($entity_type_config) && $entity_type_config->isEnableIndex($node_type)) {
     $form['acquia_contenthub'] = \Drupal::service('acquia_contenthub.form.node_type_preview_image_form')->getForm($node_type);
     $form['actions']['submit']['#submit'][] = 'acquia_contenthub_form_node_type_form_submit';
   }
