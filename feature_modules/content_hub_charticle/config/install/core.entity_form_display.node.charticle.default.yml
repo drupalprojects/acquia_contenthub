@@ -41,6 +41,7 @@ dependencies:
     - field.field.node.charticle.field_textformattedlongwithsumma
     - field.field.node.charticle.field_time
     - field.field.node.charticle.field_video_embed
+    - field.field.node.charticle.field_view_mode
     - image.style.thumbnail
     - node.type.charticle
   module:
@@ -53,6 +54,7 @@ dependencies:
     - path
     - text
     - video_embed_field
+    - view_mode_selector
 id: node.charticle.default
 targetEntityType: node
 bundle: charticle
@@ -319,6 +321,11 @@ content:
     settings: {  }
     third_party_settings: {  }
     type: video_embed_field_textfield
+  field_view_mode:
+    weight: 46
+    settings: {  }
+    third_party_settings: {  }
+    type: view_mode_selector_radios
   path:
     type: path
     weight: 8

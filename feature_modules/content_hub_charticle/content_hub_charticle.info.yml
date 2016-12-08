@@ -20,4 +20,5 @@ dependencies:
   - text
   - user
   - video_embed_field
+  - view_mode_selector
 version: '0.1'
