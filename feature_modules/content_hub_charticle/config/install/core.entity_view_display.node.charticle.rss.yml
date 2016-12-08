@@ -4,8 +4,40 @@ dependencies:
   config:
     - core.entity_view_mode.node.rss
     - field.field.node.charticle.body
+    - field.field.node.charticle.field_bool
+    - field.field.node.charticle.field_date
+    - field.field.node.charticle.field_email
     - field.field.node.charticle.field_image
+    - field.field.node.charticle.field_link
+    - field.field.node.charticle.field_list_date
+    - field.field.node.charticle.field_list_email
+    - field.field.node.charticle.field_list_image
+    - field.field.node.charticle.field_list_text
+    - field.field.node.charticle.field_list_textformatted
+    - field.field.node.charticle.field_list_textformattedlong
+    - field.field.node.charticle.field_list_textformattedlongwith
+    - field.field.node.charticle.field_list_textplain
+    - field.field.node.charticle.field_list_textplainlong
+    - field.field.node.charticle.field_listbool
+    - field.field.node.charticle.field_listfloat
+    - field.field.node.charticle.field_listinteger
+    - field.field.node.charticle.field_numberdecimal
+    - field.field.node.charticle.field_numberfloat
+    - field.field.node.charticle.field_numberinteger
+    - field.field.node.charticle.field_referencecontent
+    - field.field.node.charticle.field_referencefile
+    - field.field.node.charticle.field_referenceimage
+    - field.field.node.charticle.field_referenceother
+    - field.field.node.charticle.field_referencetaxonomyterm
+    - field.field.node.charticle.field_referencetaxonomytermlist
+    - field.field.node.charticle.field_referenceuser
     - field.field.node.charticle.field_tags
+    - field.field.node.charticle.field_text_formatted_long
+    - field.field.node.charticle.field_text_plain
+    - field.field.node.charticle.field_text_plain_long
+    - field.field.node.charticle.field_textformatted
+    - field.field.node.charticle.field_textformattedlongwithsumma
+    - field.field.node.charticle.field_time
     - node.type.charticle
   module:
     - user
@@ -18,5 +50,37 @@ content:
     weight: 100
 hidden:
   body: true
+  field_bool: true
+  field_date: true
+  field_email: true
   field_image: true
+  field_link: true
+  field_list_date: true
+  field_list_email: true
+  field_list_image: true
+  field_list_text: true
+  field_list_textformatted: true
+  field_list_textformattedlong: true
+  field_list_textformattedlongwith: true
+  field_list_textplain: true
+  field_list_textplainlong: true
+  field_listbool: true
+  field_listfloat: true
+  field_listinteger: true
+  field_numberdecimal: true
+  field_numberfloat: true
+  field_numberinteger: true
+  field_referencecontent: true
+  field_referencefile: true
+  field_referenceimage: true
+  field_referenceother: true
+  field_referencetaxonomyterm: true
+  field_referencetaxonomytermlist: true
+  field_referenceuser: true
   field_tags: true
+  field_text_formatted_long: true
+  field_text_plain: true
+  field_text_plain_long: true
+  field_textformatted: true
+  field_textformattedlongwithsumma: true
+  field_time: true

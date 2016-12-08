@@ -3,17 +3,21 @@ description: 'Provides CH-Article content type and related configuration. Use <e
 type: module
 core: 8.x
 dependencies:
+  - ch_feature_article
   - datetime
   - field
   - file
   - image
   - link
+  - metatag
   - node
   - options
+  - panelizer
   - path
   - rdf
   - system
   - taxonomy
   - text
   - user
+  - video_embed_field
 version: '0.1'

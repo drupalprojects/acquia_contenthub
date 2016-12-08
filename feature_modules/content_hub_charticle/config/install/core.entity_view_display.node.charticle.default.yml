@@ -17,12 +17,15 @@ dependencies:
     - field.field.node.charticle.field_list_textformattedlongwith
     - field.field.node.charticle.field_list_textplain
     - field.field.node.charticle.field_list_textplainlong
+    - field.field.node.charticle.field_list_video_embed
     - field.field.node.charticle.field_listbool
     - field.field.node.charticle.field_listfloat
     - field.field.node.charticle.field_listinteger
+    - field.field.node.charticle.field_metatags
     - field.field.node.charticle.field_numberdecimal
     - field.field.node.charticle.field_numberfloat
     - field.field.node.charticle.field_numberinteger
+    - field.field.node.charticle.field_panelizer
     - field.field.node.charticle.field_referencecontent
     - field.field.node.charticle.field_referencefile
     - field.field.node.charticle.field_referenceimage
@@ -37,15 +40,19 @@ dependencies:
     - field.field.node.charticle.field_textformatted
     - field.field.node.charticle.field_textformattedlongwithsumma
     - field.field.node.charticle.field_time
+    - field.field.node.charticle.field_video_embed
     - node.type.charticle
   module:
     - datetime
     - file
     - image
     - link
+    - metatag
     - options
+    - panelizer
     - text
     - user
+    - video_embed_field
 id: node.charticle.default
 targetEntityType: node
 bundle: charticle
@@ -158,6 +165,16 @@ content:
     settings: {  }
     third_party_settings: {  }
     type: basic_string
+  field_list_video_embed:
+    weight: 136
+    label: above
+    settings:
+      responsive: true
+      width: 854
+      height: 480
+      autoplay: true
+    third_party_settings: {  }
+    type: video_embed_field_video
   field_listbool:
     weight: 128
     label: above
@@ -179,6 +196,12 @@ content:
     settings: {  }
     third_party_settings: {  }
     type: list_default
+  field_metatags:
+    weight: 133
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    type: metatag_empty_formatter
   field_numberdecimal:
     weight: 108
     label: above
@@ -207,6 +230,12 @@ content:
       prefix_suffix: true
     third_party_settings: {  }
     type: number_integer
+  field_panelizer:
+    weight: 134
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    type: panelizer
   field_referencecontent:
     weight: 111
     label: above
@@ -303,6 +332,16 @@ content:
       timezone: ''
     third_party_settings: {  }
     type: timestamp
+  field_video_embed:
+    weight: 135
+    label: above
+    settings:
+      responsive: true
+      width: 854
+      height: 480
+      autoplay: true
+    third_party_settings: {  }
+    type: video_embed_field_video
   links:
     weight: 100
 hidden:
