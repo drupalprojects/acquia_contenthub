@@ -11,6 +11,7 @@ dependencies:
     - field.field.node.charticle.field_list_date
     - field.field.node.charticle.field_list_email
     - field.field.node.charticle.field_list_image
+    - field.field.node.charticle.field_list_link
     - field.field.node.charticle.field_list_text
     - field.field.node.charticle.field_list_textformatted
     - field.field.node.charticle.field_list_textformattedlong
@@ -130,6 +131,17 @@ content:
       image_link: ''
     third_party_settings: {  }
     type: image
+  field_list_link:
+    weight: 138
+    label: above
+    settings:
+      trim_length: 80
+      url_only: false
+      url_plain: false
+      rel: ''
+      target: ''
+    third_party_settings: {  }
+    type: link
   field_list_text:
     weight: 117
     label: above

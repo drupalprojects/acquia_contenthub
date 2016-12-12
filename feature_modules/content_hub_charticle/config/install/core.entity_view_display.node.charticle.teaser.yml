@@ -21,9 +21,11 @@ dependencies:
     - field.field.node.charticle.field_listbool
     - field.field.node.charticle.field_listfloat
     - field.field.node.charticle.field_listinteger
+    - field.field.node.charticle.field_metatags
     - field.field.node.charticle.field_numberdecimal
     - field.field.node.charticle.field_numberfloat
     - field.field.node.charticle.field_numberinteger
+    - field.field.node.charticle.field_panelizer
     - field.field.node.charticle.field_referencecontent
     - field.field.node.charticle.field_referencefile
     - field.field.node.charticle.field_referenceimage
@@ -91,9 +93,11 @@ hidden:
   field_listbool: true
   field_listfloat: true
   field_listinteger: true
+  field_metatags: true
   field_numberdecimal: true
   field_numberfloat: true
   field_numberinteger: true
+  field_panelizer: true
   field_referencecontent: true
   field_referencefile: true
   field_referenceimage: true
