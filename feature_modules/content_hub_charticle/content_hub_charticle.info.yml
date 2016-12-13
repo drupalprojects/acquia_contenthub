@@ -3,8 +3,6 @@ description: 'Provides CH-Article content type and related configuration. Use <e
 type: module
 core: 8.x
 dependencies:
-  - acquia_contenthub
-  - ch_feature_article
   - datetime
   - field
   - file
