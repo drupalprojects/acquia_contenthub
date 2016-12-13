@@ -12,12 +12,14 @@ dependencies:
     - field.field.node.charticle.field_list_date
     - field.field.node.charticle.field_list_email
     - field.field.node.charticle.field_list_image
+    - field.field.node.charticle.field_list_link
     - field.field.node.charticle.field_list_text
     - field.field.node.charticle.field_list_textformatted
     - field.field.node.charticle.field_list_textformattedlong
     - field.field.node.charticle.field_list_textformattedlongwith
     - field.field.node.charticle.field_list_textplain
     - field.field.node.charticle.field_list_textplainlong
+    - field.field.node.charticle.field_list_video_embed
     - field.field.node.charticle.field_listbool
     - field.field.node.charticle.field_listfloat
     - field.field.node.charticle.field_listinteger
@@ -25,7 +27,6 @@ dependencies:
     - field.field.node.charticle.field_numberdecimal
     - field.field.node.charticle.field_numberfloat
     - field.field.node.charticle.field_numberinteger
-    - field.field.node.charticle.field_panelizer
     - field.field.node.charticle.field_referencecontent
     - field.field.node.charticle.field_referencefile
     - field.field.node.charticle.field_referenceimage
@@ -40,6 +41,8 @@ dependencies:
     - field.field.node.charticle.field_textformatted
     - field.field.node.charticle.field_textformattedlongwithsumma
     - field.field.node.charticle.field_time
+    - field.field.node.charticle.field_video_embed
+    - field.field.node.charticle.field_view_mode
     - node.type.charticle
   module:
     - user
@@ -60,12 +63,14 @@ hidden:
   field_list_date: true
   field_list_email: true
   field_list_image: true
+  field_list_link: true
   field_list_text: true
   field_list_textformatted: true
   field_list_textformattedlong: true
   field_list_textformattedlongwith: true
   field_list_textplain: true
   field_list_textplainlong: true
+  field_list_video_embed: true
   field_listbool: true
   field_listfloat: true
   field_listinteger: true
@@ -73,7 +78,6 @@ hidden:
   field_numberdecimal: true
   field_numberfloat: true
   field_numberinteger: true
-  field_panelizer: true
   field_referencecontent: true
   field_referencefile: true
   field_referenceimage: true
@@ -88,3 +92,5 @@ hidden:
   field_textformatted: true
   field_textformattedlongwithsumma: true
   field_time: true
+  field_video_embed: true
+  field_view_mode: true

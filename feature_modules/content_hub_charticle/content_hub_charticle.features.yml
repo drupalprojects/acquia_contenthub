@@ -1,5 +1,7 @@
 excluded:
   - field.storage.node.field_image
   - field.storage.node.field_tags
+  - field.storage.node.field_panelizer
   - taxonomy.vocabulary.tags
+  - field.field.node.charticle.field_panelizer
 required: true
