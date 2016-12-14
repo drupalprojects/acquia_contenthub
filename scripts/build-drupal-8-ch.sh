@@ -64,7 +64,7 @@ fi
 
 # Contrib modules required for development
 composer require drupal/devel:1.0.0-alpha1 --profile
-composer require drupal/features:^8.3.0 --profile
+composer require drupal/features:^3.0 --profile
 
 # setup the content-hub-d8 module and change branch if needed
 if [ ! -d web/modules/contrib/content-hub-d8 ]; then
