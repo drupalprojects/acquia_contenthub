@@ -11,7 +11,6 @@ dependencies:
   - metatag
   - node
   - options
-  - panelizer
   - path
   - rdf
   - system
