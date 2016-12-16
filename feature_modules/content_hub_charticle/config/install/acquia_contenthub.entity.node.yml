@@ -10,16 +10,20 @@ bundles:
   article:
     enable_index: false
     enable_viewmodes: false
-    rendering: {  }
+    rendering:
+      teaser: teaser
   landing_page:
     enable_index: false
     enable_viewmodes: false
-    rendering: {  }
+    rendering:
+      full: full
   page:
     enable_index: false
     enable_viewmodes: false
-    rendering: {  }
+    rendering:
+      teaser: teaser
   charticle:
     enable_index: true
     enable_viewmodes: false
-    rendering: {  }
+    rendering:
+      rss: rss
