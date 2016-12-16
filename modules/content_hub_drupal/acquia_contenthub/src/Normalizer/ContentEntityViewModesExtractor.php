@@ -240,7 +240,7 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
       $entity = $entity->{$field_key}->entity;
     }
 
-    if ($entity->bundle() !== 'file') {
+    if (!in_array($entity->bundle(), array('image', 'file'))) {
       return '';
     }
     $file_uri = $entity->getFileUri();
