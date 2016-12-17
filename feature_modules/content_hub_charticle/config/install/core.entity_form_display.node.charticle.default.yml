@@ -11,15 +11,18 @@ dependencies:
     - field.field.node.charticle.field_list_date
     - field.field.node.charticle.field_list_email
     - field.field.node.charticle.field_list_image
+    - field.field.node.charticle.field_list_link
     - field.field.node.charticle.field_list_text
     - field.field.node.charticle.field_list_textformatted
     - field.field.node.charticle.field_list_textformattedlong
     - field.field.node.charticle.field_list_textformattedlongwith
     - field.field.node.charticle.field_list_textplain
     - field.field.node.charticle.field_list_textplainlong
+    - field.field.node.charticle.field_list_video_embed
     - field.field.node.charticle.field_listbool
     - field.field.node.charticle.field_listfloat
     - field.field.node.charticle.field_listinteger
+    - field.field.node.charticle.field_metatags
     - field.field.node.charticle.field_numberdecimal
     - field.field.node.charticle.field_numberfloat
     - field.field.node.charticle.field_numberinteger
@@ -37,6 +40,8 @@ dependencies:
     - field.field.node.charticle.field_textformatted
     - field.field.node.charticle.field_textformattedlongwithsumma
     - field.field.node.charticle.field_time
+    - field.field.node.charticle.field_video_embed
+    - field.field.node.charticle.field_view_mode
     - image.style.thumbnail
     - node.type.charticle
   module:
@@ -44,8 +49,11 @@ dependencies:
     - file
     - image
     - link
+    - metatag
     - path
     - text
+    - video_embed_field
+    - view_mode_selector
 id: node.charticle.default
 targetEntityType: node
 bundle: charticle
@@ -115,6 +123,13 @@ content:
       preview_image_style: thumbnail
     third_party_settings: {  }
     type: image_image
+  field_list_link:
+    weight: 47
+    settings:
+      placeholder_url: ''
+      placeholder_title: ''
+    third_party_settings: {  }
+    type: link_default
   field_list_text:
     weight: 25
     settings: {  }
@@ -156,6 +171,11 @@ content:
       placeholder: ''
     third_party_settings: {  }
     type: string_textarea
+  field_list_video_embed:
+    weight: 45
+    settings: {  }
+    third_party_settings: {  }
+    type: video_embed_field_textfield
   field_listbool:
     weight: 37
     settings:
@@ -172,6 +192,11 @@ content:
     settings: {  }
     third_party_settings: {  }
     type: options_select
+  field_metatags:
+    weight: 42
+    settings: {  }
+    third_party_settings: {  }
+    type: metatag_firehose
   field_numberdecimal:
     weight: 16
     settings:
@@ -292,6 +317,16 @@ content:
     settings: {  }
     third_party_settings: {  }
     type: datetime_timestamp
+  field_video_embed:
+    weight: 44
+    settings: {  }
+    third_party_settings: {  }
+    type: video_embed_field_textfield
+  field_view_mode:
+    weight: 46
+    settings: {  }
+    third_party_settings: {  }
+    type: view_mode_selector_radios
   path:
     type: path
     weight: 8

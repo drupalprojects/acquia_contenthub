@@ -8,6 +8,7 @@ dependencies:
   - file
   - image
   - link
+  - metatag
   - node
   - options
   - path
@@ -16,4 +17,6 @@ dependencies:
   - taxonomy
   - text
   - user
+  - video_embed_field
+  - view_mode_selector
 version: '0.1'
