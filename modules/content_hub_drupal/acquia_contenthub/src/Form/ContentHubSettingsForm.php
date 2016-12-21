@@ -102,14 +102,6 @@ class ContentHubSettingsForm extends ConfigFormBase {
       '#default_value' => $config->get('secret_key'),
     );
 
-    $form['settings']['rewrite_domain'] = array(
-      '#type' => 'url',
-      '#title' => t('Rewrite domain before sending to Acquia Content Hub.'),
-      '#description' => t('Useful when working with a site behind a proxy such as ngrok. Will transform the URL to what you add in here so that Acquia Content Hub knows where to fetch the resource. Eg.: localhost:80/node/1 becomes myexternalsite.someproxy.com/node/1'),
-      '#default_value' => $config->get('rewrite_domain'),
-      '#required' => FALSE,
-    );
-
     $client_name = $config->get('client_name');
     $readonly = empty($client_name) ? [] : ['readonly' => TRUE];
 
@@ -232,10 +224,6 @@ class ContentHubSettingsForm extends ConfigFormBase {
           $encrypted_secret = $secret;
         }
         $config->set('secret_key', $encrypted_secret);
-      }
-
-      if ($form_state->hasValue('rewrite_domain')) {
-        $config->set('rewrite_domain', $form_state->getValue('rewrite_domain'));
       }
 
       $config->save();
