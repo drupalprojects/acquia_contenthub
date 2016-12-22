@@ -19,3 +19,8 @@ configuration:
       - json
     supported_auth:
       - cookie
+  PATCH:
+    supported_formats:
+      - json
+    supported_auth:
+      - cookie
