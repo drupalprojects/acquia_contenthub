@@ -22,6 +22,7 @@ use DateTime;
 use Drupal\Core\Entity\EntityStorageException;
 use Drupal\Component\Render\FormattableMarkup;
 use Symfony\Component\HttpFoundation\Request;
+use Drupal\rest\ModifiedResourceResponse;
 
 /**
  * Provides a resource to perform CRUD operations on Content Hub Filters.
@@ -311,4 +312,42 @@ class ContentHubFilterResource extends ResourceBase {
     }
   }
 
-}
+  /**
+   * Responds to DELETE requests.
+   *
+   * @param string $contenthub_filter_id
+   *   The Content Hub Filter ID.
+   *
+   * @return \Drupal\rest\ResourceResponse
+   *   The success status of the request.
+   */
+  public function delete($contenthub_filter_id) {
+    if (!$this->currentUser->hasPermission($this->permission)) {
+      throw new AccessDeniedHttpException();
+    }
+
+    if ($contenthub_filter_id == NULL) {
+      throw new BadRequestHttpException('No Content Hub Filter information was sent to be deleted.');
+    }
+    // Obtain the original Content Hub Filter.
+    $contenthub_filter = $this->entityManager->getStorage('contenthub_filter')->load($contenthub_filter_id);
+    if (empty($contenthub_filter)) {
+      throw new BadRequestHttpException("No Content Hub Filter exists for id = \"{$contenthub_filter_id}\".");
+    }
+
+    try {
+      $contenthub_filter->delete();
+      // DELETE responses have an empty body.
+      return new ModifiedResourceResponse(NULL, 204);
+    }
+    catch (\Drupal\Core\Entity\EntityStorageException $e) {
+      $message = new FormattableMarkup('Internal Server Error [!message].', array(
+        '!message' => $e->getMessage(),
+      ));
+      throw new HttpException(500, $message, $e);
+
+    }
+  }
+
+
+  }
