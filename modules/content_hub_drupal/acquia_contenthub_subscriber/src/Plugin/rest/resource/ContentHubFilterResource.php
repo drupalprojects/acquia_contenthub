@@ -256,18 +256,18 @@ class ContentHubFilterResource extends ResourceBase {
    *
    * @param string $parameter
    *   The URL parameter.
-   * @param \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface|NULL $contenthub_filter
+   * @param \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface $contenthub_filter
    *   The Content Hub Filter entity submitted by REST.
    *
    * @return \Drupal\rest\ResourceResponse
    *   The Content Hub Filter after it has been saved.
    */
-  public function patch($parameter, ContentHubFilterInterface $contenthub_filter = NULL, Request $request) {
+  public function patch($parameter, ContentHubFilterInterface $contenthub_filter, Request $request) {
     if (!$this->currentUser->hasPermission($this->permission)) {
       throw new AccessDeniedHttpException();
     }
 
-    if ($contenthub_filter == NULL) {
+    if (empty($contenthub_filter)) {
       throw new BadRequestHttpException('No Content Hub Filter content received.');
     }
 
@@ -349,5 +349,4 @@ class ContentHubFilterResource extends ResourceBase {
     }
   }
 
-
-  }
+}
