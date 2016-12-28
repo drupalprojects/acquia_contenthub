@@ -43,6 +43,7 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
   private $entityTypeManager;
 
   /**
+   * Entity Config Storage.
    *
    * @var \Drupal\Core\Entity\EntityStorageInterface|\PHPUnit_Framework_MockObject_MockObject
    */
