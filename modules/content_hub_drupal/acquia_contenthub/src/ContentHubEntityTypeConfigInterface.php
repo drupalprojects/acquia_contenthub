@@ -99,4 +99,9 @@ interface ContentHubEntityTypeConfigInterface {
    */
   public function setPreviewImageStyle($bundle, $image_style);
 
+  /**
+   * Save the settings.
+   */
+  public function save();
+
 }

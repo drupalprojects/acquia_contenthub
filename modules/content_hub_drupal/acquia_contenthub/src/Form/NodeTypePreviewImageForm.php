@@ -67,11 +67,11 @@ class NodeTypePreviewImageForm {
    * Constructor.
    *
    * @param \Drupal\acquia_contenthub\EntityManager $entity_manager
-   *   The config factory service.
+   *   The Entity Manager.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The Entity Type Manager.
    * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entity_field_manager
-   *   Entity Field Manager.
+   *   The Entity Field Manager.
    */
   public function __construct(EntityManager $entity_manager, EntityTypeManagerInterface $entity_type_manager, EntityFieldManagerInterface $entity_field_manager) {
     // We are assuming this is ONLY working for 'node' entities. If preview

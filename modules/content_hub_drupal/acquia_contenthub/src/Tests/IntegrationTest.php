@@ -54,6 +54,8 @@ class IntegrationTest extends WebTestBase {
     // Enable view-modes for article nodes.
     $this->enableViewModeFor('node', 'article', 'teaser');
     $this->checkCdfOutput($this->article, 'teaser');
+
+    $this->ConfigureAndUsePreviewImageStyle();
   }
 
   /**
@@ -132,6 +134,17 @@ class IntegrationTest extends WebTestBase {
 
     $this->drupalGet('admin/config/services/acquia-contenthub/configuration');
     $this->assertResponse(200);
+  }
+
+  /**
+   * Configure and use content hub preview image style.
+   */
+  public function configureAndUsePreviewImageStyle() {
+    $this->drupalGet('admin/config/services/acquia-contenthub/configuration');
+    $this->assertRaw('admin/structure/types/manage/article#edit-acquia-contenthub', 'Preview image shortcut links exist on the page.');
+
+    $this->drupalGet('admin/structure/types/manage/article');
+    $this->assertText(t('Acquia Content Hub'));
   }
 
 }

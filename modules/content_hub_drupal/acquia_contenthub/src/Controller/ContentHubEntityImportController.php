@@ -11,7 +11,7 @@ use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Database\Connection;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\acquia_contenthub\EntityManager as EntityManager;
+use Drupal\acquia_contenthub\EntityManager;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\acquia_contenthub\ContentHubImportedEntities;
