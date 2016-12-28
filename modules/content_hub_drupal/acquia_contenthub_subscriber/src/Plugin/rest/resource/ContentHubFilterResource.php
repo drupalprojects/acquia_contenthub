@@ -204,7 +204,7 @@ class ContentHubFilterResource extends ResourceBase {
       throw new AccessDeniedHttpException();
     }
 
-    if ($contenthub_filter == NULL) {
+    if (empty($contenthub_filter)) {
       throw new BadRequestHttpException('No Content Hub Filter content received.');
     }
 
@@ -326,7 +326,7 @@ class ContentHubFilterResource extends ResourceBase {
       throw new AccessDeniedHttpException();
     }
 
-    if ($contenthub_filter_id == NULL) {
+    if (empty($contenthub_filter_id)) {
       throw new BadRequestHttpException('No Content Hub Filter information was sent to be deleted.');
     }
     // Obtain the original Content Hub Filter.
