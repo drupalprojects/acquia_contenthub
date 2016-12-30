@@ -214,4 +214,33 @@ class ContentHubFilter extends ConfigEntityBase implements ContentHubFilterInter
     return $this;
   }
 
+  /**
+   * Update values of the original entity to the one submitted by REST.
+   *
+   * @param \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface $contenthub_filter_original
+   *   The original content hub filter.
+   *
+   * @return \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface
+   *   The updated content hub filter.
+   */
+  public function updateValues(ContentHubFilterInterface $contenthub_filter_original) {
+    // The following are the only fields that we allow to change through PATCH.
+    $replaceable_fields = [
+      'name',
+      'publish_setting',
+      'search_term',
+      'from_date',
+      'to_date',
+      'source',
+      'tags',
+    ];
+
+    foreach ($this->_restSubmittedFields as $field) {
+      if (in_array($field, $replaceable_fields)) {
+        $contenthub_filter_original->{$field} = $this->{$field};
+      }
+    }
+    return $contenthub_filter_original;
+  }
+
 }

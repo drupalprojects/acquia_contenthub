@@ -21,6 +21,8 @@ use Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface;
 use DateTime;
 use Drupal\Core\Entity\EntityStorageException;
 use Drupal\Component\Render\FormattableMarkup;
+use Symfony\Component\HttpFoundation\Request;
+use Drupal\rest\ModifiedResourceResponse;
 
 /**
  * Provides a resource to perform CRUD operations on Content Hub Filters.
@@ -202,7 +204,7 @@ class ContentHubFilterResource extends ResourceBase {
       throw new AccessDeniedHttpException();
     }
 
-    if ($contenthub_filter == NULL) {
+    if (empty($contenthub_filter)) {
       throw new BadRequestHttpException('No Content Hub Filter content received.');
     }
 
@@ -252,30 +254,99 @@ class ContentHubFilterResource extends ResourceBase {
   /**
    * Responds to PATCH requests.
    *
-   * @param \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface $original_contenthub_filter
-   *   The original Content Hub Filter entity.
-   * @param \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface|NULL $contenthub_filter
-   *   The Content Hub Filter entity.
+   * @param string $parameter
+   *   The URL parameter.
+   * @param \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface $contenthub_filter
+   *   The Content Hub Filter entity submitted by REST.
    *
    * @return \Drupal\rest\ResourceResponse
    *   The Content Hub Filter after it has been saved.
    */
-  public function patch(ContentHubFilterInterface $original_contenthub_filter, ContentHubFilterInterface $contenthub_filter = NULL) {
+  public function patch($parameter, ContentHubFilterInterface $contenthub_filter, Request $request) {
     if (!$this->currentUser->hasPermission($this->permission)) {
       throw new AccessDeniedHttpException();
     }
 
-    if ($contenthub_filter == NULL) {
+    if (empty($contenthub_filter)) {
       throw new BadRequestHttpException('No Content Hub Filter content received.');
     }
 
-    // Verify that we have valid and existent Content Hub Filter Entity.
+    // Obtain the original Content Hub Filter.
+    $contenthub_filter_original = $this->entityManager->getStorage('contenthub_filter')->load($contenthub_filter->getOriginalId());
+    if (empty($contenthub_filter_original)) {
+      throw new BadRequestHttpException('No Content Hub Filter "id" received. You have to provide an existing entity "id" in the body message.');
+    }
+
+    // This Filter is owned by the user who initially created it.
+    if (empty($contenthub_filter->author)) {
+      // Anonymous should not be able to have 'Administer Content Hub'
+      // permission but if it ever does, this filter will be owned by admin.
+      $contenthub_filter->author = $contenthub_filter_original->author ?: 1;
+    }
+
+    // Verify that we have valid values submitted in Content Hub Filter.
     $this->validate($contenthub_filter, FALSE);
 
-    // Save changes.
-    // Return.
-    return new ResourceResponse($contenthub_filter);
+    // Now that it has been validated, we need to convert the Date to the
+    // appropriate storage format in "Y-m-d".
+    $contenthub_filter->changeDateFormatMonthDayYear2YearMonthDay();
 
+    // Update original entity with submitted values.
+    /** @var \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface $contenthub_filter_updated */
+    $contenthub_filter_updated = $contenthub_filter->updateValues($contenthub_filter_original);
+
+    // Validation has passed, now try to save the original updated entity.
+    try {
+      $contenthub_filter_updated->save();
+      $this->logger->notice('Updated entity %type with ID %id.', array('%type' => $contenthub_filter_updated->getEntityTypeId(), '%id' => $contenthub_filter_updated->id()));
+
+      // Convert back the Dates to format "m-d-Y".
+      $contenthub_filter_updated->changeDateFormatYearMonthDay2MonthDayYear();
+      return new ResourceResponse($contenthub_filter_updated);
+    }
+    catch (EntityStorageException $e) {
+      $message = new FormattableMarkup('Internal Server Error [!message].', array(
+        '!message' => $e->getMessage(),
+      ));
+      throw new HttpException(500, $message, $e);
+    }
+  }
+
+  /**
+   * Responds to DELETE requests.
+   *
+   * @param string $contenthub_filter_id
+   *   The Content Hub Filter ID.
+   *
+   * @return \Drupal\rest\ResourceResponse
+   *   The success status of the request.
+   */
+  public function delete($contenthub_filter_id) {
+    if (!$this->currentUser->hasPermission($this->permission)) {
+      throw new AccessDeniedHttpException();
+    }
+
+    if (empty($contenthub_filter_id)) {
+      throw new BadRequestHttpException('No Content Hub Filter information was sent to be deleted.');
+    }
+    // Obtain the original Content Hub Filter.
+    $contenthub_filter = $this->entityManager->getStorage('contenthub_filter')->load($contenthub_filter_id);
+    if (empty($contenthub_filter)) {
+      throw new BadRequestHttpException("No Content Hub Filter exists for id = \"{$contenthub_filter_id}\".");
+    }
+
+    try {
+      $contenthub_filter->delete();
+      // DELETE responses have an empty body.
+      return new ModifiedResourceResponse(NULL, 204);
+    }
+    catch (\Drupal\Core\Entity\EntityStorageException $e) {
+      $message = new FormattableMarkup('Internal Server Error [!message].', array(
+        '!message' => $e->getMessage(),
+      ));
+      throw new HttpException(500, $message, $e);
+
+    }
   }
 
 }
