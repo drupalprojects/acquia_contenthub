@@ -81,3 +81,4 @@ script:
   - drush pm-enable simpletest -y
   - nohup php -S localhost:8080 > /dev/null 2>&1 &
   - php core/scripts/run-tests.sh --php /home/travis/.phpenv/shims/php --verbose --url http://localhost:8080 --module acquia_contenthub
+  - php core/scripts/run-tests.sh --php /home/travis/.phpenv/shims/php --verbose --url http://localhost:8080 --module acquia_contenthub_subscriber
