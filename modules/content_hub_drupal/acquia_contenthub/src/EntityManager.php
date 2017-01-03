@@ -15,10 +15,10 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\Core\Url;
 use Drupal\Core\Config\ConfigFactory;
-use Drupal\acquia_contenthub\ContentHubImportedEntities;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
+use Drupal\Component\Utility\UrlHelper;
 
 /**
  * Provides a service for managing entity actions for Content Hub.
@@ -349,7 +349,6 @@ class EntityManager {
   public function getResourceUrl(EntityInterface $entity, $include_references = 'true') {
     // Check if there are link templates defined for the entity type and
     // use the path from the route instead of the default.
-    $entity_type = $entity->getEntityType();
     $entity_type_id = $entity->getEntityTypeId();
 
     $route_name = 'acquia_contenthub.entity.' . $entity_type_id . '.GET.acquia_contenthub_cdf';
@@ -360,6 +359,20 @@ class EntityManager {
       'include_references' => $include_references,
     );
 
+    return $this->getResourceUrlByRouteName($route_name, $url_options);
+  }
+
+  /**
+   * Returns the route's resource URL.
+   *
+   * @param $route_name
+   *   Route name.
+   * @param array $url_options
+   *   Bulk-upload Url query params.
+   * @return string
+   *   returns URL.
+   */
+  protected function getResourceUrlByRouteName($route_name, $url_options = array()) {
     $url = Url::fromRoute($route_name, $url_options);
     $path = $url->toString();
 
@@ -368,42 +381,32 @@ class EntityManager {
       ->get('acquia_contenthub.admin_settings')
       ->get('rewrite_domain');
 
-    if ($rewrite_localdomain) {
-      $url = Url::fromUri($rewrite_localdomain . $path);
+    if (UrlHelper::isExternal($path)) {
+      // If for some reason the $path is an external URL, do not further
+      // prefix a domain, and do not overwrite the given domain.
+      $full_path = $path;
+    } elseif ($rewrite_localdomain) {
+      $full_path = $rewrite_localdomain . $path;
+    } else {
+      $full_path = $this->baseRoot . $path;
     }
-    else {
-      $url = Url::fromUri($this->baseRoot . $path);
-    }
+    $url = Url::fromUri($full_path);
+
     return $url->toUriString();
   }
 
   /**
    * Builds the bulk-upload url to make a single request.
    *
-   * @param string $params
+   * @param array $url_options
    *   Bulk-upload Url query params.
    *
    * @return string
    *   returns URL.
    */
-  public function getBulkResourceUrl($params) {
-
+  public function getBulkResourceUrl($url_options = array()) {
     $route_name = 'acquia_contenthub.acquia_contenthub_bulk_cdf';
-    $url = Url::fromRoute($route_name, $params);
-    $path = $url->toString();
-
-    // Get the content hub config settings.
-    $rewrite_localdomain = $this->configFactory
-      ->get('acquia_contenthub.admin_settings')
-      ->get('rewrite_domain');
-
-    if ($rewrite_localdomain) {
-      $url = Url::fromUri($rewrite_localdomain . $path);
-    }
-    else {
-      $url = Url::fromUri($this->baseRoot . $path);
-    }
-    return $url->toUriString();
+    return $this->getResourceUrlByRouteName($route_name, $url_options);
   }
 
   /**
