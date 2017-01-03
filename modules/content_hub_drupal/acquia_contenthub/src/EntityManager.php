@@ -357,10 +357,11 @@ class EntityManager {
   /**
    * Returns the route's resource URL.
    *
-   * @param $route_name
+   * @param string $route_name
    *   Route name.
    * @param array $url_options
    *   Bulk-upload Url query params.
+   *
    * @return string
    *   returns URL.
    */
