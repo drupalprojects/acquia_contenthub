@@ -40,13 +40,6 @@ class EntityManager {
   protected $loggerFactory;
 
   /**
-   * Config Factory.
-   *
-   * @var \Drupal\Core\Config\ConfigFactory
-   */
-  protected $configFactory;
-
-  /**
    * Content Hub Client Manager.
    *
    * @var \Drupal\acquia_contenthub\Client\ClientManager
@@ -109,14 +102,13 @@ class EntityManager {
   public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager, ContentHubImportedEntities $acquia_contenthub_imported_entities, EntityTypeManagerInterface $entity_manager, EntityTypeBundleInfoInterface $entity_type_bundle_info_manager, HttpKernelInterface $kernel) {
     $this->baseRoot = isset($GLOBALS['base_root']) ? $GLOBALS['base_root'] : '';
     $this->loggerFactory = $logger_factory;
-    $this->configFactory = $config_factory;
     $this->clientManager = $client_manager;
     $this->contentHubImportedEntities = $acquia_contenthub_imported_entities;
     $this->entityTypeManager = $entity_manager;
     $this->entityTypeBundleInfoManager = $entity_type_bundle_info_manager;
     $this->kernel = $kernel;
     // Get the content hub config settings.
-    $this->config = $this->configFactory->get('acquia_contenthub.admin_settings');
+    $this->config = $config_factory->get('acquia_contenthub.admin_settings');
   }
 
   /**
@@ -377,9 +369,7 @@ class EntityManager {
     $path = $url->toString();
 
     // Get the content hub config settings.
-    $rewrite_localdomain = $this->configFactory
-      ->get('acquia_contenthub.admin_settings')
-      ->get('rewrite_domain');
+    $rewrite_localdomain = $this->config->get('rewrite_domain');
 
     if (UrlHelper::isExternal($path)) {
       // If for some reason the $path is an external URL, do not further

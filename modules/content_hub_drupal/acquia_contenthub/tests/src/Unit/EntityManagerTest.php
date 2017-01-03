@@ -278,4 +278,68 @@ class EntityManagerTest extends UnitTestCase {
     $this->assertEquals($expected_entity_types, $entity_types);
   }
 
+  /**
+   * Test for getBulkResourceUrl() method.
+   *
+   * @covers ::getBulkResourceUrl
+   */
+  public function testGetBulkResourceUrl() {
+    $entity_manager = new EntityManager($this->loggerFactory, $this->configFactory, $this->clientManager, $this->contentHubImportedEntities, $this->entityTypeManager, $this->entityTypeBundleInfoManager, $this->kernel);
+
+    $container = $this->getMock('Drupal\Core\DependencyInjection\Container');
+    \Drupal::setContainer($container);
+    $bulk_route_name = 'acquia_contenthub.acquia_contenthub_bulk_cdf';
+    $url_options = ['option1' => 'option_value_1'];
+    $url_generator = $this->getMock('Drupal\Core\Routing\UrlGeneratorInterface');
+    $url_generator
+      ->method('generateFromRoute')
+      ->with($bulk_route_name, $url_options)
+      ->willReturn('/node/1');
+    $container->expects($this->once())
+      ->method('get')
+      ->with('url_generator')
+      ->willReturn($url_generator);
+    $this->settings->expects($this->once())
+      ->method('get')
+      ->with('rewrite_domain')
+      ->willReturn('http://my-rewrite-domain.com');
+
+    $result_url = $entity_manager->getBulkResourceUrl($url_options);
+
+    $expected_url = 'http://my-rewrite-domain.com/node/1';
+    $this->assertEquals($expected_url, $result_url);
+  }
+
+  /**
+   * Test for getBulkResourceUrl() method, path is already external.
+   *
+   * @covers ::getBulkResourceUrl
+   */
+  public function testGetBulkResourceUrlIsExternal() {
+    $entity_manager = new EntityManager($this->loggerFactory, $this->configFactory, $this->clientManager, $this->contentHubImportedEntities, $this->entityTypeManager, $this->entityTypeBundleInfoManager, $this->kernel);
+
+    $container = $this->getMock('Drupal\Core\DependencyInjection\Container');
+    \Drupal::setContainer($container);
+    $bulk_route_name = 'acquia_contenthub.acquia_contenthub_bulk_cdf';
+    $url_options = ['option1' => 'option_value_1'];
+    $url_generator = $this->getMock('Drupal\Core\Routing\UrlGeneratorInterface');
+    $url_generator
+      ->method('generateFromRoute')
+      ->with($bulk_route_name, $url_options)
+      ->willReturn('http://localhost/node/1');
+    $container->expects($this->once())
+      ->method('get')
+      ->with('url_generator')
+      ->willReturn($url_generator);
+    $this->settings->expects($this->once())
+      ->method('get')
+      ->with('rewrite_domain')
+      ->willReturn('http://my-rewrite-domain.com');
+
+    $result_url = $entity_manager->getBulkResourceUrl($url_options);
+
+    $expected_url = 'http://localhost/node/1';
+    $this->assertEquals($expected_url, $result_url);
+  }
+
 }
