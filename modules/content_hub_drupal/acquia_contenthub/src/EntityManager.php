@@ -629,11 +629,6 @@ class EntityManager {
             $entity_types[$type][$key] = $bundle['label'];
           }
         }
-        else {
-          // In cases where there are no bundles, but the entity can be
-          // selected.
-          $entity_types[$type][$type] = $entity->getLabel();
-        }
       }
     }
     $entity_types = array_diff_key($entity_types, $excluded_types);
