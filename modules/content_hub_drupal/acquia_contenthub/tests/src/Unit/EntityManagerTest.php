@@ -229,11 +229,6 @@ class EntityManagerTest extends UnitTestCase {
 
     $entity_manager = new EntityManager($this->loggerFactory, $this->configFactory, $this->clientManager, $this->contentHubImportedEntities, $this->entityTypeManager, $this->entityTypeBundleInfoManager, $this->kernel);
 
-    // Second content entity does not have bundles.
-    $this->contentEntityType->expects($this->once())
-      ->method('getLabel')
-      ->willReturn('content_entity_2');
-
     $entity_types = [
       'content_entity_1' => $this->contentEntityType,
       'content_entity_2' => $this->contentEntityType,
@@ -260,6 +255,8 @@ class EntityManagerTest extends UnitTestCase {
       ->method('getBundleInfo')
       ->with('content_entity_1')
       ->willReturn($bundles);
+
+    // Second content entity does not have bundles.
     $this->entityTypeBundleInfoManager->expects($this->at(1))
       ->method('getBundleInfo')
       ->with('content_entity_2')
