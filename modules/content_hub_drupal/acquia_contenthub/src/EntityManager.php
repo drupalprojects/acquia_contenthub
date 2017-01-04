@@ -376,9 +376,11 @@ class EntityManager {
       // If for some reason the $path is an external URL, do not further
       // prefix a domain, and do not overwrite the given domain.
       $full_path = $path;
-    } elseif ($rewrite_localdomain) {
+    }
+    elseif ($rewrite_localdomain) {
       $full_path = $rewrite_localdomain . $path;
-    } else {
+    }
+    else {
       $full_path = $this->baseRoot . $path;
     }
     $url = Url::fromUri($full_path);
