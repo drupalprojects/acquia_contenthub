@@ -266,13 +266,12 @@ class EntityManagerTest extends UnitTestCase {
       ->willReturn(NULL);
 
     $entity_types = $entity_manager->getAllowedEntityTypes();
+
+    // We expect that an entity without bundles shouldn't show up in the list.
     $expected_entity_types = [
       'content_entity_1' => [
         'bundle1' => 'bundle1',
         'bundle2' => 'bundle2',
-      ],
-      'content_entity_2' => [
-        'content_entity_2' => 'content_entity_2',
       ],
     ];
     $this->assertEquals($expected_entity_types, $entity_types);
