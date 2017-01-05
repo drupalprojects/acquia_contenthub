@@ -14,7 +14,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\acquia_contenthub\EntityManager;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Drupal\Core\Logger\LoggerChannelFactory;
-use Drupal\acquia_contenthub\ContentHubImportedEntities;
+use Drupal\acquia_contenthub\ContentHubEntitiesTracking;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Drupal\Component\Uuid\Uuid;
 use Drupal\acquia_contenthub\ContentHubEntityDependency;
@@ -75,7 +75,7 @@ class ContentHubEntityImportController extends ControllerBase {
    * @param \Drupal\acquia_contenthub\ContentHubImportedEntities $acquia_contenthub_imported_entities
    *   The Content Hub Imported Entities Service.
    */
-  public function __construct(Connection $database, LoggerChannelFactory $logger_factory, EntityManager $entity_manager, SerializerInterface $serializer, ContentHubImportedEntities $acquia_contenthub_imported_entities) {
+  public function __construct(Connection $database, LoggerChannelFactory $logger_factory, EntityManager $entity_manager, SerializerInterface $serializer, ContentHubEntitiesTracking $acquia_contenthub_imported_entities) {
     $this->database = $database;
     $this->loggerFactory = $logger_factory;
     $this->entityManager = $entity_manager;
@@ -280,7 +280,7 @@ class ContentHubEntityImportController extends ControllerBase {
       $entity->save();
 
       // @TODO: Fix the auto_update flag be saved according to a value.
-      $auto_update = \Drupal\acquia_contenthub\ContentHubImportedEntities::AUTO_UPDATE_ENABLED;
+      $auto_update = \Drupal\acquia_contenthub\ContentHubEntitiesTracking::AUTO_UPDATE_ENABLED;
 
       // Save this entity in the tracking for importing entities.
       $origin = $contenthub_entity->getRawEntity()->getOrigin();

@@ -8,7 +8,7 @@ services:
     arguments: ['@database', '@logger.factory', '@acquia_contenthub.entity_manager', '@serializer', '@acquia_contenthub.acquia_contenthub_imported_entities']
 
   acquia_contenthub.acquia_contenthub_imported_entities:
-    class: Drupal\acquia_contenthub\ContentHubImportedEntities
+    class: Drupal\acquia_contenthub\ContentHubEntitiesTracking
     arguments: ['@database', '@config.factory']
 
   acquia_contenthub.acquia_contenthub_export_entities:

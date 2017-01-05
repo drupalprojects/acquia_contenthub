@@ -39,7 +39,7 @@ function acquia_contenthub_subscriber_acquia_contenthub_process_webhook_alter($w
 
     // If the entity has been previously imported, check auto update status.
     if ($contenthub_imported_entity->loadByUuid($asset['uuid']) !== FALSE) {
-      if ($contenthub_imported_entity->getAutoUpdate() == \Drupal\acquia_contenthub\ContentHubImportedEntities::AUTO_UPDATE_ENABLED) {
+      if ($contenthub_imported_entity->getAutoUpdate() == \Drupal\acquia_contenthub\ContentHubEntitiesTracking::AUTO_UPDATE_ENABLED) {
         $contenthub_import_controller->saveDrupalEntity($asset['uuid']);
       }
     }
