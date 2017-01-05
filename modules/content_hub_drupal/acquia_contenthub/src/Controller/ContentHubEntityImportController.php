@@ -138,60 +138,57 @@ class ContentHubEntityImportController extends ControllerBase {
       // We will just show a standard "access denied" page in this case.
       throw new AccessDeniedHttpException();
     }
-    if ($contenthub_entity = $this->entityManager->loadRemoteEntity($uuid)) {
 
-      $origin = $contenthub_entity->getRawEntity()->getOrigin();
-      $site_origin = $this->contentHubEntitiesTracking->getSiteOrigin();
-
-      // Checking that the entity origin is different than this site's origin.
-      if ($origin == $site_origin) {
-        $args = array(
-          '@type' => $contenthub_entity->getRawEntity()->getType(),
-          '@uuid' => $contenthub_entity->getRawEntity()->getUuid(),
-          '@origin' => $origin,
-        );
-        $message = new FormattableMarkup('Cannot save "@type" entity with uuid="@uuid". It has the same origin as this site: "@origin"', $args);
-        $this->loggerFactory->get('acquia_contenthub')->debug($message);
-        $result = FALSE;
-        return $this->jsonErrorResponseMessage($message, $result, 403);
-      }
-
-      // Collect and flat out all dependencies.
-      $dependencies = array();
-      if ($include_dependencies) {
-        $dependencies = $this->entityManager->getAllRemoteDependencies($contenthub_entity, $dependencies, TRUE);
-      }
-
-      // Obtaining the Status of the parent entity, if it is a node and
-      // setting the publishing status of that entity.
-      $contenthub_entity->setStatus($status);
-
-      // Assigning author to this entity and dependencies.
-      $contenthub_entity->setAuthor($author);
-
-      foreach ($dependencies as $uuid => $dependency) {
-        $dependencies[$uuid]->setAuthor($author);
-        // Only change the Node status of dependent entities if they are nodes,
-        // if the status flag is set and if they haven't been imported before.
-        $entity_type = $dependency->getEntityType();
-        if (isset($status) && ($entity_type == 'node')) {
-          if ($this->contentHubEntitiesTracking->loadImportedByUuid($uuid) === FALSE) {
-            $dependencies[$uuid]->setStatus($status);
-          }
-        }
-      }
-
-      // Save this entity and all its dependencies.
-      return $this->saveDrupalEntityDependencies($contenthub_entity, $dependencies);
-    }
-    else {
-      // If the Entity is not found in Content Hub then return a 404 Not Found.
+    // If the Entity is not found in Content Hub then return a 404 Not Found.
+    $contenthub_entity = $this->entityManager->loadRemoteEntity($uuid);
+    if (!$contenthub_entity) {
       $message = t('Entity with UUID = @uuid not found.', array(
         '@uuid' => $uuid,
       ));
       return $this->jsonErrorResponseMessage($message, FALSE, 404);
     }
 
+    $origin = $contenthub_entity->getRawEntity()->getOrigin();
+    $site_origin = $this->contentHubEntitiesTracking->getSiteOrigin();
+
+    // Checking that the entity origin is different than this site's origin.
+    if ($origin === $site_origin) {
+      $args = array(
+        '@type' => $contenthub_entity->getRawEntity()->getType(),
+        '@uuid' => $contenthub_entity->getRawEntity()->getUuid(),
+        '@origin' => $origin,
+      );
+      $message = new FormattableMarkup('Cannot save "@type" entity with uuid="@uuid". It has the same origin as this site: "@origin"', $args);
+      $this->loggerFactory->get('acquia_contenthub')->debug($message);
+      $result = FALSE;
+      return $this->jsonErrorResponseMessage($message, $result, 403);
+    }
+
+    // Collect and flat out all dependencies.
+    $dependencies = array();
+    if ($include_dependencies) {
+      $dependencies = $this->entityManager->getAllRemoteDependencies($contenthub_entity, $dependencies, TRUE);
+    }
+
+    // Obtaining the Status of the parent entity, if it is a node and
+    // setting the publishing status of that entity.
+    $contenthub_entity->setStatus($status);
+
+    // Assigning author to this entity and dependencies.
+    $contenthub_entity->setAuthor($author);
+
+    foreach ($dependencies as $uuid => $dependency) {
+      $dependencies[$uuid]->setAuthor($author);
+      // Only change the Node status of dependent entities if they are nodes,
+      // if the status flag is set and if they haven't been imported before.
+      $entity_type = $dependency->getEntityType();
+      if (isset($status) && $entity_type === 'node' && !$this->contentHubEntitiesTracking->loadImportedByUuid($uuid)) {
+        $dependencies[$uuid]->setStatus($status);
+      }
+    }
+
+    // Save this entity and all its dependencies.
+    return $this->saveDrupalEntityDependencies($contenthub_entity, $dependencies);
   }
 
   /**
@@ -299,16 +296,14 @@ class ContentHubEntityImportController extends ControllerBase {
     try {
       // Add synchronization flag.
       $entity->__contenthub_synchronized = TRUE;
-
       // Save the entity.
       $entity->save();
-
-      // @TODO: Fix the auto_update flag be saved according to a value.
-      $status_import = ContentHubEntitiesTracking::AUTO_UPDATE_ENABLED;
+      // Remove synchronization flag.
+      unset($entity->__contenthub_synchronized);
 
       // Save this entity in the tracking for importing entities.
       $cdf = (array) $contenthub_entity->getRawEntity();
-      $this->trackImportedEntity($cdf, $status_import);
+      $this->trackImportedEntity($cdf);
 
     }
     catch (\Exception $e) {
@@ -327,7 +322,7 @@ class ContentHubEntityImportController extends ControllerBase {
    *
    * @param string $message
    *   The message to print.
-   * @param string $status
+   * @param bool $status
    *   The status message.
    * @param int $status_code
    *   The HTTP Status code.
@@ -349,12 +344,10 @@ class ContentHubEntityImportController extends ControllerBase {
    *
    * @param array $cdf
    *   The entity that has to be tracked as imported entity.
-   * @param string $status_import
-   *   The import status to save in the tracking table..
    */
-  public function trackImportedEntity($cdf, $status_import = ContentHubEntitiesTracking::AUTO_UPDATE_ENABLED) {
+  public function trackImportedEntity($cdf) {
     if ($imported_entity = $this->contentHubEntitiesTracking->loadImportedByUuid($cdf['uuid'])) {
-      $imported_entity->setImportStatus($status_import);
+      $imported_entity->setAutoUpdate();
       $imported_entity->setModified($cdf['modified']);
     }
     else {
@@ -363,7 +356,6 @@ class ContentHubEntityImportController extends ControllerBase {
         $cdf['type'],
         $entity->id(),
         $cdf['uuid'],
-        $status_import,
         $cdf['modified'],
         $cdf['origin']
       );
@@ -373,9 +365,8 @@ class ContentHubEntityImportController extends ControllerBase {
       $args = array(
         '%type' => $cdf['type'],
         '%uuid' => $cdf['uuid'],
-        '%status_import' => $status_import,
       );
-      $message = new FormattableMarkup('Saving %type entity with uuid=%uuid. Tracking imported entity with status_import = %status_import', $args);
+      $message = new FormattableMarkup('Saving %type entity with uuid=%uuid. Tracking imported entity with auto updates.', $args);
       $this->loggerFactory->get('acquia_contenthub')->debug($message);
     }
   }

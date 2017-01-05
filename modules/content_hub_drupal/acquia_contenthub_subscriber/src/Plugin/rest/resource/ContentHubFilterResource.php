@@ -212,7 +212,7 @@ class ContentHubFilterResource extends ResourceBase {
     if (empty($contenthub_filter->author)) {
       $uid = $this->currentUser->id();
 
-      // Anonymous should not be able to have 'Administer Content Hub'
+      // Anonymous should not be able to have 'Administer Acquia Content Hub'
       // permission but if it ever does, this filter will be owned by admin.
       $contenthub_filter->author = $uid ?: 1;
     }
@@ -279,7 +279,7 @@ class ContentHubFilterResource extends ResourceBase {
 
     // This Filter is owned by the user who initially created it.
     if (empty($contenthub_filter->author)) {
-      // Anonymous should not be able to have 'Administer Content Hub'
+      // Anonymous should not be able to have 'Administer Acquia Content Hub'
       // permission but if it ever does, this filter will be owned by admin.
       $contenthub_filter->author = $contenthub_filter_original->author ?: 1;
     }
