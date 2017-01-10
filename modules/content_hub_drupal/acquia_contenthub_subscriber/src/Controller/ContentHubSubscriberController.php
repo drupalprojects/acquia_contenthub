@@ -26,7 +26,7 @@ class ContentHubSubscriberController extends ControllerBase {
     $cookie_header = session_name() . '=' . current($request->cookies->all());
 
     $config = \Drupal::config('acquia_contenthub.admin_settings');
-    $ember_endpoint = $config->get('ember_app') ?: $GLOBALS['base_url'] . '/' . drupal_get_path('module', 'acquia_contenthub_subscriber') . '/ember';
+    $ember_endpoint = $config->get('ember_app') ?: $GLOBALS['base_url'] . '/' . drupal_get_path('module', 'acquia_contenthub_subscriber') . '/ember/index.html';
 
     // Set Client User Agent.
     $module_info = system_get_info('module', 'acquia_contenthub');
