@@ -57,9 +57,9 @@ class ContentHubEntityImportController extends ControllerBase {
   /**
    * The Content Hub Imported Entities.
    *
-   * @var \Drupal\acquia_contenthub\ContentHubImportedEntities
+   * @var \Drupal\acquia_contenthub\ContentHubEntitiesTracking
    */
-  protected $contentHubImportedEntities;
+  protected $contentHubEntitiesTracking;
 
   /**
    * Public Constructor.
@@ -72,15 +72,15 @@ class ContentHubEntityImportController extends ControllerBase {
    *   The Acquia Content Hub Entity Manager.
    * @param \Symfony\Component\Serializer\SerializerInterface $serializer
    *   The Serializer.
-   * @param \Drupal\acquia_contenthub\ContentHubImportedEntities $acquia_contenthub_imported_entities
+   * @param \Drupal\acquia_contenthub\ContentHubEntitiesTracking $acquia_contenthub_entities_tracking
    *   The Content Hub Imported Entities Service.
    */
-  public function __construct(Connection $database, LoggerChannelFactory $logger_factory, EntityManager $entity_manager, SerializerInterface $serializer, ContentHubEntitiesTracking $acquia_contenthub_imported_entities) {
+  public function __construct(Connection $database, LoggerChannelFactory $logger_factory, EntityManager $entity_manager, SerializerInterface $serializer, ContentHubEntitiesTracking $acquia_contenthub_entities_tracking) {
     $this->database = $database;
     $this->loggerFactory = $logger_factory;
     $this->entityManager = $entity_manager;
     $this->serializer = $serializer;
-    $this->contentHubImportedEntities = $acquia_contenthub_imported_entities;
+    $this->contentHubEntitiesTracking = $acquia_contenthub_entities_tracking;
   }
 
   /**
@@ -92,7 +92,7 @@ class ContentHubEntityImportController extends ControllerBase {
       $container->get('logger.factory'),
       $container->get('acquia_contenthub.entity_manager'),
       $container->get('serializer'),
-      $container->get('acquia_contenthub.acquia_contenthub_imported_entities')
+      $container->get('acquia_contenthub.acquia_contenthub_entities_tracking')
     );
   }
 
@@ -130,7 +130,7 @@ class ContentHubEntityImportController extends ControllerBase {
     if ($contenthub_entity = $this->entityManager->loadRemoteEntity($uuid)) {
 
       $origin = $contenthub_entity->getRawEntity()->getOrigin();
-      $site_origin = $this->contentHubImportedEntities->getSiteOrigin();
+      $site_origin = $this->contentHubEntitiesTracking->getSiteOrigin();
 
       // Checking that the entity origin is different than this site's origin.
       if ($origin == $site_origin) {
@@ -164,7 +164,7 @@ class ContentHubEntityImportController extends ControllerBase {
         // if the status flag is set and if they haven't been imported before.
         $entity_type = $dependency->getEntityType();
         if (isset($status) && ($entity_type == 'node')) {
-          if ($this->contentHubImportedEntities->loadByUuid($uuid) === FALSE) {
+          if ($this->contentHubEntitiesTracking->loadImportedByUuid($uuid) === FALSE) {
             $dependencies[$uuid]->setStatus($status);
           }
         }
@@ -265,7 +265,7 @@ class ContentHubEntityImportController extends ControllerBase {
     try {
       $entity = $this->serializer->deserialize($contenthub_entity->getRawEntity()->json(), $class, $this->format);
     }
-    catch (UnexpectedValueException $e) {
+    catch (\UnexpectedValueException $e) {
       $error = $e->getMessage();
       return $this->jsonErrorResponseMessage($error, FALSE, 400);
     }
@@ -280,24 +280,25 @@ class ContentHubEntityImportController extends ControllerBase {
       $entity->save();
 
       // @TODO: Fix the auto_update flag be saved according to a value.
-      $auto_update = \Drupal\acquia_contenthub\ContentHubEntitiesTracking::AUTO_UPDATE_ENABLED;
+      $status_import = ContentHubEntitiesTracking::AUTO_UPDATE_ENABLED;
 
       // Save this entity in the tracking for importing entities.
       $origin = $contenthub_entity->getRawEntity()->getOrigin();
-      $this->contentHubImportedEntities->setImportedEntity($entity->getEntityTypeId(), $entity->id(), $entity->uuid(), $auto_update, $origin);
+      $modified = $contenthub_entity->getRawEntity()->getModified();
+      $this->contentHubEntitiesTracking->setImportedEntity($entity->getEntityTypeId(), $entity->id(), $entity->uuid(), $status_import, $modified, $origin);
 
       $args = array(
         '%type' => $entity->getEntityTypeId(),
         '%uuid' => $entity->uuid(),
-        '%auto_update' => $auto_update,
+        '%status_import' => $status_import,
       );
 
-      if ($this->contentHubImportedEntities->save()) {
-        $message = new FormattableMarkup('Saving %type entity with uuid=%uuid. Tracking imported entity with auto_update = %auto_update', $args);
+      if ($this->contentHubEntitiesTracking->save()) {
+        $message = new FormattableMarkup('Saving %type entity with uuid=%uuid. Tracking imported entity with status_import = %status_import', $args);
         $this->loggerFactory->get('acquia_contenthub')->debug($message);
       }
       else {
-        $message = new FormattableMarkup('Saving %type entity with uuid=%uuid, but not tracking this entity in acquia_contenthub_imported_entities table because it could not be saved.', $args);
+        $message = new FormattableMarkup('Saving %type entity with uuid=%uuid, but not tracking this entity in acquia_contenthub_entities_tracking table because it could not be saved.', $args);
         $this->loggerFactory->get('acquia_contenthub')->warning($message);
       }
 

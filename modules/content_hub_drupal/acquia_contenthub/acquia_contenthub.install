@@ -127,7 +127,7 @@ function acquia_contenthub_update_8201() {
 /**
  * Updates the Entities Tracking Table to include exported entities.
  */
-function acquia_contenthub_update8202() {
+function acquia_contenthub_update_8202() {
   define('CONTENT_HUB_CONNECTOR_ENTITY_TRACKING_TABLE', 'acquia_contenthub_entities_tracking');
   $schema = Database::getConnection()->schema();
 
@@ -151,7 +151,7 @@ function acquia_contenthub_update8202() {
     'default' => '',
     'not null' => TRUE,
   );
-  $schema->changeField(CONTENT_HUB_CONNECTOR_ENTITY_TRACKING_TABLE,'auto_update', 'status_import', $spec);
+  $schema->changeField(CONTENT_HUB_CONNECTOR_ENTITY_TRACKING_TABLE, 'auto_update', 'status_import', $spec);
 
   $spec = array(
     'description' => 'The CDF entity\'s modified field.',

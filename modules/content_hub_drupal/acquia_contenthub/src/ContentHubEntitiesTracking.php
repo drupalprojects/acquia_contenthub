@@ -43,11 +43,11 @@ class ContentHubEntitiesTracking {
   protected $contentHubAdminConfig;
 
   /**
-   * The Imported Entity Record.
+   * The Tracking Entity Record.
    *
    * @var object
    */
-  protected $importedEntity;
+  protected $trackingEntity;
 
   /**
    * {@inheritdoc}
@@ -76,14 +76,14 @@ class ContentHubEntitiesTracking {
   }
 
   /**
-   * Resets the Imported Entity Information.
+   * Resets the Tracking Entity Information.
    */
   protected function reset() {
-    $this->importedEntity = NULL;
+    $this->trackingEntity = NULL;
   }
 
   /**
-   * Explicitly sets the Imported Entity.
+   * Explicitly sets the Tracking Entity.
    *
    * @param string $entity_type
    *   The Entity Type.
@@ -104,7 +104,7 @@ class ContentHubEntitiesTracking {
    *   This same object.
    */
   public function setTrackingEntity($entity_type, $entity_id, $entity_uuid, $status_export, $status_import, $modified, $origin) {
-    $this->importedEntity = (object) [
+    $this->trackingEntity = (object) [
       'entity_type' => $entity_type,
       'entity_id' => $entity_id,
       'uuid' => $entity_uuid,
@@ -117,13 +117,59 @@ class ContentHubEntitiesTracking {
   }
 
   /**
+   * Helper function to set the Exported Tracking Entity.
+   *
+   * @param string $entity_type
+   *   The Entity Type.
+   * @param int $entity_id
+   *   The Entity ID.
+   * @param string $entity_uuid
+   *   The Entity UUID.
+   * @param string $status_export
+   *   The Export Status.
+   * @param string $modified
+   *   The CDF's modified timestamp.
+   * @param string $origin
+   *   The origin UUID.
+   *
+   * @return \Drupal\acquia_contenthub\ContentHubEntitiesTracking
+   *   This same object.
+   */
+  public function setExportedEntity($entity_type, $entity_id, $entity_uuid, $status_export, $modified, $origin) {
+    return $this->setTrackingEntity($entity_type, $entity_id, $entity_uuid, $status_export, '', $modified, $origin);
+  }
+
+  /**
+   * Helper function to set the Imported Tracking Entity.
+   *
+   * @param string $entity_type
+   *   The Entity Type.
+   * @param int $entity_id
+   *   The Entity ID.
+   * @param string $entity_uuid
+   *   The Entity UUID.
+   * @param string $status_import
+   *   The Import Status.
+   * @param string $modified
+   *   The CDF's modified timestamp.
+   * @param string $origin
+   *   The origin UUID.
+   *
+   * @return \Drupal\acquia_contenthub\ContentHubEntitiesTracking
+   *   This same object.
+   */
+  public function setImportedEntity($entity_type, $entity_id, $entity_uuid, $status_import, $modified, $origin) {
+    return $this->setTrackingEntity($entity_type, $entity_id, $entity_uuid, '', $status_import, $modified, $origin);
+  }
+
+  /**
    * Returns the Imported Entity object.
    *
    * @return object
    *   The Imported Entity object.
    */
   public function getTrackingEntity() {
-    return $this->importedEntity;
+    return $this->trackingEntity;
   }
 
   /**
@@ -360,7 +406,6 @@ class ContentHubEntitiesTracking {
         $success = FALSE;
         break;
     }
-
     return $success;
   }
 
@@ -394,8 +439,8 @@ class ContentHubEntitiesTracking {
    *   The ContentHubEntitiesTracking object if it exists and is exported,
    *   FALSE otherwise.
    */
-  public static function loadExportedByDrupalEntity($entity_type, $entity_id) {
-    if ($exported_entity = self::loadByDrupalEntity($entity_type, $entity_id)) {
+  public function loadExportedByDrupalEntity($entity_type, $entity_id) {
+    if ($exported_entity = $this->loadByDrupalEntity($entity_type, $entity_id)) {
       return $exported_entity->isExportedEntity();
     }
     return FALSE;
@@ -413,8 +458,8 @@ class ContentHubEntitiesTracking {
    *   The ContentHubEntitiesTracking object if it exists and is imported,
    *   FALSE otherwise.
    */
-  public static function loadImportedByDrupalEntity($entity_type, $entity_id) {
-    if ($imported_entity = self::loadByDrupalEntity($entity_type, $entity_id)) {
+  public function loadImportedByDrupalEntity($entity_type, $entity_id) {
+    if ($imported_entity = $this->loadByDrupalEntity($entity_type, $entity_id)) {
       return $imported_entity->isImportedEntity();
     }
     return FALSE;
@@ -458,8 +503,8 @@ class ContentHubEntitiesTracking {
    *   The ContentHubEntitiesTracking object if it exists and is exported,
    *   FALSE otherwise.
    */
-  public static function loadExportedByUuid($entity_uuid) {
-    if ($exported_entity = self::loadByUuid($entity_uuid)) {
+  public function loadExportedByUuid($entity_uuid) {
+    if ($exported_entity = $this->loadByUuid($entity_uuid)) {
       return $exported_entity->isExportedEntity();
     }
     return FALSE;
@@ -475,8 +520,8 @@ class ContentHubEntitiesTracking {
    *   The ContentHubEntitiesTracking object if it exists and is imported,
    *   FALSE otherwise.
    */
-  public static function loadImportedByUuid($entity_uuid) {
-    if ($imported_entity = self::loadByUuid($entity_uuid)) {
+  public function loadImportedByUuid($entity_uuid) {
+    if ($imported_entity = $this->loadByUuid($entity_uuid)) {
       return $imported_entity->isImportedEntity();
     }
     return FALSE;
