@@ -581,9 +581,20 @@ class EntityManager {
     // Obtaining dependencies of this entity.
     $dep_dependencies = $this->getRemoteDependencies($content_hub_entity, $use_chain);
 
+    /** @var \Drupal\acquia_contenthub\ContentHubEntityDependency $content_hub_dependency */
     foreach ($dep_dependencies as $uuid => $content_hub_dependency) {
       if (isset($dependencies[$uuid])) {
         continue;
+      }
+
+      // Also check if this dependency has been previously imported and has the
+      // same modified timestamp. If the 'modified' timestamp matches then we
+      // know we are trying to import an entity that has no change at all, then
+      // it does not need to be imported again.
+      if ($imported_entity = $this->contentHubEntitiesTracking->loadImportedByUuid($uuid)) {
+        if ($imported_entity->getModified() === $content_hub_dependency->getRawEntity()->getModified()) {
+          continue;
+        }
       }
 
       $dependencies[$uuid] = $content_hub_dependency;

@@ -5,7 +5,7 @@ services:
 
   acquia_contenthub.acquia_contenthub_cdf.import_entity:
     class: Drupal\acquia_contenthub\Controller\ContentHubEntityImportController
-    arguments: ['@database', '@logger.factory', '@acquia_contenthub.entity_manager', '@serializer', '@acquia_contenthub.acquia_contenthub_entities_tracking']
+    arguments: ['@database', '@logger.factory', '@acquia_contenthub.entity_manager', '@serializer', '@entity.repository', '@acquia_contenthub.acquia_contenthub_entities_tracking']
 
   acquia_contenthub.acquia_contenthub_entities_tracking:
     class: Drupal\acquia_contenthub\ContentHubEntitiesTracking

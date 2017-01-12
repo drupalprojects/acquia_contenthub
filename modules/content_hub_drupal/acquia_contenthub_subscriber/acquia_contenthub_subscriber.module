@@ -62,8 +62,9 @@ function acquia_contenthub_subscriber_entity_delete(EntityInterface $entity) {
   $entity_uuid = $entity->uuid();
   if (isset($entity_uuid)) {
     // If this is an imported entity, delete its track record.
+    /** @var \Drupal\acquia_contenthub\ContentHubEntitiesTracking $contenthub_entities_tracking */
     $contenthub_entities_tracking = \Drupal::service('acquia_contenthub.acquia_contenthub_entities_tracking');
-    if ($imported_entity = $contenthub_entities_tracking->loadByUuid($entity_uuid)) {
+    if ($imported_entity = $contenthub_entities_tracking->loadImportedByUuid($entity_uuid)) {
       $imported_entity->delete();
     }
   }
