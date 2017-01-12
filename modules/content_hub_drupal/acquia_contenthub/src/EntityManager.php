@@ -15,10 +15,10 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\Core\Url;
 use Drupal\Core\Config\ConfigFactory;
-use Drupal\acquia_contenthub\ContentHubImportedEntities;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
+use Drupal\Component\Utility\UrlHelper;
 
 /**
  * Provides a service for managing entity actions for Content Hub.
@@ -38,13 +38,6 @@ class EntityManager {
    * @var \Drupal\Core\Logger\LoggerChannelFactory
    */
   protected $loggerFactory;
-
-  /**
-   * Config Factory.
-   *
-   * @var \Drupal\Core\Config\ConfigFactory
-   */
-  protected $configFactory;
 
   /**
    * Content Hub Client Manager.
@@ -109,14 +102,13 @@ class EntityManager {
   public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager, ContentHubImportedEntities $acquia_contenthub_imported_entities, EntityTypeManagerInterface $entity_manager, EntityTypeBundleInfoInterface $entity_type_bundle_info_manager, HttpKernelInterface $kernel) {
     $this->baseRoot = isset($GLOBALS['base_root']) ? $GLOBALS['base_root'] : '';
     $this->loggerFactory = $logger_factory;
-    $this->configFactory = $config_factory;
     $this->clientManager = $client_manager;
     $this->contentHubImportedEntities = $acquia_contenthub_imported_entities;
     $this->entityTypeManager = $entity_manager;
     $this->entityTypeBundleInfoManager = $entity_type_bundle_info_manager;
     $this->kernel = $kernel;
     // Get the content hub config settings.
-    $this->config = $this->configFactory->get('acquia_contenthub.admin_settings');
+    $this->config = $config_factory->get('acquia_contenthub.admin_settings');
   }
 
   /**
@@ -349,7 +341,6 @@ class EntityManager {
   public function getResourceUrl(EntityInterface $entity, $include_references = 'true') {
     // Check if there are link templates defined for the entity type and
     // use the path from the route instead of the default.
-    $entity_type = $entity->getEntityType();
     $entity_type_id = $entity->getEntityTypeId();
 
     $route_name = 'acquia_contenthub.entity.' . $entity_type_id . '.GET.acquia_contenthub_cdf';
@@ -360,50 +351,55 @@ class EntityManager {
       'include_references' => $include_references,
     );
 
+    return $this->getResourceUrlByRouteName($route_name, $url_options);
+  }
+
+  /**
+   * Returns the route's resource URL.
+   *
+   * @param string $route_name
+   *   Route name.
+   * @param array $url_options
+   *   Bulk-upload Url query params.
+   *
+   * @return string
+   *   returns URL.
+   */
+  protected function getResourceUrlByRouteName($route_name, $url_options = array()) {
     $url = Url::fromRoute($route_name, $url_options);
     $path = $url->toString();
 
     // Get the content hub config settings.
-    $rewrite_localdomain = $this->configFactory
-      ->get('acquia_contenthub.admin_settings')
-      ->get('rewrite_domain');
+    $rewrite_localdomain = $this->config->get('rewrite_domain');
 
-    if ($rewrite_localdomain) {
-      $url = Url::fromUri($rewrite_localdomain . $path);
+    if (UrlHelper::isExternal($path)) {
+      // If for some reason the $path is an external URL, do not further
+      // prefix a domain, and do not overwrite the given domain.
+      $full_path = $path;
+    }
+    elseif ($rewrite_localdomain) {
+      $full_path = $rewrite_localdomain . $path;
     }
     else {
-      $url = Url::fromUri($this->baseRoot . $path);
+      $full_path = $this->baseRoot . $path;
     }
+    $url = Url::fromUri($full_path);
+
     return $url->toUriString();
   }
 
   /**
    * Builds the bulk-upload url to make a single request.
    *
-   * @param string $params
+   * @param array $url_options
    *   Bulk-upload Url query params.
    *
    * @return string
    *   returns URL.
    */
-  public function getBulkResourceUrl($params) {
-
+  public function getBulkResourceUrl($url_options = array()) {
     $route_name = 'acquia_contenthub.acquia_contenthub_bulk_cdf';
-    $url = Url::fromRoute($route_name, $params);
-    $path = $url->toString();
-
-    // Get the content hub config settings.
-    $rewrite_localdomain = $this->configFactory
-      ->get('acquia_contenthub.admin_settings')
-      ->get('rewrite_domain');
-
-    if ($rewrite_localdomain) {
-      $url = Url::fromUri($rewrite_localdomain . $path);
-    }
-    else {
-      $url = Url::fromUri($this->baseRoot . $path);
-    }
-    return $url->toUriString();
+    return $this->getResourceUrlByRouteName($route_name, $url_options);
   }
 
   /**
@@ -628,11 +624,6 @@ class EntityManager {
           foreach ($bundles as $key => $bundle) {
             $entity_types[$type][$key] = $bundle['label'];
           }
-        }
-        else {
-          // In cases where there are no bundles, but the entity can be
-          // selected.
-          $entity_types[$type][$type] = $entity->getLabel();
         }
       }
     }

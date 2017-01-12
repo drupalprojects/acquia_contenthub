@@ -24,7 +24,7 @@ use Drupal\Core\Render\RendererInterface;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Drupal\Core\Url;
 use Drupal\Component\Uuid\Uuid;
-use Drupal\acquia_contenthub\EntityManager as EntityManager;
+use Drupal\acquia_contenthub\EntityManager;
 use Drupal\acquia_contenthub\Controller\ContentHubEntityExportController;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Language\LanguageInterface;

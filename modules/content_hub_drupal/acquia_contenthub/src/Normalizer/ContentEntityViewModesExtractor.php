@@ -163,7 +163,7 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
     $contenthub_entity_config_id = $this->getContentHubEntityTypeConfigEntity($entity_type_id);
 
     // Stop processing if 'view modes' are not configured for this entity type.
-    if ($contenthub_entity_config_id->isEnabledViewModes($entity_bundle_id) === FALSE) {
+    if (!$contenthub_entity_config_id || $contenthub_entity_config_id->isEnabledViewModes($entity_bundle_id) === FALSE) {
       return NULL;
     }
 

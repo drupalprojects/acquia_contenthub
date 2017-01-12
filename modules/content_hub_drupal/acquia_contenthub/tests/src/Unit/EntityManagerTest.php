@@ -229,11 +229,6 @@ class EntityManagerTest extends UnitTestCase {
 
     $entity_manager = new EntityManager($this->loggerFactory, $this->configFactory, $this->clientManager, $this->contentHubImportedEntities, $this->entityTypeManager, $this->entityTypeBundleInfoManager, $this->kernel);
 
-    // Second content entity does not have bundles.
-    $this->contentEntityType->expects($this->once())
-      ->method('getLabel')
-      ->willReturn('content_entity_2');
-
     $entity_types = [
       'content_entity_1' => $this->contentEntityType,
       'content_entity_2' => $this->contentEntityType,
@@ -260,22 +255,87 @@ class EntityManagerTest extends UnitTestCase {
       ->method('getBundleInfo')
       ->with('content_entity_1')
       ->willReturn($bundles);
+
+    // Second content entity does not have bundles.
     $this->entityTypeBundleInfoManager->expects($this->at(1))
       ->method('getBundleInfo')
       ->with('content_entity_2')
       ->willReturn(NULL);
 
     $entity_types = $entity_manager->getAllowedEntityTypes();
+
+    // We expect that an entity without bundles shouldn't show up in the list.
     $expected_entity_types = [
       'content_entity_1' => [
         'bundle1' => 'bundle1',
         'bundle2' => 'bundle2',
       ],
-      'content_entity_2' => [
-        'content_entity_2' => 'content_entity_2',
-      ],
     ];
     $this->assertEquals($expected_entity_types, $entity_types);
+  }
+
+  /**
+   * Test for getBulkResourceUrl() method.
+   *
+   * @covers ::getBulkResourceUrl
+   */
+  public function testGetBulkResourceUrl() {
+    $entity_manager = new EntityManager($this->loggerFactory, $this->configFactory, $this->clientManager, $this->contentHubImportedEntities, $this->entityTypeManager, $this->entityTypeBundleInfoManager, $this->kernel);
+
+    $container = $this->getMock('Drupal\Core\DependencyInjection\Container');
+    \Drupal::setContainer($container);
+    $bulk_route_name = 'acquia_contenthub.acquia_contenthub_bulk_cdf';
+    $url_options = ['option1' => 'option_value_1'];
+    $url_generator = $this->getMock('Drupal\Core\Routing\UrlGeneratorInterface');
+    $url_generator
+      ->method('generateFromRoute')
+      ->with($bulk_route_name, $url_options)
+      ->willReturn('/node/1');
+    $container->expects($this->once())
+      ->method('get')
+      ->with('url_generator')
+      ->willReturn($url_generator);
+    $this->settings->expects($this->once())
+      ->method('get')
+      ->with('rewrite_domain')
+      ->willReturn('http://my-rewrite-domain.com');
+
+    $result_url = $entity_manager->getBulkResourceUrl($url_options);
+
+    $expected_url = 'http://my-rewrite-domain.com/node/1';
+    $this->assertEquals($expected_url, $result_url);
+  }
+
+  /**
+   * Test for getBulkResourceUrl() method, path is already external.
+   *
+   * @covers ::getBulkResourceUrl
+   */
+  public function testGetBulkResourceUrlIsExternal() {
+    $entity_manager = new EntityManager($this->loggerFactory, $this->configFactory, $this->clientManager, $this->contentHubImportedEntities, $this->entityTypeManager, $this->entityTypeBundleInfoManager, $this->kernel);
+
+    $container = $this->getMock('Drupal\Core\DependencyInjection\Container');
+    \Drupal::setContainer($container);
+    $bulk_route_name = 'acquia_contenthub.acquia_contenthub_bulk_cdf';
+    $url_options = ['option1' => 'option_value_1'];
+    $url_generator = $this->getMock('Drupal\Core\Routing\UrlGeneratorInterface');
+    $url_generator
+      ->method('generateFromRoute')
+      ->with($bulk_route_name, $url_options)
+      ->willReturn('http://localhost/node/1');
+    $container->expects($this->once())
+      ->method('get')
+      ->with('url_generator')
+      ->willReturn($url_generator);
+    $this->settings->expects($this->once())
+      ->method('get')
+      ->with('rewrite_domain')
+      ->willReturn('http://my-rewrite-domain.com');
+
+    $result_url = $entity_manager->getBulkResourceUrl($url_options);
+
+    $expected_url = 'http://localhost/node/1';
+    $this->assertEquals($expected_url, $result_url);
   }
 
 }
