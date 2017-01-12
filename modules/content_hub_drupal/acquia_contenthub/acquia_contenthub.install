@@ -128,11 +128,11 @@ function acquia_contenthub_update_8201() {
  * Updates the Entities Tracking Table to include exported entities.
  */
 function acquia_contenthub_update_8202() {
-  define('CONTENT_HUB_CONNECTOR_ENTITY_TRACKING_TABLE', 'acquia_contenthub_entities_tracking');
+  define('ACQUIA_CONTENTHUB_ENTITY_TRACKING_TABLE', 'acquia_contenthub_entities_tracking');
   $schema = Database::getConnection()->schema();
 
   // Rename Table.
-  $schema->renameTable('acquia_contenthub_imported_entities', CONTENT_HUB_CONNECTOR_ENTITY_TRACKING_TABLE);
+  $schema->renameTable('acquia_contenthub_imported_entities', ACQUIA_CONTENTHUB_ENTITY_TRACKING_TABLE);
 
   // Add/Change fields.
   $spec = array(
@@ -142,7 +142,7 @@ function acquia_contenthub_update_8202() {
     'not null' => TRUE,
     'length' => 36,
   );
-  $schema->addField(CONTENT_HUB_CONNECTOR_ENTITY_TRACKING_TABLE, 'status_export', $spec);
+  $schema->addField(ACQUIA_CONTENTHUB_ENTITY_TRACKING_TABLE, 'status_export', $spec);
 
   $spec = array(
     'description' => 'The status of an imported entity.',
@@ -151,7 +151,7 @@ function acquia_contenthub_update_8202() {
     'default' => '',
     'not null' => TRUE,
   );
-  $schema->changeField(CONTENT_HUB_CONNECTOR_ENTITY_TRACKING_TABLE, 'auto_update', 'status_import', $spec);
+  $schema->changeField(ACQUIA_CONTENTHUB_ENTITY_TRACKING_TABLE, 'auto_update', 'status_import', $spec);
 
   $spec = array(
     'description' => 'The CDF entity\'s modified field.',
@@ -160,16 +160,16 @@ function acquia_contenthub_update_8202() {
     'not null' => TRUE,
     'length' => 36,
   );
-  $schema->addField(CONTENT_HUB_CONNECTOR_ENTITY_TRACKING_TABLE, 'modified', $spec);
+  $schema->addField(ACQUIA_CONTENTHUB_ENTITY_TRACKING_TABLE, 'modified', $spec);
 
   // Updating data in the table.
-  Database::getConnection()->update(CONTENT_HUB_CONNECTOR_ENTITY_TRACKING_TABLE)
+  Database::getConnection()->update(ACQUIA_CONTENTHUB_ENTITY_TRACKING_TABLE)
     ->fields(array(
       'status_import' => 'AUTO_UPDATE_ENABLED',
     ))
     ->condition('status_import', 'ENABLED', '=')
     ->execute();
-  Database::getConnection()->update(CONTENT_HUB_CONNECTOR_ENTITY_TRACKING_TABLE)
+  Database::getConnection()->update(ACQUIA_CONTENTHUB_ENTITY_TRACKING_TABLE)
     ->fields(array(
       'status_import' => 'AUTO_UPDATE_DISABLED',
     ))
