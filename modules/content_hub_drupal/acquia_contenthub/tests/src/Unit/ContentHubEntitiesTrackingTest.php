@@ -148,17 +148,22 @@ class ContentHubEntitiesTrackingTest extends UnitTestCase {
     $database_entity = [
       'entity_type' => 'node',
       'entity_id' => 1,
-      'entity_uuid' => '00000000-0000-0000-0000-000000000000',
+      'entity_uuid' => '00000000-0000-0000-0000-111111112222',
       'status_export' => ContentHubEntitiesTracking::INITIATED,
       'status_import' => '',
       'modified' => '2016-12-09T20:51:45+00:00',
       'origin' => '11111111-1111-1111-1111-111111111111',
     ];
-    $this->contentHubEntitiesTracking = $this->getContentHubEntitiesTrackingService($database_entity);
-    $this->assertFalse($this->contentHubEntitiesTracking->loadImportedByUuid($entity->entity_uuid));
 
+    $this->contentHubEntitiesTracking = $this->getContentHubEntitiesTrackingService($database_entity);
+
+    // Trying to load an imported entity should return false.
+    $this->assertFalse($this->contentHubEntitiesTracking->loadImportedByUuid($database_entity['entity_uuid']));
+
+    // Loading an exported entity should work.
     $this->contentHubEntitiesTracking->loadExportedByUuid($database_entity['entity_uuid']);
     $this->assertEquals((object) $database_entity, $this->contentHubEntitiesTracking->getTrackingEntity());
+    $this->assertEquals(ContentHubEntitiesTracking::INITIATED, $this->contentHubEntitiesTracking->getExportStatus());
   }
 
   /**
@@ -202,17 +207,21 @@ class ContentHubEntitiesTrackingTest extends UnitTestCase {
     $database_entity = [
       'entity_type' => 'node',
       'entity_id' => 1,
-      'entity_uuid' => '00000000-0000-0000-0000-000000000000',
+      'entity_uuid' => '00000000-0000-0000-0000-111111111111',
       'status_export' => '',
       'status_import' => ContentHubEntitiesTracking::AUTO_UPDATE_DISABLED,
       'modified' => '2016-12-09T20:51:45+00:00',
       'origin' => '11111111-1111-1111-1111-111111111111',
     ];
     $this->contentHubEntitiesTracking = $this->getContentHubEntitiesTrackingService($database_entity);
-    $this->assertFalse($this->contentHubEntitiesTracking->loadExportedByUuid($entity->entity_uuid));
 
+    // Trying to load an imported entity should work.
     $this->contentHubEntitiesTracking->loadImportedByUuid($database_entity['entity_uuid']);
     $this->assertEquals((object) $database_entity, $this->contentHubEntitiesTracking->getTrackingEntity());
+    $this->assertEquals(ContentHubEntitiesTracking::AUTO_UPDATE_DISABLED, $this->contentHubEntitiesTracking->getImportStatus());
+
+    // Trying to load an exported entity should return false.
+    $this->assertFalse($this->contentHubEntitiesTracking->loadExportedByUuid($database_entity['entity_uuid']));
   }
 
 }
