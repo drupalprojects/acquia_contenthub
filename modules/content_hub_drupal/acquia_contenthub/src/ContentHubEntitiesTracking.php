@@ -107,7 +107,7 @@ class ContentHubEntitiesTracking {
     $this->trackingEntity = (object) [
       'entity_type' => $entity_type,
       'entity_id' => $entity_id,
-      'uuid' => $entity_uuid,
+      'entity_uuid' => $entity_uuid,
       'status_export' => $status_export,
       'status_import' => $status_import,
       'modified' => $modified,
@@ -199,7 +199,7 @@ class ContentHubEntitiesTracking {
    *   The Entity's UUID.
    */
   public function getUuid() {
-    return isset($this->getTrackingEntity()->uuid) ? $this->getTrackingEntity()->uuid : NULL;
+    return isset($this->getTrackingEntity()->entity_uuid) ? $this->getTrackingEntity()->entity_uuid : NULL;
   }
 
   /**
@@ -421,7 +421,7 @@ class ContentHubEntitiesTracking {
     }
     elseif (Uuid::isValid($this->getUuid())) {
       return $this->database->delete(self::TABLE)
-        ->condition('uuid', $this->getUuid())
+        ->condition('entity_uuid', $this->getUuid())
         ->execute();
     }
     return FALSE;
