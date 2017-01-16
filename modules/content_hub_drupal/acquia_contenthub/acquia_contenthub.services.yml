@@ -1,19 +1,19 @@
 services:
   acquia_contenthub.entity_manager:
     class: Drupal\acquia_contenthub\EntityManager
-    arguments: ['@logger.factory', '@config.factory', '@acquia_contenthub.client_manager', '@acquia_contenthub.acquia_contenthub_imported_entities', '@entity_type.manager', '@entity_type.bundle.info', '@http_kernel.basic']
+    arguments: ['@logger.factory', '@config.factory', '@acquia_contenthub.client_manager', '@acquia_contenthub.acquia_contenthub_entities_tracking', '@entity_type.manager', '@entity_type.bundle.info', '@http_kernel.basic']
 
   acquia_contenthub.acquia_contenthub_cdf.import_entity:
     class: Drupal\acquia_contenthub\Controller\ContentHubEntityImportController
-    arguments: ['@database', '@logger.factory', '@acquia_contenthub.entity_manager', '@serializer', '@acquia_contenthub.acquia_contenthub_imported_entities']
+    arguments: ['@database', '@logger.factory', '@acquia_contenthub.entity_manager', '@serializer', '@entity.repository', '@acquia_contenthub.acquia_contenthub_entities_tracking']
 
-  acquia_contenthub.acquia_contenthub_imported_entities:
-    class: Drupal\acquia_contenthub\ContentHubImportedEntities
+  acquia_contenthub.acquia_contenthub_entities_tracking:
+    class: Drupal\acquia_contenthub\ContentHubEntitiesTracking
     arguments: ['@database', '@config.factory']
 
   acquia_contenthub.acquia_contenthub_export_entities:
     class: Drupal\acquia_contenthub\Controller\ContentHubEntityExportController
-    arguments: ['@http_kernel.basic', '@acquia_contenthub.client_manager', '@acquia_contenthub.acquia_contenthub_subscription']
+    arguments: ['@http_kernel.basic', '@acquia_contenthub.client_manager', '@acquia_contenthub.acquia_contenthub_subscription', '@acquia_contenthub.acquia_contenthub_entities_tracking', '@entity.repository']
 
   acquia_contenthub.acquia_contenthub_subscription:
     class: Drupal\acquia_contenthub\ContentHubSubscription

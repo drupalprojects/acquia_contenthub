@@ -83,13 +83,19 @@ function acquia_contenthub_send_entities() {
   }
 
   // The collected entities are clean now and should all be processed.
+  $exported_entities = [];
   $bulk_url_array = [];
   foreach ($entities as $en) {
     $entity = $en['entity'];
     $entity_type = $entity->getEntityTypeId();
     $entity_id = $entity->id();
     $bulk_url_array[$entity_type][$entity_id] = $entity_id;
-    $acquia_contenthub_export_controller->getEntityCdfByInternalRequest($entity_type, $entity_id);
+    $exported_entities = array_merge($exported_entities, $acquia_contenthub_export_controller->getEntityCdfByInternalRequest($entity_type, $entity_id));
+  }
+  // Eliminating duplicates.
+  $exported_cdfs = [];
+  foreach ($exported_entities['entities'] as $cdf) {
+    $exported_cdfs[$cdf['uuid']] = $cdf;
   }
 
   // Now implode parameters.
@@ -97,7 +103,17 @@ function acquia_contenthub_send_entities() {
     $bulk_url_array[$entity_type] = implode(',', $entities);
   }
   $resource_url = $entity_manager->getBulkResourceUrl($bulk_url_array);
+
+  // @TODO This logic should be reviewed later on. We are just saving the
+  // exported entities and not using this information to optimize the export
+  // yet.
+  // Setting up INITIATED status to all tracked exported entities.
+  foreach ($exported_cdfs as $exported_entity) {
+    // Obtaining the entity ID from the entity.
+    $acquia_contenthub_export_controller->trackExportedEntity($exported_entity);
+  }
   $entity_manager->updateRemoteEntities($resource_url);
+
 }
 
 
