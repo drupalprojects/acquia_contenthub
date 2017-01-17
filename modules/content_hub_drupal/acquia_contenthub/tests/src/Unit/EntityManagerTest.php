@@ -43,9 +43,9 @@ class EntityManagerTest extends UnitTestCase {
   /**
    * The Content Hub Imported Entities Service.
    *
-   * @var \Drupal\acquia_contenthub\ContentHubImportedEntities|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\acquia_contenthub\ContentHubEntitiesTracking|\PHPUnit_Framework_MockObject_MockObject
    */
-  private $contentHubImportedEntities;
+  private $contentHubEntitiesTracking;
 
   /**
    * The entity manager.
@@ -101,7 +101,7 @@ class EntityManagerTest extends UnitTestCase {
       ->disableOriginalConstructor()
       ->getMock();
     $this->clientManager = $this->getMock('Drupal\acquia_contenthub\Client\ClientManagerInterface');
-    $this->contentHubImportedEntities = $this->getMockBuilder('Drupal\acquia_contenthub\ContentHubImportedEntities')
+    $this->contentHubEntitiesTracking = $this->getMockBuilder('Drupal\acquia_contenthub\ContentHubEntitiesTracking')
       ->disableOriginalConstructor()
       ->getMock();
     $this->entityTypeManager = $this->getMock('Drupal\Core\Entity\EntityTypeManagerInterface');
@@ -207,7 +207,7 @@ class EntityManagerTest extends UnitTestCase {
    * @covers ::getContentHubEnabledEntityTypeIds
    */
   public function testGetContentHubEnabledEntityTypeIds() {
-    $entity_manager = new EntityManager($this->loggerFactory, $this->configFactory, $this->clientManager, $this->contentHubImportedEntities, $this->entityTypeManager, $this->entityTypeBundleInfoManager, $this->kernel);
+    $entity_manager = new EntityManager($this->loggerFactory, $this->configFactory, $this->clientManager, $this->contentHubEntitiesTracking, $this->entityTypeManager, $this->entityTypeBundleInfoManager, $this->kernel);
 
     $config_storage = $this->getContentHubConfigStorage();
     $this->entityTypeManager->method('getStorage')->with('acquia_contenthub_entity_config')->willReturn($config_storage);
@@ -227,7 +227,7 @@ class EntityManagerTest extends UnitTestCase {
    */
   public function testGetAllowedEntityTypes() {
 
-    $entity_manager = new EntityManager($this->loggerFactory, $this->configFactory, $this->clientManager, $this->contentHubImportedEntities, $this->entityTypeManager, $this->entityTypeBundleInfoManager, $this->kernel);
+    $entity_manager = new EntityManager($this->loggerFactory, $this->configFactory, $this->clientManager, $this->contentHubEntitiesTracking, $this->entityTypeManager, $this->entityTypeBundleInfoManager, $this->kernel);
 
     $entity_types = [
       'content_entity_1' => $this->contentEntityType,
@@ -280,7 +280,7 @@ class EntityManagerTest extends UnitTestCase {
    * @covers ::getBulkResourceUrl
    */
   public function testGetBulkResourceUrl() {
-    $entity_manager = new EntityManager($this->loggerFactory, $this->configFactory, $this->clientManager, $this->contentHubImportedEntities, $this->entityTypeManager, $this->entityTypeBundleInfoManager, $this->kernel);
+    $entity_manager = new EntityManager($this->loggerFactory, $this->configFactory, $this->clientManager, $this->contentHubEntitiesTracking, $this->entityTypeManager, $this->entityTypeBundleInfoManager, $this->kernel);
 
     $container = $this->getMock('Drupal\Core\DependencyInjection\Container');
     \Drupal::setContainer($container);
@@ -312,7 +312,7 @@ class EntityManagerTest extends UnitTestCase {
    * @covers ::getBulkResourceUrl
    */
   public function testGetBulkResourceUrlIsExternal() {
-    $entity_manager = new EntityManager($this->loggerFactory, $this->configFactory, $this->clientManager, $this->contentHubImportedEntities, $this->entityTypeManager, $this->entityTypeBundleInfoManager, $this->kernel);
+    $entity_manager = new EntityManager($this->loggerFactory, $this->configFactory, $this->clientManager, $this->contentHubEntitiesTracking, $this->entityTypeManager, $this->entityTypeBundleInfoManager, $this->kernel);
 
     $container = $this->getMock('Drupal\Core\DependencyInjection\Container');
     \Drupal::setContainer($container);

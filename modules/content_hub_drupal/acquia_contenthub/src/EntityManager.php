@@ -47,11 +47,11 @@ class EntityManager {
   protected $clientManager;
 
   /**
-   * The Content Hub Imported Entities Service.
+   * The Content Hub Entities Tracking Service.
    *
-   * @var \Drupal\acquia_contenthub\ContentHubImportedEntities
+   * @var \Drupal\acquia_contenthub\ContentHubEntitiesTracking
    */
-  protected $contentHubImportedEntities;
+  protected $contentHubEntitiesTracking;
 
   /**
    * The entity manager.
@@ -82,7 +82,7 @@ class EntityManager {
       $container->get('logger.factory'),
       $container->get('config.factory'),
       $container->get('acquia_contenthub.client_manager'),
-      $container->get('acquia_contenthub.acquia_contenthub_imported_entities'),
+      $container->get('acquia_contenthub.acquia_contenthub_entities_tracking'),
       $container->get('acquia_contenthub.entity_manager'),
       $container->get('entity_type.bundle.info'),
       $container->get('http_kernel.basic')
@@ -99,11 +99,11 @@ class EntityManager {
    * @param \Drupal\acquia_contenthub\Client\ClientManagerInterface $client_manager
    *    The client manager.
    */
-  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager, ContentHubImportedEntities $acquia_contenthub_imported_entities, EntityTypeManagerInterface $entity_manager, EntityTypeBundleInfoInterface $entity_type_bundle_info_manager, HttpKernelInterface $kernel) {
+  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager, ContentHubEntitiesTracking $acquia_contenthub_entities_tracking, EntityTypeManagerInterface $entity_manager, EntityTypeBundleInfoInterface $entity_type_bundle_info_manager, HttpKernelInterface $kernel) {
     $this->baseRoot = isset($GLOBALS['base_root']) ? $GLOBALS['base_root'] : '';
     $this->loggerFactory = $logger_factory;
     $this->clientManager = $client_manager;
-    $this->contentHubImportedEntities = $acquia_contenthub_imported_entities;
+    $this->contentHubEntitiesTracking = $acquia_contenthub_entities_tracking;
     $this->entityTypeManager = $entity_manager;
     $this->entityTypeBundleInfoManager = $entity_type_bundle_info_manager;
     $this->kernel = $kernel;
@@ -430,7 +430,7 @@ class EntityManager {
 
     // If the entity has been imported before, then it didn't originate from
     // this site and shouldn't be exported.
-    if ($this->contentHubImportedEntities->loadByDrupalEntity($entity->getEntityTypeId(), $entity->id()) !== FALSE) {
+    if ($this->contentHubEntitiesTracking->loadImportedByDrupalEntity($entity->getEntityTypeId(), $entity->id()) !== FALSE) {
       // Is this an entity that does not belong to this site? Has it been
       // previously imported from Content Hub?
       $uuid = $entity->uuid();
@@ -581,9 +581,20 @@ class EntityManager {
     // Obtaining dependencies of this entity.
     $dep_dependencies = $this->getRemoteDependencies($content_hub_entity, $use_chain);
 
+    /** @var \Drupal\acquia_contenthub\ContentHubEntityDependency $content_hub_dependency */
     foreach ($dep_dependencies as $uuid => $content_hub_dependency) {
       if (isset($dependencies[$uuid])) {
         continue;
+      }
+
+      // Also check if this dependency has been previously imported and has the
+      // same modified timestamp. If the 'modified' timestamp matches then we
+      // know we are trying to import an entity that has no change at all, then
+      // it does not need to be imported again.
+      if ($imported_entity = $this->contentHubEntitiesTracking->loadImportedByUuid($uuid)) {
+        if ($imported_entity->getModified() === $content_hub_dependency->getRawEntity()->getModified()) {
+          continue;
+        }
       }
 
       $dependencies[$uuid] = $content_hub_dependency;

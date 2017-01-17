@@ -6,6 +6,7 @@
 
 use Drupal\Core\Config\Entity\ConfigEntityType;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\Core\Database\Database;
 
 /**
  * Implements hook_schema().
@@ -17,7 +18,7 @@ use Drupal\Core\StringTranslation\TranslatableMarkup;
  * @ingroup acquia_contenthub
  */
 function acquia_contenthub_schema() {
-  $schema['acquia_contenthub_imported_entities'] = array(
+  $schema['acquia_contenthub_entities_tracking'] = array(
     'fields' => array(
       'entity_type' => array(
         'type' => 'varchar',
@@ -37,11 +38,26 @@ function acquia_contenthub_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
-      'auto_update' => array(
+      'status_export' => array(
+        'description' => 'The status of an exported entity.',
+        'type' => 'varchar',
+        'default' => '',
+        'not null' => TRUE,
+        'length' => 36,
+      ),
+      'status_import' => array(
+        'description' => 'The status of an imported entity.',
         'type' => 'varchar',
         'length' => 36,
+        'default' => '',
         'not null' => TRUE,
-        'default' => 'ENABLED',
+      ),
+      'modified' => array(
+        'description' => 'The CDF entity\'s modified field.',
+        'type' => 'varchar',
+        'default' => '',
+        'not null' => TRUE,
+        'length' => 36,
       ),
       'origin' => array(
         'type' => 'char',
@@ -100,4 +116,67 @@ function acquia_contenthub_update_8201() {
 
 /**
  * @} End of "defgroup updates-8.2.x-config-entities".
+ */
+
+/**
+ * @defgroup updates-8.2.x-update-entities-tracking-table
+ * @{
+ * Update functions to Entities Tracking Table.
+ */
+
+/**
+ * Updates the Entities Tracking Table to include exported entities.
+ */
+function acquia_contenthub_update_8202() {
+  define('ACQUIA_CONTENTHUB_ENTITY_TRACKING_TABLE', 'acquia_contenthub_entities_tracking');
+  $schema = Database::getConnection()->schema();
+
+  // Rename Table.
+  $schema->renameTable('acquia_contenthub_imported_entities', ACQUIA_CONTENTHUB_ENTITY_TRACKING_TABLE);
+
+  // Add/Change fields.
+  $spec = array(
+    'description' => 'The status of an exported entity.',
+    'type' => 'varchar',
+    'default' => '',
+    'not null' => TRUE,
+    'length' => 36,
+  );
+  $schema->addField(ACQUIA_CONTENTHUB_ENTITY_TRACKING_TABLE, 'status_export', $spec);
+
+  $spec = array(
+    'description' => 'The status of an imported entity.',
+    'type' => 'varchar',
+    'length' => 36,
+    'default' => '',
+    'not null' => TRUE,
+  );
+  $schema->changeField(ACQUIA_CONTENTHUB_ENTITY_TRACKING_TABLE, 'auto_update', 'status_import', $spec);
+
+  $spec = array(
+    'description' => 'The CDF entity\'s modified field.',
+    'type' => 'varchar',
+    'default' => '',
+    'not null' => TRUE,
+    'length' => 36,
+  );
+  $schema->addField(ACQUIA_CONTENTHUB_ENTITY_TRACKING_TABLE, 'modified', $spec);
+
+  // Updating data in the table.
+  Database::getConnection()->update(ACQUIA_CONTENTHUB_ENTITY_TRACKING_TABLE)
+    ->fields(array(
+      'status_import' => 'AUTO_UPDATE_ENABLED',
+    ))
+    ->condition('status_import', 'ENABLED', '=')
+    ->execute();
+  Database::getConnection()->update(ACQUIA_CONTENTHUB_ENTITY_TRACKING_TABLE)
+    ->fields(array(
+      'status_import' => 'AUTO_UPDATE_DISABLED',
+    ))
+    ->condition('status_import', 'DISABLED', '=')
+    ->execute();
+}
+
+/**
+ * @} End of "defgroup updates-8.2.x-update-entities-tracking-table".
  */

@@ -19,8 +19,8 @@ use Drupal\Core\Entity\EntityInterface;
  * Implements hook_acquia_contenthub_process_webhook_alter().
  */
 function acquia_contenthub_subscriber_acquia_contenthub_process_webhook_alter($webhook) {
-  /* @var \Drupal\acquia_contenthub\ContentHubImportedEntities $contenthub_imported_entity */
-  $contenthub_imported_entity = \Drupal::service('acquia_contenthub.acquia_contenthub_imported_entities');
+  /* @var \Drupal\acquia_contenthub\ContentHubEntitiesTracking $contenthub_entity_tracking */
+  $contenthub_entity_tracking = \Drupal::service('acquia_contenthub.acquia_contenthub_entities_tracking');
 
   /* @var \Drupal\acquia_contenthub\Controller\ContentHubEntityImportController $contenthub_import_controller */
   $contenthub_import_controller = \Drupal::service('acquia_contenthub.acquia_contenthub_cdf.import_entity');
@@ -38,8 +38,8 @@ function acquia_contenthub_subscriber_acquia_contenthub_process_webhook_alter($w
     // @TODO: We need to exclude post-dependencies (entity dependent).
 
     // If the entity has been previously imported, check auto update status.
-    if ($contenthub_imported_entity->loadByUuid($asset['uuid']) !== FALSE) {
-      if ($contenthub_imported_entity->getAutoUpdate() == \Drupal\acquia_contenthub\ContentHubImportedEntities::AUTO_UPDATE_ENABLED) {
+    if ($contenthub_entity_tracking->loadImportedByUuid($asset['uuid']) !== FALSE) {
+      if ($contenthub_entity_tracking->getImportStatus() == \Drupal\acquia_contenthub\ContentHubEntitiesTracking::AUTO_UPDATE_ENABLED) {
         $contenthub_import_controller->saveDrupalEntity($asset['uuid']);
       }
     }
@@ -62,8 +62,9 @@ function acquia_contenthub_subscriber_entity_delete(EntityInterface $entity) {
   $entity_uuid = $entity->uuid();
   if (isset($entity_uuid)) {
     // If this is an imported entity, delete its track record.
-    $contenthub_imported_entities = \Drupal::service('acquia_contenthub.acquia_contenthub_imported_entities');
-    if ($imported_entity = $contenthub_imported_entities->loadByUuid($entity_uuid)) {
+    /** @var \Drupal\acquia_contenthub\ContentHubEntitiesTracking $contenthub_entities_tracking */
+    $contenthub_entities_tracking = \Drupal::service('acquia_contenthub.acquia_contenthub_entities_tracking');
+    if ($imported_entity = $contenthub_entities_tracking->loadImportedByUuid($entity_uuid)) {
       $imported_entity->delete();
     }
   }
