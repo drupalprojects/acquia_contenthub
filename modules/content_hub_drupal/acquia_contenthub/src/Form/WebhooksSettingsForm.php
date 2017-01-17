@@ -90,7 +90,6 @@ class WebhooksSettingsForm extends ConfigFormBase {
       ))->toString();
     }
     $webhook_uuid = $config->get('webhook_uuid');
-    $readonly = (bool) $webhook_uuid ? ['readonly' => TRUE] : [];
 
     if ((bool) $webhook_uuid) {
       $title = t('Receive Webhooks (uuid = %uuid)', array(
