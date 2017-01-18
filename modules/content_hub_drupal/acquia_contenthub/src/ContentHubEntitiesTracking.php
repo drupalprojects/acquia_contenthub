@@ -555,7 +555,7 @@ class ContentHubEntitiesTracking {
    * @return \Drupal\acquia_contenthub\ContentHubEntitiesTracking|bool
    *   This ContentHubEntitiesTracking object if succeeds, FALSE otherwise.
    */
-  public function loadByDrupalEntity($entity_type, $entity_id) {
+  protected function loadByDrupalEntity($entity_type, $entity_id) {
     $this->reset();
     $result = $this->database->select(self::TABLE, 'ci')
       ->fields('ci')

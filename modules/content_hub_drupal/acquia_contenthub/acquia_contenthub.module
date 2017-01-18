@@ -41,7 +41,7 @@ function acquia_contenthub_entity_update(EntityInterface $entity) {
 
   // Re-import entity, if the entity is "pending sync".
   // TODO: This should go into a service.
-  $imported_entity = \Drupal::service('acquia_contenthub.acquia_contenthub_entities_tracking')->loadByDrupalEntity($entity->getEntityTypeId(), $entity->id());
+  $imported_entity = \Drupal::service('acquia_contenthub.acquia_contenthub_entities_tracking')->loadImportedByDrupalEntity($entity->getEntityTypeId(), $entity->id());
   if (!$imported_entity) {
     return;
   }
@@ -138,7 +138,7 @@ function acquia_contenthub_form_node_form_alter(&$form, $form_state) {
     return;
   }
 
-  $imported_entity = \Drupal::service('acquia_contenthub.acquia_contenthub_entities_tracking')->loadByDrupalEntity($node->getEntityTypeId(), $node->id());
+  $imported_entity = \Drupal::service('acquia_contenthub.acquia_contenthub_entities_tracking')->loadImportedByDrupalEntity($node->getEntityTypeId(), $node->id());
   // If the entity is not imported, do not display form.
   if (!$imported_entity) {
     return;
@@ -185,7 +185,7 @@ function acquia_contenthub_form_node_form_submit($form, FormStateInterface $form
     return;
   }
   $node = $form_state->getFormObject()->getEntity();
-  $imported_entity = \Drupal::service('acquia_contenthub.acquia_contenthub_entities_tracking')->loadByDrupalEntity($node->getEntityTypeId(), $node->id());
+  $imported_entity = \Drupal::service('acquia_contenthub.acquia_contenthub_entities_tracking')->loadImportedByDrupalEntity($node->getEntityTypeId(), $node->id());
   if (!$imported_entity) {
     return;
   }
