@@ -40,7 +40,6 @@ function acquia_contenthub_entity_update(EntityInterface $entity) {
   $entity_manager->entityAction($entity, 'UPDATE');
 
   // Re-import entity, if the entity is "pending sync".
-  // TODO: This should go into a service.
   $imported_entity = \Drupal::service('acquia_contenthub.acquia_contenthub_entities_tracking')->loadImportedByDrupalEntity($entity->getEntityTypeId(), $entity->id());
   if (!$imported_entity) {
     return;
