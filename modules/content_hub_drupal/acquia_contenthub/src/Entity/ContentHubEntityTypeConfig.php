@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Content Hub Entity Configuration Entity.
+ * Content Hub Entity Type Configuration Entity.
  */
 
 namespace Drupal\acquia_contenthub\Entity;
@@ -15,13 +15,13 @@ use Drupal\image\Entity\ImageStyle;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 
 /**
- * Defines a ContentHubEntityConfig configuration entity class.
+ * Defines a ContentHubEntityTypeConfig configuration entity class.
  *
  * @ConfigEntityType(
  *   id = "acquia_contenthub_entity_config",
- *   label = @Translation("Acquia Content Hub Entity configuration"),
+ *   label = @Translation("Acquia Content Hub Entity Type configuration"),
  *   config_prefix = "entity",
- *   admin_permission = "Administer Acquia Content Hub'",
+ *   admin_permission = "Administer Acquia Content Hub",
  *   label_callback = "getLabelFromPlugin",
  *   entity_keys = {
  *     "id" = "id"

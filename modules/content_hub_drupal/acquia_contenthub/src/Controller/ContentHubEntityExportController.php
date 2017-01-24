@@ -157,7 +157,7 @@ class ContentHubEntityExportController extends ControllerBase {
               if (!in_array($cdf['uuid'], $uuids)) {
                 $normalized['entities'][] = $cdf;
                 if ($request_from_contenthub) {
-                  $this->trackExportedEntity($cdf, ContentHubEntitiesTracking::EXPORTED);
+                  $this->trackExportedEntity($cdf, TRUE);
                 }
               }
             }
@@ -197,12 +197,11 @@ class ContentHubEntityExportController extends ControllerBase {
    *
    * @param array $cdf
    *   The entity that has to be tracked as exported entity.
-   * @param string $status_export
-   *   The export status to save in the tracking table..
+   * @param bool $set_exported
+   *   Set the export status to exported in the tracking table.
    */
-  public function trackExportedEntity($cdf, $status_export = ContentHubEntitiesTracking::INITIATED) {
+  public function trackExportedEntity($cdf, $set_exported = FALSE) {
     if ($exported_entity = $this->contentHubEntitiesTracking->loadExportedByUuid($cdf['uuid'])) {
-      $exported_entity->setExportStatus($status_export);
       $exported_entity->setModified($cdf['modified']);
     }
     else {
@@ -213,11 +212,15 @@ class ContentHubEntityExportController extends ControllerBase {
         $cdf['type'],
         $entity->id(),
         $cdf['uuid'],
-        $status_export,
         $cdf['modified'],
         $this->contentHubEntitiesTracking->getSiteOrigin()
       );
     }
+
+    if ($set_exported) {
+      $exported_entity->setExported();
+    }
+
     // Now save the entity.
     $this->contentHubEntitiesTracking->save();
   }

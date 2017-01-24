@@ -38,6 +38,17 @@ function acquia_contenthub_entity_update(EntityInterface $entity) {
   /** @var \Drupal\acquia_contenthub\EntityManager $entity_manager */
   $entity_manager = \Drupal::service('acquia_contenthub.entity_manager');
   $entity_manager->entityAction($entity, 'UPDATE');
+
+  // Re-import entity, if the entity is "pending sync".
+  $imported_entity = \Drupal::service('acquia_contenthub.acquia_contenthub_entities_tracking')->loadImportedByDrupalEntity($entity->getEntityTypeId(), $entity->id());
+  if (!$imported_entity) {
+    return;
+  }
+
+  if ($imported_entity->isPendingSync() && !isset($entity->__contenthub_synchronized)) {
+    $contenthub_import_controller = \Drupal::service('acquia_contenthub.acquia_contenthub_cdf.import_entity');
+    $contenthub_import_controller->saveDrupalEntity($imported_entity->getUuid(), $entity);
+  }
 }
 
 /**
@@ -53,7 +64,6 @@ function acquia_contenthub_entity_delete(EntityInterface $entity) {
  * Sends entities to Content Hub using Bulk Upload.
  */
 function acquia_contenthub_send_entities() {
-  global $base_path;
   /** @var \Drupal\acquia_contenthub\EntityManager $entity_manager */
   $entity_manager = \Drupal::service('acquia_contenthub.entity_manager');
 
@@ -116,6 +126,77 @@ function acquia_contenthub_send_entities() {
 
 }
 
+/**
+ * Implements hook_form_BASE_FORM_ID_alter().
+ */
+function acquia_contenthub_form_node_form_alter(&$form, $form_state) {
+  /* @var Drupal\Core\Entity\FieldableEntityInterface $node */
+  $node = $form_state->getFormObject()->getEntity();
+  // Don't display anything if the node doesn't exist.
+  if (empty($node->id())) {
+    return;
+  }
+
+  $imported_entity = \Drupal::service('acquia_contenthub.acquia_contenthub_entities_tracking')->loadImportedByDrupalEntity($node->getEntityTypeId(), $node->id());
+  // If the entity is not imported, do not display form.
+  if (!$imported_entity) {
+    return;
+  }
+
+  $form['acquia_contenthub'] = array(
+    '#type' => 'details',
+    '#title' => t('Acquia Content Hub settings'),
+    '#access' => \Drupal::currentUser()->hasPermission('administer acquia content hub'),
+    '#group' => 'advanced',
+    '#tree' => TRUE,
+    '#weight' => 30,
+  );
+  $form['acquia_contenthub']['auto_update_label'] = array(
+    '#type' => 'markup',
+    '#markup' => $imported_entity->hasLocalChange() ? t('This content has been modified.') : t('What do you like to do if there are changes in the original article?'),
+  );
+  $form['acquia_contenthub']['auto_update'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable automatic updates'),
+    '#default_value' => $imported_entity->isAutoUpdate(),
+  );
+  if ($imported_entity->hasLocalChange()) {
+    $form['acquia_contenthub']['auto_update_local_changes_label'] = array(
+      '#type' => 'markup',
+      '#markup' => '<div>' . t('Check to enable syncing with any future updates of content from Content Hub.') . '</div><div><strong>' . t("Any edits that were made to your site's instance of this content will be overwritten by the Content Hub version.") . '</strong></div>',
+    );
+  }
+
+  foreach (array_keys($form['actions']) as $action) {
+    if ($action !== 'preview' && isset($form['actions'][$action]['#type']) && $form['actions'][$action]['#type'] === 'submit') {
+      array_unshift($form['actions'][$action]['#submit'], 'acquia_contenthub_form_node_form_submit');
+    }
+  }
+}
+
+/**
+ * Submit handler for the node form with acquia contenthub options.
+ *
+ * @see acquia_contenthub_form_node_form_alter()
+ */
+function acquia_contenthub_form_node_form_submit($form, FormStateInterface $form_state) {
+  if ($form_state->isValueEmpty('acquia_contenthub')) {
+    return;
+  }
+  $node = $form_state->getFormObject()->getEntity();
+  $imported_entity = \Drupal::service('acquia_contenthub.acquia_contenthub_entities_tracking')->loadImportedByDrupalEntity($node->getEntityTypeId(), $node->id());
+  if (!$imported_entity) {
+    return;
+  }
+  $values = $form_state->getValue('acquia_contenthub');
+  $new_auto_update_flag = $values['auto_update'];
+
+  // If we are changing from state of "has local changes" to "sync enabled", set
+  // state to resync the entity. Otherwise, just set the new autoUpdate flag.
+  $set_pending_sync = $imported_entity->hasLocalChange() && $new_auto_update_flag === 1;
+  $set_pending_sync ? $imported_entity->setPendingSync() : $imported_entity->setAutoUpdate($new_auto_update_flag);
+  $imported_entity->save();
+}
 
 // Helper function.
 /**

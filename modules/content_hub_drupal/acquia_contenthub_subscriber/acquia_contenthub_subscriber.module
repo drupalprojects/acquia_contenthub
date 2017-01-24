@@ -37,16 +37,17 @@ function acquia_contenthub_subscriber_acquia_contenthub_process_webhook_alter($w
   foreach ($assets as $asset) {
     // @TODO: We need to exclude post-dependencies (entity dependent).
 
-    // If the entity has been previously imported, check auto update status.
-    if ($contenthub_entity_tracking->loadImportedByUuid($asset['uuid']) !== FALSE) {
-      if ($contenthub_entity_tracking->getImportStatus() == \Drupal\acquia_contenthub\ContentHubEntitiesTracking::AUTO_UPDATE_ENABLED) {
-        $contenthub_import_controller->saveDrupalEntity($asset['uuid']);
-      }
-    }
-    else {
-      // New entities are handled by Content Hub Filters.
+    // New entities are handled by Content Hub Filters.
+    if (!$contenthub_entity_tracking->loadByUuid($asset['uuid'])) {
       acquia_contenthub_subscriber_process_filters($contenthub_import_controller, $filters, $asset);
+      continue;
     }
+    // If the entity has been previously imported, save only when auto update
+    // status says so.
+    if (!$contenthub_entity_tracking->isAutoUpdate()) {
+      continue;
+    }
+    $contenthub_import_controller->saveDrupalEntity($asset['uuid']);
   }
 }
 
