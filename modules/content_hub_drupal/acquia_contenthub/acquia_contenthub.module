@@ -61,6 +61,38 @@ function acquia_contenthub_entity_delete(EntityInterface $entity) {
 }
 
 /**
+ * Implements hook_entity_presave().
+ */
+function acquia_contenthub_entity_presave(EntityInterface $entity) {
+  // If the entity is "pending sync" or already "has local change", skip.
+  $imported_entity = \Drupal::service('acquia_contenthub.acquia_contenthub_entities_tracking')->loadImportedByDrupalEntity($entity->getEntityTypeId(), $entity->id());
+  if (!$imported_entity || $imported_entity->isPendingSync() || $imported_entity->hasLocalChange()) {
+    return;
+  }
+
+  // Otherwise check if the entity has introduced any local changes.
+  $entity_comparison = \Drupal::service('diff.entity_comparison');
+  $field_comparisons = $entity_comparison->compareRevisions($entity->original, $entity);
+
+  $has_local_change = FALSE;
+  foreach ($field_comparisons as $field_comparison) {
+    if ($field_comparison['#data']['#left'] !== $field_comparison['#data']['#right']) {
+      $has_local_change = TRUE;
+      break;
+    }
+  }
+
+  // Don't do anything if there is no local change.
+  if (!$has_local_change) {
+    return;
+  }
+
+  // Otherwise, set and store the imported entity as having local changes.
+  $imported_entity->setLocalChange();
+  $imported_entity->save();
+}
+
+/**
  * Sends entities to Content Hub using Bulk Upload.
  */
 function acquia_contenthub_send_entities() {
