@@ -3,6 +3,10 @@ services:
     class: Drupal\acquia_contenthub\EntityManager
     arguments: ['@logger.factory', '@config.factory', '@acquia_contenthub.client_manager', '@acquia_contenthub.acquia_contenthub_entities_tracking', '@entity_type.manager', '@entity_type.bundle.info', '@http_kernel.basic']
 
+  acquia_contenthub.import_entity_manager:
+    class: Drupal\acquia_contenthub\ImportEntityManager
+    arguments: ['@acquia_contenthub.acquia_contenthub_entities_tracking', '@acquia_contenthub.acquia_contenthub_cdf.import_entity', '@diff.entity_comparison']
+
   acquia_contenthub.acquia_contenthub_cdf.import_entity:
     class: Drupal\acquia_contenthub\Controller\ContentHubEntityImportController
     arguments: ['@database', '@logger.factory', '@acquia_contenthub.entity_manager', '@serializer', '@entity.repository', '@acquia_contenthub.acquia_contenthub_entities_tracking']
