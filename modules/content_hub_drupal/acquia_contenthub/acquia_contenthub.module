@@ -7,7 +7,6 @@
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
-use Drupal\taxonomy\Entity\Vocabulary;
 
 /**
  * Implements hook_help().
@@ -156,30 +155,6 @@ function acquia_contenthub_form_node_form_alter(&$form, $form_state) {
 function acquia_contenthub_form_node_form_submit($form, FormStateInterface $form_state) {
   $node_form_service = \Drupal::service('acquia_contenthub.form.node_form');
   $node_form_service->saveSettings($form_state);
-}
-
-// Helper function.
-/**
- * Returns a vocabulary object which matches the given name.
- *
- * Will return null if no such vocabulary exists.
- *
- * @param string $vocabulary_name
- *   This is the name of the section which is required.
- *
- * @return Object
- *   This is the vocabulary object with the name or null if no such vocabulary
- *   exists.
- */
-function acquia_contenthub_get_vocabulary_by_name($vocabulary_name) {
-  $vocabs = Vocabulary::loadMultiple(NULL);
-  foreach ($vocabs as $vocab_object) {
-    /* @var $vocab_object \Drupal\taxonomy\Entity\Vocabulary  */
-    if ($vocab_object->getOriginalId() == $vocabulary_name) {
-      return $vocab_object;
-    }
-  }
-  return NULL;
 }
 
 /**
