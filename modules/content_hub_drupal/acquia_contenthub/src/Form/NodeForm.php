@@ -53,38 +53,40 @@ class NodeForm {
    */
   public function getForm(EntityInterface $node) {
     // Don't display anything if the node doesn't exist.
-    if (empty($node->id())) {
+    $node_id = $node->id();
+    if (empty($node_id)) {
       return NULL;
     }
 
-    $imported_entity = $this->contentHubEntitiesTracking->loadImportedByDrupalEntity($node->getEntityTypeId(), $node->id());
+    $imported_entity = $this->contentHubEntitiesTracking->loadImportedByDrupalEntity($node->getEntityTypeId(), $node_id);
     // If the entity is not imported, do not display form.
     if (!$imported_entity) {
       return NULL;
     }
 
-    $form = array(
+    $form = [
       '#type' => 'details',
       '#title' => t('Acquia Content Hub settings'),
       '#access' => $this->currentUser->hasPermission('administer acquia content hub'),
       '#group' => 'advanced',
       '#tree' => TRUE,
       '#weight' => 30,
-    );
-    $form['auto_update_label'] = array(
+    ];
+    $has_local_change = $imported_entity->hasLocalChange();
+    $form['auto_update_label'] = [
       '#type' => 'markup',
-      '#markup' => $imported_entity->hasLocalChange() ? t('This content has been modified.') : t('What do you like to do if there are changes in the original article?'),
-    );
-    $form['auto_update'] = array(
+      '#markup' => $has_local_change ? t('This content has been modified.') : t('What do you like to do if there are changes in the original article?'),
+    ];
+    $form['auto_update'] = [
       '#type' => 'checkbox',
       '#title' => t('Enable automatic updates'),
       '#default_value' => $imported_entity->isAutoUpdate(),
-    );
-    if ($imported_entity->hasLocalChange()) {
-      $form['auto_update_local_changes_label'] = array(
+    ];
+    if ($has_local_change) {
+      $form['auto_update_local_changes_label'] = [
         '#type' => 'markup',
         '#markup' => '<div>' . t('Check to enable syncing with any future updates of content from Content Hub.') . '</div><div><strong>' . t("Any edits that were made to your site's instance of this content will be overwritten by the Content Hub version.") . '</strong></div>',
-      );
+      ];
     }
 
     return $form;
