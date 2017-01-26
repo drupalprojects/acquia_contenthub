@@ -49,7 +49,7 @@ class NodeFormTest extends WebTestBase {
     $edit['acquia_contenthub[auto_update]'] = FALSE;
     $this->drupalPostForm($node_edit_url, $edit, t('Save'));
 
-    // Option should now set to to "disabled".
+    // Option should now set to "disabled".
     $this->drupalGet($node_edit_url);
     $this->assertNoFieldChecked('edit-acquia-contenthub-auto-update', 'Automatic updates is enabled by default');
   }
@@ -84,7 +84,7 @@ class NodeFormTest extends WebTestBase {
     $edit['title[0][value]'] = 'my new title';
     $this->drupalPostForm($node_edit_url, $edit, t('Save'));
 
-    // Option should now set to to "disabled, as having local changes".
+    // Option should now set to "disabled, as having local changes".
     $this->drupalGet($node_edit_url);
     $this->assertText(t('This content has been modified.'));
     $this->assertNoFieldChecked('edit-acquia-contenthub-auto-update', 'Automatic updates is enabled by default');
