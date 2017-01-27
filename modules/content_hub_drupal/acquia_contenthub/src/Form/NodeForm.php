@@ -128,9 +128,9 @@ class NodeForm {
     $values = $form_state->getValue('acquia_contenthub');
     $new_auto_update_flag = $values['auto_update'];
 
-    // If we are changing from state of "has local changes" to "sync enabled",
+    // If we are changing state to "sync enabled" (from anything else),
     // set state to resync entity. Otherwise, just set the new autoUpdate flag.
-    $set_pending_sync = $imported_entity->hasLocalChange() && $new_auto_update_flag === 1;
+    $set_pending_sync = !$imported_entity->isAutoUpdate() && $new_auto_update_flag === 1;
     $set_pending_sync ? $imported_entity->setPendingSync() : $imported_entity->setAutoUpdate($new_auto_update_flag);
     $imported_entity->save();
   }

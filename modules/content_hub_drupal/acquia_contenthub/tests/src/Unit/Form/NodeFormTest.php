@@ -284,7 +284,7 @@ class NodeFormTest extends UnitTestCase {
   /**
    * Tests the saveSettings() method, actually set and save.
    *
-   * @param bool $has_local_change
+   * @param bool $old_auto_update_flag
    *   Has local change flag.
    * @param int $new_auto_update_flag
    *   Set to auto update flag.
@@ -297,7 +297,7 @@ class NodeFormTest extends UnitTestCase {
    *
    * @dataProvider providerTestSaveSettingsSetAndSave
    */
-  public function testSaveSettingsSetAndSave($has_local_change, $new_auto_update_flag, $method_name, $method_parameter) {
+  public function testSaveSettingsSetAndSave($old_auto_update_flag, $new_auto_update_flag, $method_name, $method_parameter) {
     $node = $this->getMock('\Drupal\node\NodeInterface');
     $node->expects($this->once())
       ->method('getEntityTypeId')
@@ -322,8 +322,8 @@ class NodeFormTest extends UnitTestCase {
       ->willReturn($this->contentHubEntitiesTracking);
 
     $this->contentHubEntitiesTracking->expects($this->once())
-      ->method('hasLocalChange')
-      ->willReturn($has_local_change);
+      ->method('isAutoUpdate')
+      ->willReturn($old_auto_update_flag);
     $form_state->expects($this->once())
       ->method('getValue')
       ->with('acquia_contenthub')
@@ -346,8 +346,8 @@ class NodeFormTest extends UnitTestCase {
    *   Data.
    */
   public function providerTestSaveSettingsSetAndSave() {
-    $yes_local_change = TRUE;
-    $no_local_change = FALSE;
+    $get_auto_update_true = TRUE;
+    $get_auto_update_false = FALSE;
     $set_auto_update_true = 1;
     $set_auto_update_false = 0;
     $expect_call_set_pending_sync = 'setPendingSync';
@@ -357,29 +357,38 @@ class NodeFormTest extends UnitTestCase {
     $expect_no_parameter = NULL;
 
     $data = [];
+
+    // disabled -> disabled: setAutoUpdate(FALSE)
     $data['no local change, set auto update false'] = [
-      $no_local_change,
+      $get_auto_update_false,
       $set_auto_update_false,
       $expect_call_set_auto_update,
       $expect_parameter_false,
     ];
+    // disabled -> enabled: setPendingSync()
+    // local change -> enabled: setPendingSync()
+    // pending sync -> enabled: setPendingSync()
+    // Note: when user indicates "enable", don't set "enable", instead, set to
+    // the only state "pending sync" that will lead to "enabled".
     $data['no local change, set auto update true'] = [
-      $no_local_change,
-      $set_auto_update_true,
-      $expect_call_set_auto_update,
-      $expect_parameter_true,
-    ];
-    $data['yes local change, set auto update false'] = [
-      $yes_local_change,
-      $set_auto_update_false,
-      $expect_call_set_auto_update,
-      $expect_parameter_false,
-    ];
-    $data['yes local change, set auto update true'] = [
-      $yes_local_change,
+      $get_auto_update_false,
       $set_auto_update_true,
       $expect_call_set_pending_sync,
       $expect_no_parameter,
+    ];
+    // enabled -> disabled: setAutoUpdate(FALSE)
+    $data['yes local change, set auto update false'] = [
+      $get_auto_update_true,
+      $set_auto_update_false,
+      $expect_call_set_auto_update,
+      $expect_parameter_false,
+    ];
+    // enabled -> disabled: setAutoUpdate(TRUE)
+    $data['yes local change, set auto update true'] = [
+      $get_auto_update_true,
+      $set_auto_update_true,
+      $expect_call_set_auto_update,
+      $expect_parameter_true,
     ];
 
     return $data;
