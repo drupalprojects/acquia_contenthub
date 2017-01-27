@@ -358,6 +358,7 @@ class NodeFormTest extends UnitTestCase {
 
     $data = [];
 
+    // Case 1.
     // disabled -> disabled: setAutoUpdate(FALSE)
     $data['no local change, set auto update false'] = [
       $get_auto_update_false,
@@ -365,6 +366,7 @@ class NodeFormTest extends UnitTestCase {
       $expect_call_set_auto_update,
       $expect_parameter_false,
     ];
+    // Case 2.
     // disabled -> enabled: setPendingSync()
     // local change -> enabled: setPendingSync()
     // pending sync -> enabled: setPendingSync()
@@ -376,6 +378,7 @@ class NodeFormTest extends UnitTestCase {
       $expect_call_set_pending_sync,
       $expect_no_parameter,
     ];
+    // Case 3.
     // enabled -> disabled: setAutoUpdate(FALSE)
     $data['yes local change, set auto update false'] = [
       $get_auto_update_true,
@@ -383,6 +386,7 @@ class NodeFormTest extends UnitTestCase {
       $expect_call_set_auto_update,
       $expect_parameter_false,
     ];
+    // Case 4.
     // enabled -> disabled: setAutoUpdate(TRUE)
     $data['yes local change, set auto update true'] = [
       $get_auto_update_true,
