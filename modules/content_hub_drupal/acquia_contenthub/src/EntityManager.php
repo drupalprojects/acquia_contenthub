@@ -22,6 +22,8 @@ use Drupal\Component\Utility\UrlHelper;
 
 /**
  * Provides a service for managing entity actions for Content Hub.
+ *
+ * @TODO To be renamed to "ExportEntityManager".
  */
 class EntityManager {
 

@@ -17,14 +17,16 @@ use Drupal\Component\Uuid\Uuid;
  */
 class ContentHubEntitiesTracking {
 
-  const TABLE                    = 'acquia_contenthub_entities_tracking';
+  const TABLE = 'acquia_contenthub_entities_tracking';
 
   // Internal constants, should not be used outside of this class.
   // Typical import status flows are:
+  // 0) (status X) -> (same status X).
   // 1) enabled <-> disabled.
   // 2) enabled -> local change.
   // 3) disabled -> local change.
   // 4) local change -> pending sync -> enabled.
+  // 5) disabled -> pending sync -> enabled.
   const AUTO_UPDATE_ENABLED  = 'AUTO_UPDATE_ENABLED';
   const AUTO_UPDATE_DISABLED = 'AUTO_UPDATE_DISABLED';
   const PENDING_SYNC         = 'PENDING_SYNC';
