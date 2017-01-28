@@ -10,6 +10,8 @@ namespace Drupal\Tests\acquia_contenthub\Unit;
 use Drupal\Tests\UnitTestCase;
 use Drupal\acquia_contenthub\ImportEntityManager;
 
+require_once __DIR__ . '/Polyfill/Drupal.php';
+
 /**
  * PHPUnit test for the ImportEntityManager class.
  *
@@ -53,16 +55,22 @@ class ImportEntityManagerTest extends UnitTestCase {
   public function setUp() {
     parent::setUp();
 
-    $this->contentHubEntitiesTracking = $this->getMockBuilder('Drupal\acquia_contenthub\ContentHubEntitiesTracking')
+    $this->database = $this->getMockBuilder('Drupal\Core\Database\Connection')
       ->disableOriginalConstructor()
       ->getMock();
-    $this->contentHubImportController = $this->getMockBuilder('Drupal\acquia_contenthub\Controller\ContentHubEntityImportController')
+    $this->loggerFactory = $this->getMockBuilder('Drupal\Core\Logger\LoggerChannelFactory')
+      ->disableOriginalConstructor()
+      ->getMock();
+    $this->serializer = $this->getMock('\Symfony\Component\Serializer\SerializerInterface');
+    $this->entityRepository = $this->getMock('\Drupal\Core\Entity\EntityRepositoryInterface');
+    $this->clientManager = $this->getMock('\Drupal\acquia_contenthub\Client\ClientManagerInterface');
+    $this->contentHubEntitiesTracking = $this->getMockBuilder('Drupal\acquia_contenthub\ContentHubEntitiesTracking')
       ->disableOriginalConstructor()
       ->getMock();
     $this->diffEntityComparison = $this->getMockBuilder('Drupal\diff\DiffEntityComparison')
       ->disableOriginalConstructor()
       ->getMock();
-    $this->importEntityManager = new ImportEntityManager($this->contentHubEntitiesTracking, $this->contentHubImportController, $this->diffEntityComparison);
+    $this->importEntityManager = new ImportEntityManager($this->database, $this->loggerFactory, $this->serializer, $this->entityRepository, $this->clientManager, $this->contentHubEntitiesTracking, $this->diffEntityComparison);
   }
 
   /**
@@ -83,8 +91,30 @@ class ImportEntityManagerTest extends UnitTestCase {
       ->with('node', 12)
       ->willReturn(NULL);
 
-    $this->contentHubImportController->expects($this->never())
-      ->method('saveDrupalEntity');
+    $this->importEntityManager->entityUpdate($node);
+  }
+
+  /**
+   * Tests the entityUpdate() method, node is during sync.
+   *
+   * @covers ::entityUpdate
+   */
+  public function testEntityUpdateNodeIsDuringSync() {
+    $node = $this->getMock('\Drupal\node\NodeInterface');
+    $node->expects($this->once())
+      ->method('id')
+      ->willReturn(12);
+    $node->expects($this->once())
+      ->method('getEntityTypeId')
+      ->willReturn('node');
+    $this->contentHubEntitiesTracking->expects($this->once())
+      ->method('loadImportedByDrupalEntity')
+      ->with('node', 12)
+      ->willReturn($this->contentHubEntitiesTracking);
+    $node->__contenthub_synchronized = TRUE;
+
+    $this->contentHubEntitiesTracking->expects($this->never())
+      ->method('isPendingSync');
 
     $this->importEntityManager->entityUpdate($node);
   }
@@ -110,36 +140,8 @@ class ImportEntityManagerTest extends UnitTestCase {
       ->method('isPendingSync')
       ->willReturn(FALSE);
 
-    $this->contentHubImportController->expects($this->never())
-      ->method('saveDrupalEntity');
-
-    $this->importEntityManager->entityUpdate($node);
-  }
-
-  /**
-   * Tests the entityUpdate() method, node is during sync.
-   *
-   * @covers ::entityUpdate
-   */
-  public function testEntityUpdateNodeIsDuringSync() {
-    $node = $this->getMock('\Drupal\node\NodeInterface');
-    $node->expects($this->once())
-      ->method('id')
-      ->willReturn(12);
-    $node->expects($this->once())
-      ->method('getEntityTypeId')
-      ->willReturn('node');
-    $this->contentHubEntitiesTracking->expects($this->once())
-      ->method('loadImportedByDrupalEntity')
-      ->with('node', 12)
-      ->willReturn($this->contentHubEntitiesTracking);
-    $this->contentHubEntitiesTracking->expects($this->once())
-      ->method('isPendingSync')
-      ->willReturn(TRUE);
-    $node->__contenthub_synchronized = TRUE;
-
-    $this->contentHubImportController->expects($this->never())
-      ->method('saveDrupalEntity');
+    $this->contentHubEntitiesTracking->expects($this->never())
+      ->method('getUuid');
 
     $this->importEntityManager->entityUpdate($node);
   }
@@ -164,12 +166,13 @@ class ImportEntityManagerTest extends UnitTestCase {
     $this->contentHubEntitiesTracking->expects($this->once())
       ->method('isPendingSync')
       ->willReturn(TRUE);
+    $uuid = '75156e0c-9b3c-48f0-b385-a373d98f8ba7';
     $this->contentHubEntitiesTracking->expects($this->once())
       ->method('getUuid')
-      ->willReturn('xxx-yyy');
-    $this->contentHubImportController->expects($this->once())
-      ->method('saveDrupalEntity')
-      ->with('xxx-yyy', $node);
+      ->willReturn($uuid);
+    $this->clientManager->expects($this->once())
+      ->method('createRequest')
+      ->with('readEntity', [$uuid]);
     $this->importEntityManager->entityUpdate($node);
   }
 
