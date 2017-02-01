@@ -46,7 +46,7 @@ acquia_contenthub.content_entity_display.entity:
   defaults:
     _controller: '\Drupal\acquia_contenthub\Controller\ContentEntityDisplayController::viewEntityViewMode'
   requirements:
-    _access: 'TRUE'
+    _contenthub_access_check : 'TRUE'
     entity_type: \w+ #word
     entity_id: \d+ #digit
     view_mode_name: \w+ #word

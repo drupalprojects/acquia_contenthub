@@ -11,6 +11,7 @@ use Drupal\Component\Render\FormattableMarkup;
 use Drupal\acquia_contenthub\Client\ClientManagerInterface;
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Logger\LoggerChannelFactory;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Handles operations on the Acquia Content Hub Subscription.
@@ -404,6 +405,26 @@ class ContentHubSubscription {
       return $list;
     }
     return FALSE;
+  }
+
+  /**
+   * Wraps a request using HMAC authentication.
+   *
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The Request to wrap using HMAC authentication.
+   *
+   * @param bool|TRUE $use_shared_secret
+   *   Whether to use shared_secret or secret_key.
+   *
+   * @return \Symfony\Component\HttpFoundation\Request
+   *   The HMAC wrapped request.
+   */
+  public function hmacWrapper(Request $request, $use_shared_secret = TRUE) {
+    $request->headers->set('Date', gmdate('D, d M Y H:i:s T'));
+    $secret = $use_shared_secret ? $this->getSharedSecret() : $this->config->get('secret_key');;
+    $signature = $this->clientManager->getRequestSignature($request, $secret);
+    $request->headers->set('Authorization', 'Acquia ContentHub:' . $signature);
+    return $request;
   }
 
 }
