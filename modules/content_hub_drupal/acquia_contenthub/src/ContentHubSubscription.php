@@ -11,6 +11,7 @@ use Drupal\Component\Render\FormattableMarkup;
 use Drupal\acquia_contenthub\Client\ClientManagerInterface;
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Logger\LoggerChannelFactory;
+use Drupal\Core\Session\AccountInterface;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -47,11 +48,18 @@ class ContentHubSubscription {
   protected $settings;
 
   /**
-   * The Drupal Configuration.
+   * The Admin Settings Simple Configuration.
    *
    * @var \Drupal\Core\Config\Config
    */
   protected $config;
+
+  /**
+   * The Entity Settings Simple Configuration.
+   *
+   * @var \Drupal\Core\Config\Config
+   */
+  protected $entity_config;
 
   /**
    * {@inheritdoc}
@@ -80,6 +88,7 @@ class ContentHubSubscription {
     $this->clientManager = $client_manager;
     // Get the content hub config settings.
     $this->config = $this->configFactory->getEditable('acquia_contenthub.admin_settings');
+    $this->entity_config = $this->configFactory->getEditable('acquia_contenthub.entity_config');
   }
 
   /**
@@ -425,6 +434,18 @@ class ContentHubSubscription {
     $signature = $this->clientManager->getRequestSignature($request, $secret);
     $request->headers->set('Authorization', 'Acquia ContentHub:' . $signature);
     return $request;
+  }
+
+  /**
+   * Obtains the user role to be used for rendering view modes.
+   *
+   * @return array|mixed|null
+   *   The user role selected to render a view mode.
+   */
+  public function getViewModeRenderUserRole() {
+    $role = $this->entity_config->get('user_role');
+    // Use the configured role if set, otherwise use 'anonymous'.
+    return !empty($role) ? $role : AccountInterface::ANONYMOUS_ROLE;
   }
 
 }

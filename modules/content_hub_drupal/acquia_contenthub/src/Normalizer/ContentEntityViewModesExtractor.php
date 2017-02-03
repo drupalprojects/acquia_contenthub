@@ -201,7 +201,7 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
       ])->toString();
 
       $request = Request::create($url);
-      $request = $this->contentHubSubscription->hmacWrapper($request, TRUE);
+      $request = $this->contentHubSubscription->hmacWrapper($request);
 
       /** @var \Drupal\Core\Render\HtmlResponse $response */
       $response = $this->kernel->handle($request, HttpKernelInterface::SUB_REQUEST);
@@ -287,9 +287,15 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
    *   The render array for the complete page, as minimal as possible.
    */
   public function getViewModeMinimalHtml(ContentEntityInterface $object, $view_mode) {
-    // Switch to anonymous user for rendering as configured role.
+    // Obtain the configured user role to be used for rendering content.
+    $render_user_role = $this->contentHubSubscription->getViewModeRenderUserRole();
     $entity_type_id = $object->getEntityTypeId();
-    $this->accountSwitcher->switchTo(new \Drupal\Core\Session\AnonymousUserSession());
+    $user_session = new \Drupal\Core\Session\UserSession([
+      'roles' => [$render_user_role],
+    ]);
+
+    // Switch to user with configured role.
+    $this->accountSwitcher->switchTo($user_session);
     $build = $this->entityTypeManager->getViewBuilder($entity_type_id)
       ->view($object, $view_mode);
 
