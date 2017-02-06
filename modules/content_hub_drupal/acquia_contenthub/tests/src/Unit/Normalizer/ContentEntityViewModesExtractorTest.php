@@ -85,6 +85,13 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
   private $contentEntity;
 
   /**
+   * Content Hub Subscription.
+   *
+   * @var \Drupal\acquia_contenthub\ContentHubSubscription|\PHPUnit_Framework_MockObject_MockObject
+   */
+  protected $contentHubSubscription;
+
+  /**
    * {@inheritdoc}
    */
   public function setUp() {
@@ -99,6 +106,9 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
     $this->kernel = $this->getMock('Symfony\Component\HttpKernel\HttpKernelInterface');
     $this->accountSwitcher = $this->getMock('Drupal\Core\Session\AccountSwitcherInterface');
     $this->contentEntity = $this->getMock('Drupal\Core\Entity\ContentEntityInterface');
+    $this->contentHubSubscription = $this->getMockBuilder('\Drupal\acquia_contenthub\ContentHubSubscription')
+      ->disableOriginalConstructor()
+      ->getMock();
   }
 
   /**
@@ -123,7 +133,7 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
       ->with(['entity_type_1'])
       ->willReturn([]);
 
-    $content_entity_view_modes_extractor = new ContentEntityViewModesExtractor($this->currentUser, $this->entityDisplayRepository, $this->entityTypeManager, $this->renderer, $this->kernel, $this->accountSwitcher);
+    $content_entity_view_modes_extractor = new ContentEntityViewModesExtractor($this->currentUser, $this->entityDisplayRepository, $this->entityTypeManager, $this->renderer, $this->kernel, $this->accountSwitcher, $this->contentHubSubscription);
     $rendered_view_modes = $content_entity_view_modes_extractor->getRenderedViewModes($this->contentEntity);
 
     $this->assertNull($rendered_view_modes);
@@ -244,6 +254,10 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
       ->with('a_file_uri')
       ->willReturn('a_style_decorated_file_uri');
 
+    $this->contentHubSubscription->expects($this->once())
+      ->method('hmacWrapper')
+      ->will($this->returnArgument(0));
+
     $response = $this->getMock('Drupal\Core\Render\HtmlResponse');
     $response->expects($this->once())
       ->method('getContent')
@@ -252,7 +266,7 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
       ->method('handle')
       ->willReturn($response);
 
-    $content_entity_view_modes_extractor = new ContentEntityViewModesExtractor($this->currentUser, $this->entityDisplayRepository, $this->entityTypeManager, $this->renderer, $this->kernel, $this->accountSwitcher);
+    $content_entity_view_modes_extractor = new ContentEntityViewModesExtractor($this->currentUser, $this->entityDisplayRepository, $this->entityTypeManager, $this->renderer, $this->kernel, $this->accountSwitcher, $this->contentHubSubscription);
     $rendered_view_modes = $content_entity_view_modes_extractor->getRenderedViewModes($this->contentEntity);
 
     $expected_rendered_view_modes = [

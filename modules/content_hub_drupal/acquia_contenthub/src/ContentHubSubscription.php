@@ -13,6 +13,7 @@ use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\Core\Session\AccountInterface;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Handles operations on the Acquia Content Hub Subscription.
@@ -59,7 +60,7 @@ class ContentHubSubscription {
    *
    * @var \Drupal\Core\Config\Config
    */
-  protected $entity_config;
+  protected $entityConfig;
 
   /**
    * {@inheritdoc}
@@ -88,7 +89,7 @@ class ContentHubSubscription {
     $this->clientManager = $client_manager;
     // Get the content hub config settings.
     $this->config = $this->configFactory->getEditable('acquia_contenthub.admin_settings');
-    $this->entity_config = $this->configFactory->getEditable('acquia_contenthub.entity_config');
+    $this->entityConfig = $this->configFactory->getEditable('acquia_contenthub.entity_config');
   }
 
   /**
@@ -421,7 +422,6 @@ class ContentHubSubscription {
    *
    * @param \Symfony\Component\HttpFoundation\Request $request
    *   The Request to wrap using HMAC authentication.
-   *
    * @param bool|TRUE $use_shared_secret
    *   Whether to use shared_secret or secret_key.
    *
@@ -443,7 +443,7 @@ class ContentHubSubscription {
    *   The user role selected to render a view mode.
    */
   public function getViewModeRenderUserRole() {
-    $role = $this->entity_config->get('user_role');
+    $role = $this->entityConfig->get('user_role');
     // Use the configured role if set, otherwise use 'anonymous'.
     return !empty($role) ? $role : AccountInterface::ANONYMOUS_ROLE;
   }
