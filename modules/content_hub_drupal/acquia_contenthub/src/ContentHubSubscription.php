@@ -56,13 +56,6 @@ class ContentHubSubscription {
   protected $config;
 
   /**
-   * The Entity Settings Simple Configuration.
-   *
-   * @var \Drupal\Core\Config\Config
-   */
-  protected $entityConfig;
-
-  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
@@ -89,7 +82,6 @@ class ContentHubSubscription {
     $this->clientManager = $client_manager;
     // Get the content hub config settings.
     $this->config = $this->configFactory->getEditable('acquia_contenthub.admin_settings');
-    $this->entityConfig = $this->configFactory->getEditable('acquia_contenthub.entity_config');
   }
 
   /**
@@ -440,17 +432,4 @@ class ContentHubSubscription {
     }
     return $request;
   }
-
-  /**
-   * Obtains the user role to be used for rendering view modes.
-   *
-   * @return array|mixed|null
-   *   The user role selected to render a view mode.
-   */
-  public function getViewModeRenderUserRole() {
-    $role = $this->entityConfig->get('user_role');
-    // Use the configured role if set, otherwise use 'anonymous'.
-    return !empty($role) ? $role : AccountInterface::ANONYMOUS_ROLE;
-  }
-
 }
