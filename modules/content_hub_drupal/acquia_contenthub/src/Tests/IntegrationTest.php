@@ -56,6 +56,13 @@ class IntegrationTest extends WebTestBase {
     $this->checkCdfOutput($this->article, 'teaser');
 
     $this->ConfigureAndUsePreviewImageStyle();
+
+    // Access to view modes as admin should be ok.
+    $this->checkAccessViewMode($this->article, 'teaser', TRUE);
+    $this->drupalLogout();
+
+    // Access view modes as anonymous should not work.
+    $this->checkAccessViewMode($this->article, 'teaser', FALSE);
   }
 
   /**
@@ -100,7 +107,7 @@ class IntegrationTest extends WebTestBase {
    *   The view mode to check in the CDF.
    */
   public function checkCdfOutput(NodeInterface $entity, $view_mode = NULL) {
-    $output = $this->drupalGetJSON($entity->getEntityTypeId() . '/' . $this->article->id(), array('query' => array('_format' => 'acquia_contenthub_cdf')));
+    $output = $this->drupalGetJSON($entity->getEntityTypeId() . '/' . $entity->id(), array('query' => array('_format' => 'acquia_contenthub_cdf')));
     $this->assertResponse(200);
     if (!empty($view_mode)) {
       $this->assertTrue(isset($output['entities']['0']['metadata']), 'Metadata is present');
@@ -145,6 +152,20 @@ class IntegrationTest extends WebTestBase {
 
     $this->drupalGet('admin/structure/types/manage/article');
     $this->assertText(t('Acquia Content Hub'));
+  }
+
+  /**
+   * Checks access to View Modes endpoint.
+   */
+  public function checkAccessViewMode(NodeInterface $entity, $view_mode, $access = TRUE) {
+    $this->drupalGet("acquia-contenthub/display/node/{$entity->id()}/{$view_mode}");
+    if ($access) {
+      $this->assertResponse(200);
+      $this->assertText($entity->label());
+    }
+    else {
+      $this->assertResponse(403);
+    }
   }
 
 }
