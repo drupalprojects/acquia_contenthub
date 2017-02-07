@@ -49,7 +49,7 @@ interface ClientManagerInterface {
    * @return bool
    *   TRUE if client is connected, FALSE otherwise.
    */
-  public static function isConnected($full_check = FALSE);
+  public function isConnected($full_check = FALSE);
 
   /**
    * Makes an API Call Request to Content Hub, with exception handling.

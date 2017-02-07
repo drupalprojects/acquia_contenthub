@@ -192,11 +192,9 @@ class ClientManager implements ClientManagerInterface {
    * @return bool
    *   TRUE if client is connected, FALSE otherwise.
    */
-  public static function isConnected($full_check = FALSE) {
-    $connection = new static();
-
+  public function isConnected($full_check = FALSE) {
     // Always do a quick check.
-    if ($connection->getConnection() === FALSE) {
+    if (empty($this->getConnection())) {
       return FALSE;
     }
 
@@ -204,7 +202,7 @@ class ClientManager implements ClientManagerInterface {
     if ($full_check) {
       // Make a request to Content Hub using current settings to make sure that
       // they do provide a valid connection.
-      if ($connection->createRequest('getSettings') === FALSE) {
+      if ($this->createRequest('getSettings') === FALSE) {
         return FALSE;
       }
     }

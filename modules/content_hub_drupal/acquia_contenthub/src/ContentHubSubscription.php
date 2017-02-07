@@ -420,6 +420,9 @@ class ContentHubSubscription {
   /**
    * Wraps a request using HMAC authentication.
    *
+   * If the current site is connected to Content Hub it wraps the request using
+   * HMAC algorithm. If not connected, it just returns the same request object.
+   *
    * @param \Symfony\Component\HttpFoundation\Request $request
    *   The Request to wrap using HMAC authentication.
    * @param bool|TRUE $use_shared_secret
@@ -429,10 +432,12 @@ class ContentHubSubscription {
    *   The HMAC wrapped request.
    */
   public function hmacWrapper(Request $request, $use_shared_secret = TRUE) {
-    $request->headers->set('Date', gmdate('D, d M Y H:i:s T'));
-    $secret = $use_shared_secret ? $this->getSharedSecret() : $this->config->get('secret_key');;
-    $signature = $this->clientManager->getRequestSignature($request, $secret);
-    $request->headers->set('Authorization', 'Acquia ContentHub:' . $signature);
+    if ($this->clientManager->isConnected()) {
+      $request->headers->set('Date', gmdate('D, d M Y H:i:s T'));
+      $secret = $use_shared_secret ? $this->getSharedSecret() : $this->config->get('secret_key');;
+      $signature = $this->clientManager->getRequestSignature($request, $secret);
+      $request->headers->set('Authorization', 'Acquia ContentHub:' . $signature);
+    }
     return $request;
   }
 
