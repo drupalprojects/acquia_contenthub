@@ -11,7 +11,6 @@ use Drupal\Component\Render\FormattableMarkup;
 use Drupal\acquia_contenthub\Client\ClientManagerInterface;
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Logger\LoggerChannelFactory;
-use Drupal\Core\Session\AccountInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -432,4 +431,5 @@ class ContentHubSubscription {
     }
     return $request;
   }
+
 }
