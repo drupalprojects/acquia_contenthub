@@ -425,7 +425,7 @@ class ContentHubSubscription {
   public function hmacWrapper(Request $request, $use_shared_secret = TRUE) {
     if ($this->clientManager->isConnected()) {
       $request->headers->set('Date', gmdate('D, d M Y H:i:s T'));
-      $secret = $use_shared_secret ? $this->getSharedSecret() : $this->config->get('secret_key');;
+      $secret = $use_shared_secret ? $this->getSharedSecret() : $this->config->get('secret_key');
       $signature = $this->clientManager->getRequestSignature($request, $secret);
       $request->headers->set('Authorization', 'Acquia ContentHub:' . $signature);
     }
