@@ -287,15 +287,9 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
    *   The render array for the complete page, as minimal as possible.
    */
   public function getViewModeMinimalHtml(ContentEntityInterface $object, $view_mode) {
-    // Obtain the configured user role to be used for rendering content.
-    $render_user_role = $this->contentHubSubscription->getViewModeRenderUserRole();
+    // Switch to anonymous user for rendering as configured role.
     $entity_type_id = $object->getEntityTypeId();
-    $user_session = new \Drupal\Core\Session\UserSession([
-      'roles' => [$render_user_role],
-    ]);
-
-    // Switch to user with configured role.
-    $this->accountSwitcher->switchTo($user_session);
+    $this->accountSwitcher->switchTo(new \Drupal\Core\Session\AnonymousUserSession());
     $build = $this->entityTypeManager->getViewBuilder($entity_type_id)
       ->view($object, $view_mode);
 
