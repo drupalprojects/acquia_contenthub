@@ -11,6 +11,8 @@ use Drupal\Component\Render\FormattableMarkup;
 use Drupal\acquia_contenthub\Client\ClientManagerInterface;
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Logger\LoggerChannelFactory;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Handles operations on the Acquia Content Hub Subscription.
@@ -46,7 +48,7 @@ class ContentHubSubscription {
   protected $settings;
 
   /**
-   * The Drupal Configuration.
+   * The Admin Settings Simple Configuration.
    *
    * @var \Drupal\Core\Config\Config
    */
@@ -404,6 +406,30 @@ class ContentHubSubscription {
       return $list;
     }
     return FALSE;
+  }
+
+  /**
+   * Wraps a request using HMAC authentication.
+   *
+   * If the current site is connected to Content Hub it wraps the request using
+   * HMAC algorithm. If not connected, it just returns the same request object.
+   *
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The Request to wrap using HMAC authentication.
+   * @param bool|TRUE $use_shared_secret
+   *   Whether to use shared_secret or secret_key.
+   *
+   * @return \Symfony\Component\HttpFoundation\Request
+   *   The HMAC wrapped request.
+   */
+  public function hmacWrapper(Request $request, $use_shared_secret = TRUE) {
+    if ($this->clientManager->isConnected()) {
+      $request->headers->set('Date', gmdate('D, d M Y H:i:s T'));
+      $secret = $use_shared_secret ? $this->getSharedSecret() : $this->config->get('secret_key');
+      $signature = $this->clientManager->getRequestSignature($request, $secret);
+      $request->headers->set('Authorization', 'Acquia ContentHub:' . $signature);
+    }
+    return $request;
   }
 
 }

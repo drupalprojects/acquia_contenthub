@@ -118,11 +118,7 @@ class ContentHubEntityExportController extends ControllerBase {
 
       // Creating an internal HMAC-signed request.
       $request = Request::create($url);
-      $request->headers->set('Content-Type', 'application/json');
-      $request->headers->set('Date', gmdate('D, d M Y H:i:s T'));
-      $shared_secret = $this->contentHubSubscription->getSharedSecret();
-      $signature = $this->clientManager->getRequestSignature($request, $shared_secret);
-      $request->headers->set('Authorization', 'Acquia ContentHub:' . $signature);
+      $request = $this->contentHubSubscription->hmacWrapper($request, TRUE);
 
       /** @var \Drupal\Core\Render\HtmlResponse $response */
       $response = $this->kernel->handle($request, HttpKernelInterface::SUB_REQUEST);

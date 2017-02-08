@@ -19,6 +19,7 @@ use Drupal\Core\Url;
 use Drupal\image\Entity\ImageStyle;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
+use Drupal\acquia_contenthub\ContentHubSubscription;
 
 /**
  * Extracts the rendered view modes from a given ContentEntity Object.
@@ -74,6 +75,13 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
   protected $accountSwitcher;
 
   /**
+   * Content Hub Subscription.
+   *
+   * @var \Drupal\acquia_contenthub\ContentHubSubscription
+   */
+  protected $contentHubSubscription;
+
+  /**
    * Constructs a ContentEntityViewModesExtractor object.
    *
    * @param \Drupal\Core\Session\AccountProxyInterface $current_user
@@ -88,14 +96,17 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
    *   The Kernel.
    * @param \Drupal\Core\Session\AccountSwitcherInterface $account_switcher
    *   The Account Switcher Service.
+   * @param \Drupal\acquia_contenthub\ContentHubSubscription $contenthub_subscription
+   *   The Content Hub Subscription.
    */
-  public function __construct(AccountProxyInterface $current_user, EntityDisplayRepositoryInterface $entity_display_repository, EntityTypeManagerInterface $entity_type_manager, RendererInterface $renderer, HttpKernelInterface $kernel, AccountSwitcherInterface $account_switcher) {
+  public function __construct(AccountProxyInterface $current_user, EntityDisplayRepositoryInterface $entity_display_repository, EntityTypeManagerInterface $entity_type_manager, RendererInterface $renderer, HttpKernelInterface $kernel, AccountSwitcherInterface $account_switcher, ContentHubSubscription $contenthub_subscription) {
     $this->currentUser = $current_user;
     $this->entityDisplayRepository = $entity_display_repository;
     $this->entityTypeManager = $entity_type_manager;
     $this->renderer = $renderer;
     $this->kernel = $kernel;
     $this->accountSwitcher = $account_switcher;
+    $this->contentHubSubscription = $contenthub_subscription;
   }
 
   /**
@@ -188,7 +199,9 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
         'entity_id' => $object->id(),
         'view_mode_name' => $view_mode_id,
       ])->toString();
+
       $request = Request::create($url);
+      $request = $this->contentHubSubscription->hmacWrapper($request);
 
       /** @var \Drupal\Core\Render\HtmlResponse $response */
       $response = $this->kernel->handle($request, HttpKernelInterface::SUB_REQUEST);
