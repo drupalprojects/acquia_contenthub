@@ -3,6 +3,10 @@ services:
     class: Drupal\acquia_contenthub\EntityManager
     arguments: ['@logger.factory', '@config.factory', '@acquia_contenthub.client_manager', '@acquia_contenthub.acquia_contenthub_entities_tracking', '@entity_type.manager', '@entity_type.bundle.info', '@http_kernel.basic']
 
+  acquia_contenthub.import_entity_manager:
+    class: Drupal\acquia_contenthub\ImportEntityManager
+    arguments: ['@acquia_contenthub.acquia_contenthub_entities_tracking', '@acquia_contenthub.acquia_contenthub_cdf.import_entity', '@diff.entity_comparison']
+
   acquia_contenthub.acquia_contenthub_cdf.import_entity:
     class: Drupal\acquia_contenthub\Controller\ContentHubEntityImportController
     arguments: ['@database', '@logger.factory', '@acquia_contenthub.entity_manager', '@serializer', '@entity.repository', '@acquia_contenthub.acquia_contenthub_entities_tracking']
@@ -35,7 +39,7 @@ services:
 
   acquia_contenthub.normalizer.content_entity_view_modes_extractor:
     class: Drupal\acquia_contenthub\Normalizer\ContentEntityViewModesExtractor
-    arguments: ['@current_user', '@entity_display.repository', '@entity_type.manager', '@renderer', '@http_kernel.basic', '@account_switcher']
+    arguments: ['@current_user', '@entity_display.repository', '@entity_type.manager', '@renderer', '@http_kernel.basic', '@account_switcher', '@acquia_contenthub.acquia_contenthub_subscription']
 
   acquia_contenthub.encoder.acquia_contenthub_cdf:
     class: Drupal\acquia_contenthub\Encoder\ContentHubCdfEncoder
@@ -73,3 +77,7 @@ services:
   acquia_contenthub.form.node_type_preview_image_form:
     class: Drupal\acquia_contenthub\Form\NodeTypePreviewImageForm
     arguments: ['@acquia_contenthub.entity_manager', '@entity_type.manager', '@entity_field.manager']
+
+  acquia_contenthub.form.node_form:
+    class: Drupal\acquia_contenthub\Form\NodeForm
+    arguments: ['@current_user', '@acquia_contenthub.acquia_contenthub_entities_tracking']

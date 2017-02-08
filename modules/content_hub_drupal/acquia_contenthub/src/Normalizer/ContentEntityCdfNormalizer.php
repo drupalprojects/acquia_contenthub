@@ -28,6 +28,7 @@ use Drupal\acquia_contenthub\EntityManager;
 use Drupal\acquia_contenthub\Controller\ContentHubEntityExportController;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Language\LanguageInterface;
+use Drupal\taxonomy\Entity\Vocabulary;
 
 /**
  * Converts the Drupal entity object to a Acquia Content Hub CDF array.
@@ -914,7 +915,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
           $attribute = $contenthub_entity->getAttribute('vocabulary');
           foreach ($langcodes as $lang) {
             $vocabulary_machine_name = $attribute['value'][$lang];
-            $vocabulary = acquia_contenthub_get_vocabulary_by_name($vocabulary_machine_name);
+            $vocabulary = $this->getVocabularyByName($vocabulary_machine_name);
             if (isset($vocabulary)) {
               $values['vid'] = $vocabulary->getOriginalId();
             }
@@ -973,6 +974,29 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     else {
       return FALSE;
     }
+  }
+
+  /**
+   * Returns a vocabulary object which matches the given name.
+   *
+   * Will return null if no such vocabulary exists.
+   *
+   * @param string $vocabulary_name
+   *   This is the name of the section which is required.
+   *
+   * @return Object
+   *   This is the vocabulary object with the name or null if no such vocabulary
+   *   exists.
+   */
+  private function getVocabularyByName($vocabulary_name) {
+    $vocabs = Vocabulary::loadMultiple(NULL);
+    foreach ($vocabs as $vocab_object) {
+      /* @var $vocab_object \Drupal\taxonomy\Entity\Vocabulary  */
+      if ($vocab_object->getOriginalId() == $vocabulary_name) {
+        return $vocab_object;
+      }
+    }
+    return NULL;
   }
 
 }

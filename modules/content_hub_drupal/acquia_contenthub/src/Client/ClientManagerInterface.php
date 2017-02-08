@@ -41,15 +41,10 @@ interface ClientManagerInterface {
   /**
    * Checks whether the current client has a valid connection to Content Hub.
    *
-   * @param bool $full_check
-   *   Use TRUE to make a full validation (check that the drupal variables
-   *   provide a valid connection to Content Hub). By default it makes a 'quick'
-   *   validation just by making sure that the variables are set.
-   *
    * @return bool
    *   TRUE if client is connected, FALSE otherwise.
    */
-  public static function isConnected($full_check = FALSE);
+  public function isConnected();
 
   /**
    * Makes an API Call Request to Content Hub, with exception handling.

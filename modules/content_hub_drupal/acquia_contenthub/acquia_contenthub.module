@@ -7,7 +7,6 @@
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
-use Drupal\taxonomy\Entity\Vocabulary;
 
 /**
  * Implements hook_help().
@@ -38,6 +37,10 @@ function acquia_contenthub_entity_update(EntityInterface $entity) {
   /** @var \Drupal\acquia_contenthub\EntityManager $entity_manager */
   $entity_manager = \Drupal::service('acquia_contenthub.entity_manager');
   $entity_manager->entityAction($entity, 'UPDATE');
+
+  /** @var \Drupal\acquia_contenthub\ImportEntityManager $import_entity_manager */
+  $import_entity_manager = \Drupal::service('acquia_contenthub.import_entity_manager');
+  $import_entity_manager->entityUpdate($entity);
 }
 
 /**
@@ -50,10 +53,18 @@ function acquia_contenthub_entity_delete(EntityInterface $entity) {
 }
 
 /**
+ * Implements hook_entity_presave().
+ */
+function acquia_contenthub_entity_presave(EntityInterface $entity) {
+  /** @var \Drupal\acquia_contenthub\ImportEntityManager $import_entity_manager */
+  $import_entity_manager = \Drupal::service('acquia_contenthub.import_entity_manager');
+  $import_entity_manager->entityPresave($entity);
+}
+
+/**
  * Sends entities to Content Hub using Bulk Upload.
  */
 function acquia_contenthub_send_entities() {
-  global $base_path;
   /** @var \Drupal\acquia_contenthub\EntityManager $entity_manager */
   $entity_manager = \Drupal::service('acquia_contenthub.entity_manager');
 
@@ -116,29 +127,34 @@ function acquia_contenthub_send_entities() {
 
 }
 
-
-// Helper function.
 /**
- * Returns a vocabulary object which matches the given name.
- *
- * Will return null if no such vocabulary exists.
- *
- * @param string $vocabulary_name
- *   This is the name of the section which is required.
- *
- * @return Object
- *   This is the vocabulary object with the name or null if no such vocabulary
- *   exists.
+ * Implements hook_form_BASE_FORM_ID_alter().
  */
-function acquia_contenthub_get_vocabulary_by_name($vocabulary_name) {
-  $vocabs = Vocabulary::loadMultiple(NULL);
-  foreach ($vocabs as $vocab_object) {
-    /* @var $vocab_object \Drupal\taxonomy\Entity\Vocabulary  */
-    if ($vocab_object->getOriginalId() == $vocabulary_name) {
-      return $vocab_object;
-    }
+function acquia_contenthub_form_node_form_alter(&$form, $form_state) {
+  /* @var Drupal\Core\Entity\FieldableEntityInterface $node */
+  $node = $form_state->getFormObject()->getEntity();
+  $node_form_service = \Drupal::service('acquia_contenthub.form.node_form');
+  $node_form = $node_form_service->getForm($node);
+
+  if (!$node_form) {
+    return;
   }
-  return NULL;
+
+  // Attach node form.
+  $form['acquia_contenthub'] = $node_form;
+  // Attach submit handler.
+  $submit_handler_name = 'acquia_contenthub_form_node_form_submit';
+  $node_form_service->attachSubmitHandler($form['actions'], $submit_handler_name);
+}
+
+/**
+ * Submit handler for the node form with acquia contenthub options.
+ *
+ * @see acquia_contenthub_form_node_form_alter()
+ */
+function acquia_contenthub_form_node_form_submit($form, FormStateInterface $form_state) {
+  $node_form_service = \Drupal::service('acquia_contenthub.form.node_form');
+  $node_form_service->saveSettings($form_state);
 }
 
 /**

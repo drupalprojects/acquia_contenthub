@@ -22,6 +22,8 @@ use Drupal\Component\Utility\UrlHelper;
 
 /**
  * Provides a service for managing entity actions for Content Hub.
+ *
+ * @TODO To be renamed to "ExportEntityManager".
  */
 class EntityManager {
 
@@ -124,7 +126,6 @@ class EntityManager {
     // Checking if the entity has already been synchronized so not to generate
     // an endless loop.
     if (isset($entity->__contenthub_synchronized)) {
-      unset($entity->__contenthub_synchronized);
       return;
     }
 
@@ -136,53 +137,54 @@ class EntityManager {
     }
 
     // Entity has not been sync'ed, then proceed with it.
-    if ($this->isEligibleEntity($entity)) {
-      if ($type == 'node') {
-        switch ($action) {
-          case 'INSERT':
-            if (!$entity->isPublished()) {
-              // Do not push nodes that are unpublished to the Content Hub.
-              return;
-            }
-            break;
+    if (!$this->isEligibleEntity($entity)) {
+      return;
+    }
 
-          case 'UPDATE':
-            if (!$entity->isPublished()) {
-              // If a node is unpublished, then delete it from the Content Hub.
-              $action = 'DELETE';
-            }
-            break;
+    // Handle node specifically.
+    if ($type == 'node') {
+      switch ($action) {
+        case 'INSERT':
+          if (!$entity->isPublished()) {
+            // Do not push nodes that are unpublished to the Content Hub.
+            return;
+          }
+          break;
 
-          case 'DELETE':
-            // Do nothing, proceed with deletion.
-            break;
-        }
-      }
+        case 'UPDATE':
+          if (!$entity->isPublished()) {
+            // If a node is unpublished, then delete it from the Content Hub.
+            $action = 'DELETE';
+          }
+          break;
 
-      if ($action !== 'DELETE') {
-        // Collect all entities and make internal page request.
-        $item = array(
-          'uuid' => $entity->uuid(),
-          'type' => $type,
-          'action' => $action,
-          'entity' => $entity,
-        );
-        $this->collectExportEntities($item);
-
-        // Registering shutdown function to send entities to Acquia Content Hub.
-        $acquia_contenthub_shutdown_function = 'acquia_contenthub_send_entities';
-        $callbacks = drupal_register_shutdown_function();
-        $callback_functions = array_column($callbacks, 'callback');
-        if (!in_array($acquia_contenthub_shutdown_function, $callback_functions)) {
-          drupal_register_shutdown_function($acquia_contenthub_shutdown_function);
-        }
-      }
-      else {
-        $this->entityActionSend($entity, $action);
+        case 'DELETE':
+          // Do nothing, proceed with deletion.
+          break;
       }
     }
-    else {
-      // Entity has not been sync'ed, then proceed with it.
+
+    // Handle entity delete specifically.
+    if ($action === 'DELETE') {
+      $this->entityActionSend($entity, $action);
+      return;
+    }
+
+    // Collect all entities and make internal page request.
+    $item = array(
+      'uuid' => $entity->uuid(),
+      'type' => $type,
+      'action' => $action,
+      'entity' => $entity,
+    );
+    $this->collectExportEntities($item);
+
+    // Registering shutdown function to send entities to Acquia Content Hub.
+    $acquia_contenthub_shutdown_function = 'acquia_contenthub_send_entities';
+    $callbacks = drupal_register_shutdown_function();
+    $callback_functions = array_column($callbacks, 'callback');
+    if (!in_array($acquia_contenthub_shutdown_function, $callback_functions)) {
+      drupal_register_shutdown_function($acquia_contenthub_shutdown_function);
     }
   }
 

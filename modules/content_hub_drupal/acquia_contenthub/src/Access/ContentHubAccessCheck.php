@@ -80,6 +80,9 @@ class ContentHubAccessCheck implements AccessInterface {
       return AccessResult::allowed();
     }
     else {
+      if (empty($this->clientManager->isConnected())) {
+        return AccessResult::forbidden();
+      }
       // If this user has no permission, then validate Request Signature.
       $headers = array_map('current', $request->headers->all());
       $authorization_header = isset($headers['authorization']) ? $headers['authorization'] : '';

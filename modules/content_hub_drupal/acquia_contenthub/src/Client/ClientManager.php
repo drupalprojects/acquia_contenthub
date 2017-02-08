@@ -184,29 +184,13 @@ class ClientManager implements ClientManagerInterface {
   /**
    * Checks whether the current client has a valid connection to Content Hub.
    *
-   * @param bool $full_check
-   *   Use TRUE to make a full validation (check that the drupal variables
-   *   provide a valid connection to Content Hub). By default it makes a 'quick'
-   *   validation just by making sure that the variables are set.
-   *
    * @return bool
    *   TRUE if client is connected, FALSE otherwise.
    */
-  public static function isConnected($full_check = FALSE) {
-    $connection = new static();
-
+  public function isConnected() {
     // Always do a quick check.
-    if ($connection->getConnection() === FALSE) {
+    if (empty($this->getConnection())) {
       return FALSE;
-    }
-
-    // If a full check is requested, test a connection to Content Hub.
-    if ($full_check) {
-      // Make a request to Content Hub using current settings to make sure that
-      // they do provide a valid connection.
-      if ($connection->createRequest('getSettings') === FALSE) {
-        return FALSE;
-      }
     }
 
     // If we reached here then client has a valid connection.

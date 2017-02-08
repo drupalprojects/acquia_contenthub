@@ -90,7 +90,6 @@ class WebhooksSettingsForm extends ConfigFormBase {
       ))->toString();
     }
     $webhook_uuid = $config->get('webhook_uuid');
-    $readonly = (bool) $webhook_uuid ? ['readonly' => TRUE] : [];
 
     if ((bool) $webhook_uuid) {
       $title = t('Receive Webhooks (uuid = %uuid)', array(
@@ -138,10 +137,6 @@ class WebhooksSettingsForm extends ConfigFormBase {
       $webhook_url = $form_state->getValue('webhook_url');
     }
 
-    $webhook_uuid = NULL;
-    if ($form_state->hasValue('webhook_uuid')) {
-      $webhook_uuid = $form_state->getValue('webhook_uuid');
-    }
     $webhook_register = (bool) $form_state->getValue('webhook_uuid');
 
     // Perform the registration / un-registration.

@@ -36,6 +36,7 @@ abstract class WebTestBase extends SimpletestWebTestBase {
    * @var string[]
    */
   protected $adminUserPermissions = array(
+    'bypass node access',
     'administer acquia content hub',
     'administer content types',
     'access administration pages',
