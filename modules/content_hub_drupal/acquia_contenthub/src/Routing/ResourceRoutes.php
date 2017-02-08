@@ -77,7 +77,7 @@ class ResourceRoutes {
       // Only allow access to the CDF if the request is coming from a logged
       // in user with 'Administer Acquia Content Hub' permission or if it
       // is coming from Acquia Content Hub (validates the HMAC signature).
-      $route->setRequirement('_contenthub_access_check', 'TRUE');
+      $route->setRequirement('_contenthub_access', 'TRUE');
       // Only allow GET.
       $route->setMethods(['GET']);
 

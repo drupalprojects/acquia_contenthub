@@ -57,11 +57,11 @@ class IntegrationTest extends WebTestBase {
 
     $this->ConfigureAndUsePreviewImageStyle();
 
-    // Access to view modes as admin should be ok.
+    // Access to view modes as admin should be allowed.
     $this->checkAccessViewMode($this->article, 'teaser', TRUE);
     $this->drupalLogout();
 
-    // Access view modes as anonymous should not work.
+    // Access to view modes as anonymous should be denied.
     $this->checkAccessViewMode($this->article, 'teaser', FALSE);
   }
 
