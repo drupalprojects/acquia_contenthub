@@ -1,0 +1,12 @@
+name: 'CH Node with References'
+description: 'Provides Node with References content type and related configuration. Node with References'
+type: module
+core: 8.x
+dependencies:
+  - field
+  - menu_ui
+  - node
+  - path
+  - text
+  - user
+  - workbench_moderation
