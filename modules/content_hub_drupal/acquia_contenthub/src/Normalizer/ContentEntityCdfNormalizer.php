@@ -57,6 +57,13 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
   protected $supportedInterfaceOrClass = 'Drupal\Core\Entity\ContentEntityInterface';
 
   /**
+   * The specific content hub entity config.
+   *
+   * @var \Drupal\Core\Config\ImmutableConfig
+   */
+  protected $contentHubEntityConfig;
+
+  /**
    * The specific content hub keys.
    *
    * @var \Drupal\Core\Config\ImmutableConfig
@@ -179,6 +186,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     global $base_url;
     $this->baseUrl = $base_url;
     $this->contentHubAdminConfig = $config_factory->get('acquia_contenthub.admin_settings');
+    $this->contentHubEntityConfig = $config_factory->get('acquia_contenthub.entity_config');
     $this->contentEntityViewModesNormalizer = $content_entity_view_modes_normalizer;
     $this->moduleHandler = $module_handler;
     $this->entityRepository = $entity_repository;
@@ -590,7 +598,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    */
   public function getMultilevelReferencedFields(ContentEntityInterface $entity, &$referenced_entities, array $context = array(), $depth = 0) {
     $depth++;
-    $maximum_depth = $this->contentHubAdminConfig->get('dependency_depth');
+    $maximum_depth = $this->contentHubEntityConfig->get('dependency_depth');
     $maximum_depth = is_int($maximum_depth) ? $maximum_depth : 3;
 
     // Collecting all referenced_entities UUIDs.
