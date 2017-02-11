@@ -121,7 +121,6 @@ class NodeReferenceTest extends WebTestBase {
     $this->assertEqual($output['entities']['4']['uuid'], $entity1->uuid());
 
     // Decreasing dependency depth to 2.
-    $config = \Drupal::configFactory()->getEditable('acquia_contenthub.entity_config');
     $config->set('dependency_depth', 2);
     $config->save();
     drupal_flush_all_caches();
