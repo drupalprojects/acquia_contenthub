@@ -57,18 +57,11 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
   protected $supportedInterfaceOrClass = 'Drupal\Core\Entity\ContentEntityInterface';
 
   /**
-   * The specific content hub entity config.
+   * The Config factory.
    *
-   * @var \Drupal\Core\Config\ImmutableConfig
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config
    */
-  protected $contentHubEntityConfig;
-
-  /**
-   * The specific content hub keys.
-   *
-   * @var \Drupal\Core\Config\ImmutableConfig
-   */
-  protected $contentHubAdminConfig;
+  protected $config;
 
   /**
    * The content entity view modes normalizer.
@@ -185,8 +178,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
   public function __construct(ConfigFactoryInterface $config_factory, ContentEntityViewModesExtractorInterface $content_entity_view_modes_normalizer, ModuleHandlerInterface $module_handler, EntityRepositoryInterface $entity_repository, HttpKernelInterface $kernel, RendererInterface $renderer, EntityManager $entity_manager, EntityTypeManagerInterface $entity_type_manager, ContentHubEntityExportController $export_controller, LanguageManagerInterface $language_manager) {
     global $base_url;
     $this->baseUrl = $base_url;
-    $this->contentHubAdminConfig = $config_factory->get('acquia_contenthub.admin_settings');
-    $this->contentHubEntityConfig = $config_factory->get('acquia_contenthub.entity_config');
+    $this->config = $config_factory;
     $this->contentEntityViewModesNormalizer = $content_entity_view_modes_normalizer;
     $this->moduleHandler = $module_handler;
     $this->entityRepository = $entity_repository;
@@ -249,7 +241,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     // Set our required CDF properties.
     $entity_type_id = $context['entity_type'] = $entity->getEntityTypeId();
     $entity_uuid = $entity->uuid();
-    $origin = $this->contentHubAdminConfig->get('origin');
+    $origin = $this->config->get('acquia_contenthub.admin_settings')->get('origin');
 
     // Required Created field.
     if ($entity->hasField('created') && $entity->get('created')) {
@@ -598,7 +590,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    */
   public function getMultilevelReferencedFields(ContentEntityInterface $entity, &$referenced_entities, array $context = array(), $depth = 0) {
     $depth++;
-    $maximum_depth = $this->contentHubEntityConfig->get('dependency_depth');
+    $maximum_depth = $this->config->get('acquia_contenthub.entity_config')->get('dependency_depth');
     $maximum_depth = is_int($maximum_depth) ? $maximum_depth : 3;
 
     // Collecting all referenced_entities UUIDs.

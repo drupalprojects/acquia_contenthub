@@ -115,13 +115,6 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   protected $languageManager;
 
   /**
-   * The Acquia Content Hub config used for the scope of this test.
-   *
-   * @var \Drupal\Core\Config\Config|\PHPUnit_Framework_MockObject_MockObject
-   */
-  protected $contentHubAdminConfig;
-
-  /**
    * {@inheritdoc}
    */
   protected function setUp() {
