@@ -459,6 +459,32 @@ class EntityManager {
   }
 
   /**
+   * Checks whether the current dependency should be transferred to Content Hub.
+   *
+   * Dependencies have an additional check as to whether they should be trans-
+   * ferred to Content Hub. If they have been previously exported then they do
+   * not need to be exported again. Dependent entities are those which are
+   * referenced from an entity that has been fired through entity hooks.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity object.
+   *
+   * @return bool
+   *   TRUE if it is eligible for export to Content Hub, FALSE otherwise.
+   */
+  public function isEligibleDependency(EntityInterface $entity) {
+    if ($this->isEligibleEntity($entity)) {
+      if ($entity_tracking = $this->contentHubEntitiesTracking->loadExportedByUuid($entity->uuid())) {
+        if ($entity_tracking->isExported()) {
+          return FALSE;
+        }
+      }
+      return TRUE;
+    }
+    return FALSE;
+  }
+
+  /**
    * Returns the list of enabled entity types for Content Hub.
    *
    * @return string[]
