@@ -115,13 +115,6 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   protected $languageManager;
 
   /**
-   * The Acquia Content Hub config used for the scope of this test.
-   *
-   * @var \Drupal\Core\Config\Config|\PHPUnit_Framework_MockObject_MockObject
-   */
-  protected $contentHubAdminConfig;
-
-  /**
    * {@inheritdoc}
    */
   protected function setUp() {
@@ -133,8 +126,15 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $this->configFactory = $this->getMock('Drupal\Core\Config\ConfigFactoryInterface');
     $this->configFactory
       ->method('get')
-      ->with('acquia_contenthub.admin_settings')
-      ->will($this->returnValue($this->createMockForContentHubAdminConfig()));
+      ->willReturnCallback(function($argument) {
+        if ($argument == 'acquia_contenthub.admin_settings') {
+          return $this->createMockForContentHubAdminConfig();
+        }
+        elseif ($argument == 'acquia_contenthub.entity_config') {
+          return $this->createMockForContentHubEntityConfig();
+        }
+        return NULL;
+      });
 
     $this->exportControler = $this->getMockBuilder('Drupal\acquia_contenthub\Controller\ContentHubEntityExportController')
       ->disableOriginalConstructor()
@@ -853,6 +853,22 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $contenthub_admin_config->method('get')->with('origin')->willReturn('test-origin');
 
     return $contenthub_admin_config;
+  }
+
+  /**
+   * Returns a fake ContentHubEntityConfig object.
+   *
+   * @return \Drupal\Core\Config\ImmutableConfig
+   *   The fake config.
+   */
+  public function createMockForContentHubEntityConfig() {
+    $contenthub_entity_config = $this->getMockBuilder('Drupal\Core\Config\ImmutableConfig')
+      ->disableOriginalConstructor()
+      ->setMethods(array('get'))
+      ->getMockForAbstractClass();
+    $contenthub_entity_config->method('get')->with('dependency_depth')->willReturn(3);
+
+    return $contenthub_entity_config;
   }
 
   /**

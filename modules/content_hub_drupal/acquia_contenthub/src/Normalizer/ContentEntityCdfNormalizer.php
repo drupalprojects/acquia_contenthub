@@ -57,11 +57,11 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
   protected $supportedInterfaceOrClass = 'Drupal\Core\Entity\ContentEntityInterface';
 
   /**
-   * The specific content hub keys.
+   * The Config factory.
    *
-   * @var \Drupal\Core\Config\ImmutableConfig
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config
    */
-  protected $contentHubAdminConfig;
+  protected $config;
 
   /**
    * The content entity view modes normalizer.
@@ -178,7 +178,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
   public function __construct(ConfigFactoryInterface $config_factory, ContentEntityViewModesExtractorInterface $content_entity_view_modes_normalizer, ModuleHandlerInterface $module_handler, EntityRepositoryInterface $entity_repository, HttpKernelInterface $kernel, RendererInterface $renderer, EntityManager $entity_manager, EntityTypeManagerInterface $entity_type_manager, ContentHubEntityExportController $export_controller, LanguageManagerInterface $language_manager) {
     global $base_url;
     $this->baseUrl = $base_url;
-    $this->contentHubAdminConfig = $config_factory->get('acquia_contenthub.admin_settings');
+    $this->config = $config_factory;
     $this->contentEntityViewModesNormalizer = $content_entity_view_modes_normalizer;
     $this->moduleHandler = $module_handler;
     $this->entityRepository = $entity_repository;
@@ -241,7 +241,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     // Set our required CDF properties.
     $entity_type_id = $context['entity_type'] = $entity->getEntityTypeId();
     $entity_uuid = $entity->uuid();
-    $origin = $this->contentHubAdminConfig->get('origin');
+    $origin = $this->config->get('acquia_contenthub.admin_settings')->get('origin');
 
     // Required Created field.
     if ($entity->hasField('created') && $entity->get('created')) {
@@ -299,24 +299,21 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       $referenced_entities = $this->getMultilevelReferencedFields($entity, $referenced_entities, $context);
 
       foreach ($referenced_entities as $entity) {
-        // Check if entity is a valid entity to be pushed to HUB.
-        if ($this->entityManager->isEligibleEntity($entity)) {
-          // Generate our URL where the isolated rendered view mode lives.
-          // This is the best way to really make sure the content in Content Hub
-          // and the content shown to any user is 100% the same.
-          try {
-            // Obtain the Entity CDF by making an hmac-signed internal request.
-            $referenced_entity_list_cdf = $this->exportController->getEntityCdfByInternalRequest($entity->getEntityTypeId(), $entity->id());
-            $referenced_entity_list_cdf = array_pop($referenced_entity_list_cdf);
-            if (is_array($referenced_entity_list_cdf)) {
-              foreach ($referenced_entity_list_cdf as $referenced_entity_cdf) {
-                $normalized['entities'][] = $referenced_entity_cdf;
-              }
+        // Generate our URL where the isolated rendered view mode lives.
+        // This is the best way to really make sure the content in Content Hub
+        // and the content shown to any user is 100% the same.
+        try {
+          // Obtain the Entity CDF by making an hmac-signed internal request.
+          $referenced_entity_list_cdf = $this->exportController->getEntityCdfByInternalRequest($entity->getEntityTypeId(), $entity->id(), FALSE);
+          $referenced_entity_list_cdf = array_pop($referenced_entity_list_cdf);
+          if (is_array($referenced_entity_list_cdf)) {
+            foreach ($referenced_entity_list_cdf as $referenced_entity_cdf) {
+              $normalized['entities'][] = $referenced_entity_cdf;
             }
           }
-          catch (\Exception $e) {
-            // Do nothing, route does not exist.
-          }
+        }
+        catch (\Exception $e) {
+          // Do nothing, route does not exist.
         }
       }
     }
@@ -372,7 +369,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         continue;
       }
 
-      // @TODO: This is a HACK to make it work with vocabularies. It should be
+      // @TODO: This is to make it work with vocabularies. It should be
       // replaced with appropriate handling of taxonomy vocabulary entities.
       if ($name == 'vid' && $entity->getEntityTypeId() == 'taxonomy_term') {
         $attribute = new Attribute(Attribute::TYPE_STRING);
@@ -522,6 +519,8 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    *   All referenced entities.
    */
   public function getReferencedFields(ContentEntityInterface $entity, array $context = array()) {
+    /** @var \Drupal\acquia_contenthub\Entity\ContentHubEntityTypeConfig[] $content_hub_entity_type_ids */
+    $content_hub_entity_type_ids = $this->entityManager->getContentHubEntityTypeConfigurationEntities();
     /** @var \Drupal\Core\Field\FieldItemListInterface[] $fields */
     $fields = $entity->getFields();
     $referenced_entities = [];
@@ -538,8 +537,32 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
 
       if ($field instanceof \Drupal\Core\Field\EntityReferenceFieldItemListInterface) {
 
-        /** @var \Drupal\Core\Entity\EntityInterface[] $referenced_entities */
-        $referenced_entities = array_merge($field->referencedEntities(), $referenced_entities);
+        // Before checking each individual entity, verify if we can skip all
+        // of them at once by checking their type.
+        $skip_entities = FALSE;
+        $settings = $field->getFieldDefinition()->getSettings();
+        $target_type = isset($settings['target_type']) ? $settings['target_type'] : NULL;
+        $target_bundles = isset($settings['handler_settings']['target_bundles']) ? $settings['handler_settings']['target_bundles'] : [$target_type];
+        if (!empty($target_type)) {
+          $skip_entities = TRUE;
+          foreach ($target_bundles as $target_bundle) {
+            $enable_index = isset($content_hub_entity_type_ids[$target_type]) ? !$content_hub_entity_type_ids[$target_type]->isEnableIndex($target_bundle) : FALSE;
+            $skip_entities = $skip_entities && $enable_index;
+          }
+        }
+
+        if (!$skip_entities) {
+          // Check whether the referenced entities should be transferred to
+          // Content Hub.
+          $field_entities = $field->referencedEntities();
+          foreach ($field_entities as $key => $field_entity) {
+            if (!$this->entityManager->isEligibleDependency($field_entity)) {
+              unset($field_entities[$key]);
+            }
+          }
+          /** @var \Drupal\Core\Entity\EntityInterface[] $referenced_entities */
+          $referenced_entities = array_merge($field_entities, $referenced_entities);
+        }
       }
     }
 
@@ -559,11 +582,17 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    *   initialized array.
    * @param array $context
    *   Additional Context such as the account.
+   * @param int $depth
+   *   The depth of the referenced entity (levels down from main entity).
    *
    * @return \Drupal\Core\Entity\ContentEntityInterface[] $referenced_entities
    *   All referenced entities.
    */
-  public function getMultilevelReferencedFields(ContentEntityInterface $entity, &$referenced_entities, array $context = array()) {
+  public function getMultilevelReferencedFields(ContentEntityInterface $entity, &$referenced_entities, array $context = array(), $depth = 0) {
+    $depth++;
+    $maximum_depth = $this->config->get('acquia_contenthub.entity_config')->get('dependency_depth');
+    $maximum_depth = is_int($maximum_depth) ? $maximum_depth : 3;
+
     // Collecting all referenced_entities UUIDs.
     $uuids = [];
     foreach ($referenced_entities as $entity) {
@@ -577,7 +606,12 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         // @TODO: This if-condition is a hack to avoid Vocabulary entities.
         if ($entity instanceof \Drupal\Core\Entity\ContentEntityInterface) {
           $referenced_entities[] = $entity;
-          $this->getMultilevelReferencedFields($entity, $referenced_entities, $context);
+
+          // Only search for dependencies if we are below the maximum depth
+          // configured by the admin. If not set, a default of 3 will be used.
+          if ($depth < $maximum_depth) {
+            $this->getMultilevelReferencedFields($entity, $referenced_entities, $context, $depth);
+          }
         }
       }
     }

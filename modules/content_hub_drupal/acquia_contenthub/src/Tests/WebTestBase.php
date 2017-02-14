@@ -90,4 +90,28 @@ abstract class WebTestBase extends SimpletestWebTestBase {
     ));
   }
 
+  /**
+   * Configures Content types to be exported to Content Hub.
+   *
+   * @param string $entity_type
+   *   The entity type the bundles belong to.
+   * @param array $bundles
+   *   The bundles to enable.
+   */
+  public function configureContentHubContentTypes($entity_type, array $bundles) {
+    $this->drupalGet('admin/config/services/acquia-contenthub/configuration');
+    $this->assertResponse(200);
+
+    $edit = array();
+    foreach ($bundles as $bundle) {
+      $edit['entities[' . $entity_type . '][' . $bundle . '][enable_index]'] = 1;
+    }
+
+    $this->drupalPostForm(NULL, $edit, $this->t('Save configuration'));
+    $this->assertResponse(200);
+
+    $this->drupalGet('admin/config/services/acquia-contenthub/configuration');
+    $this->assertResponse(200);
+  }
+
 }

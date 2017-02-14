@@ -123,7 +123,11 @@ function acquia_contenthub_send_entities() {
     // Obtaining the entity ID from the entity.
     $acquia_contenthub_export_controller->trackExportedEntity($exported_entity);
   }
-  $entity_manager->updateRemoteEntities($resource_url);
+  // @TODO: If we are not able to set export status for entities then we are
+  // not exportig entities. Check these lines for media entities.
+  if (!empty($exported_cdfs)) {
+    $entity_manager->updateRemoteEntities($resource_url);
+  }
 
 }
 

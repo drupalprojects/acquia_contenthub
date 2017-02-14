@@ -100,20 +100,25 @@ class ContentHubEntityExportController extends ControllerBase {
    *   The Entity type.
    * @param string $entity_id
    *   The Entity ID.
+   * @param bool $include_references
+   *   Whether to include referenced entities in the CDF.
    *
    * @return array
    *   The CDF array.
    */
-  public function getEntityCdfByInternalRequest($entity_type, $entity_id) {
+  public function getEntityCdfByInternalRequest($entity_type, $entity_id, $include_references = TRUE) {
     global $base_path;
     try {
-      $url = Url::fromRoute('acquia_contenthub.entity.' . $entity_type . '.GET.acquia_contenthub_cdf', [
+      $params = [
         'entity_type' => $entity_type,
         'entity_id' => $entity_id,
         $entity_type => $entity_id,
         '_format' => 'acquia_contenthub_cdf',
-        'include_references' => 'true',
-      ])->toString();
+      ];
+      if ($include_references) {
+        $params['include_references'] = 'true';
+      }
+      $url = Url::fromRoute('acquia_contenthub.entity.' . $entity_type . '.GET.acquia_contenthub_cdf', $params)->toString();
       $url = str_replace($base_path, '/', $url);
 
       // Creating an internal HMAC-signed request.
@@ -129,7 +134,7 @@ class ContentHubEntityExportController extends ControllerBase {
       // Do nothing, route does not exist.
       $bulk_cdf = array();
     }
-    return $bulk_cdf;
+    return empty($bulk_cdf) ? ['entities' => []] : $bulk_cdf;
   }
 
   /**
