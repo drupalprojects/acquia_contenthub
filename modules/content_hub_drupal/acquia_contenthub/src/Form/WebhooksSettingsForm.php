@@ -74,7 +74,7 @@ class WebhooksSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $config = \Drupal::config('acquia_contenthub.admin_settings');
+    $config = $this->configFactory->getEditable('acquia_contenthub.admin_settings');
     $form['webhook_settings'] = array(
       '#type' => 'fieldset',
       '#title' => t('Administer Webhooks'),
@@ -92,8 +92,7 @@ class WebhooksSettingsForm extends ConfigFormBase {
     $webhook_uuid = $config->get('webhook_uuid');
 
     // Ask service about webhooks.
-    $subscription = \Drupal::getContainer()->get("acquia_contenthub.acquia_contenthub_subscription");
-    $webhooks = $subscription->getSettings()->getWebhooks();
+    $webhooks = $this->contentHubSubscription->getSettings()->getWebhooks();
 
     // Match $remote_uuid via $webhook_url from service response.
     $remote_uuid = NULL;
@@ -104,12 +103,11 @@ class WebhooksSettingsForm extends ConfigFormBase {
       }
     }
 
-    // Fix local state if it doesn't match service state.
+    // Fix local state if it does not match service state.
     if ($remote_uuid != $webhook_uuid) {
-      $config_write = \Drupal::configFactory()->getEditable('acquia_contenthub.admin_settings');
-      $config_write->set('webhook_uuid', $remote_uuid);
-      $config_write->set('webhook_url', $webhook_url);
-      $config_write->save();
+      $config->set('webhook_uuid', $remote_uuid);
+      $config->set('webhook_url', $webhook_url);
+      $config->save();
       $webhook_uuid = $remote_uuid;
     }
 
@@ -161,13 +159,22 @@ class WebhooksSettingsForm extends ConfigFormBase {
 
     $webhook_register = (bool) $form_state->getValue('webhook_uuid');
 
-    // Perform the registration / un-registration.
-    if ($webhook_register) {
+    // Establish current uuid from config.
+    $config = $this->configFactory->getEditable('acquia_contenthub.admin_settings');
+    $webhook_uuid = $config->get('webhook_uuid');
+
+    // User clicked Submit, but url is already registered.
+    if ($webhook_register && $webhook_uuid) {
+      drupal_set_message('No change in webhook status was taken.', 'warning');
+    }
+    // User wants to register and is currently not registered.
+    elseif ($webhook_register) {
       $success = $this->contentHubSubscription->registerWebhook($webhook_url);
       if (!$success) {
         drupal_set_message('There was a problem trying to register this webhook.', 'error');
       }
     }
+    // User wants to unregister thier webhook.
     else {
       $success = $this->contentHubSubscription->unregisterWebhook($webhook_url);
       if (!$success) {
