@@ -91,6 +91,28 @@ class WebhooksSettingsForm extends ConfigFormBase {
     }
     $webhook_uuid = $config->get('webhook_uuid');
 
+    // ask service about webhooks
+    $subscription = \Drupal::getContainer()->get("acquia_contenthub.acquia_contenthub_subscription");
+    $webhooks = $subscription->getSettings()->getWebhooks();
+
+    // match $remote_uuid via $webhook_url from service response
+    $remote_uuid = NULL;
+    foreach ($webhooks as $webhook) {
+      if ($webhook['url'] == $webhook_url) {
+        $remote_uuid = $webhook['uuid'];
+        break;
+      }
+    }
+
+    // fix local state if it doesn't match service state
+    if ($remote_uuid != $webhook_uuid) {
+      $config_write = \Drupal::configFactory()->getEditable('acquia_contenthub.admin_settings');
+      $config_write->set('webhook_uuid', $remote_uuid);
+      $config_write->set('webhook_url', $webhook_url);
+      $config_write->save();
+      $webhook_uuid = $remote_uuid;
+    }
+
     if ((bool) $webhook_uuid) {
       $title = t('Receive Webhooks (uuid = %uuid)', array(
         '%uuid' => $webhook_uuid,
