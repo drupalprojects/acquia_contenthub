@@ -211,14 +211,7 @@ class ContentHubWebhookController extends ControllerBase {
 
       case 'pending':
         $api = $this->config->get('api_key');
-        $encryption = (bool) $this->config->get('encryption_key_file');
-        if ($encryption) {
-          $secret = $this->config->get('secret_key');
-          $secret_key = $this->clientManager->cipher()->decrypt($secret);
-        }
-        else {
-          $secret_key = $this->config->get('secret_key');
-        }
+        $secret_key = $this->config->get('secret_key');
         $signature = $this->clientManager->getRequestSignature($request, $secret_key);
 
         $authorization = "Acquia $api:" . $signature;
@@ -262,16 +255,11 @@ class ContentHubWebhookController extends ControllerBase {
    */
   public function registerWebhook($webhook) {
     $uuid = isset($webhook['uuid']) ? $webhook['uuid'] : FALSE;
-    $origin = $this->config->get('origin', '');
-    $api_key = $this->config->get('api_key', '');
+    $origin = $this->config->get('origin');
+    $api_key = $this->config->get('api_key');
 
     if ($uuid && $webhook['initiator'] == $origin && $webhook['publickey'] == $api_key) {
-
-      $encryption = (bool) $this->config->get('encryption_key_file', '');
-      $secret = $this->config->get('secret_key', '');
-      if ($encryption) {
-        $secret = $this->clientManager->cipher()->decrypt($secret);
-      }
+      $secret = $this->config->get('secret_key');
 
       // Creating a response.
       $response = new ResponseSigner($api_key, $secret);

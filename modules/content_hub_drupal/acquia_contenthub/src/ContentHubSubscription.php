@@ -93,13 +93,8 @@ class ContentHubSubscription {
   public function getSettings() {
     if ($this->settings = $this->clientManager->createRequest('getSettings')) {
       $shared_secret = $this->settings->getSharedSecret();
-
-      // If encryption is activated, then encrypt the shared secret.
-      $encryption = $this->config->get('encryption_key_file', FALSE);
-      if ($encryption) {
-        $shared_secret = $this->clientManager->cipher()->encrypt($shared_secret);
-      }
       $this->config->set('shared_secret', $shared_secret);
+      $this->config->save();
       return $this->settings;
     }
     return FALSE;
@@ -185,10 +180,6 @@ class ContentHubSubscription {
    */
   public function getSharedSecret() {
     if ($shared_secret = $this->config->get('shared_secret')) {
-      $encryption = (bool) $this->config->get('encryption_key_file');
-      if ($encryption) {
-        $shared_secret = $this->clientManager->cipher()->decrypt($shared_secret);
-      }
       return $shared_secret;
     }
     else {
@@ -263,7 +254,7 @@ class ContentHubSubscription {
    * Hub, then we need to update it.
    */
   public function updateSharedSecret() {
-    if ($this->isConnected()) {
+    if ($this->clientManager->isConnected()) {
       if ($this->getSharedSecret() !== $this->clientManager->createRequest('getSettings')->getSharedSecret()) {
         // If this condition is met, then the locally stored shared secret is
         // outdated. We need to update the value from the Hub.

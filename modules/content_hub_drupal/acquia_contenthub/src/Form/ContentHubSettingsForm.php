@@ -210,20 +210,7 @@ class ContentHubSettingsForm extends ConfigFormBase {
       $secret = NULL;
       if ($form_state->hasValue('secret_key')) {
         $secret = $form_state->getValue('secret_key');
-
-        // Only reset the secret if it is passed. If encryption is activated,
-        // then encrypt it too.
-        $encryption = $config->get('encryption_key_file');
-
-        // Encrypting the secret, to save for later use.
-        if (!empty($secret) && !empty($encryption)) {
-          $encrypted_secret = $this->clientManager->cipher()->encrypt($secret);
-        }
-        elseif ($secret) {
-          // Not encryption was provided.
-          $encrypted_secret = $secret;
-        }
-        $config->set('secret_key', $encrypted_secret);
+        $config->set('secret_key', $secret);
       }
 
       $config->save();
