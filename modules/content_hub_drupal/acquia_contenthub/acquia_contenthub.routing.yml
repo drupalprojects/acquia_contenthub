@@ -34,7 +34,7 @@ acquia_contenthub.acquia_contenthub_cdf.entity:
   methods:
     - POST
   defaults:
-    _controller: 'Drupal\acquia_contenthub\Controller\ContentHubEntityImportController::saveDrupalEntity'
+    _controller: 'Drupal\acquia_contenthub\Controller\ContentHubEntityImportController::importEntity'
   requirements:
     _permission: 'administer acquia content hub'
     _access_rest_csrf: 'TRUE'

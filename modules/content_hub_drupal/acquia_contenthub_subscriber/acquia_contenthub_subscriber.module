@@ -5,7 +5,7 @@
  */
 
 use \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface;
-use \Drupal\acquia_contenthub\Controller\ContentHubEntityImportController;
+use \Drupal\acquia_contenthub\ImportEntityManager;
 use Drupal\user\Entity\User;
 
 /**
@@ -22,8 +22,8 @@ function acquia_contenthub_subscriber_acquia_contenthub_process_webhook_alter($w
   /* @var \Drupal\acquia_contenthub\ContentHubEntitiesTracking $contenthub_entity_tracking */
   $contenthub_entity_tracking = \Drupal::service('acquia_contenthub.acquia_contenthub_entities_tracking');
 
-  /* @var \Drupal\acquia_contenthub\Controller\ContentHubEntityImportController $contenthub_import_controller */
-  $contenthub_import_controller = \Drupal::service('acquia_contenthub.acquia_contenthub_cdf.import_entity');
+  /* @var \Drupal\acquia_contenthub\ImportEntityManager $import_entity_manager */
+  $import_entity_manager = \Drupal::service('acquia_contenthub.import_entity_manager');
 
   /* @var \Drupal\Core\Entity\EntityManagerInterface $entity_manager */
   $entity_manager = \Drupal::service('entity.manager');
@@ -39,7 +39,7 @@ function acquia_contenthub_subscriber_acquia_contenthub_process_webhook_alter($w
 
     // New entities are handled by Content Hub Filters.
     if (!$contenthub_entity_tracking->loadByUuid($asset['uuid'])) {
-      acquia_contenthub_subscriber_process_filters($contenthub_import_controller, $filters, $asset);
+      acquia_contenthub_subscriber_process_filters($import_entity_manager, $filters, $asset);
       continue;
     }
     // If the entity has been previously imported, save only when auto update
@@ -47,7 +47,7 @@ function acquia_contenthub_subscriber_acquia_contenthub_process_webhook_alter($w
     if (!$contenthub_entity_tracking->isAutoUpdate()) {
       continue;
     }
-    $contenthub_import_controller->saveDrupalEntity($asset['uuid']);
+    $import_entity_manager->importRemoteEntity($asset['uuid']);
   }
 }
 
@@ -74,15 +74,15 @@ function acquia_contenthub_subscriber_entity_delete(EntityInterface $entity) {
 /**
  * Processes an Asset that has arrived through a Webhook.
  *
- * @param \Drupal\acquia_contenthub\Controller\ContentHubEntityImportController $contenthub_import_controller
- *   The Content Hub Import Controller Service.
+ * @param \Drupal\acquia_contenthub\ImportEntityManager $import_entity_manager
+ *   The Import Entity Service.
  * @param \Drupal\acquia_contenthub_subscriber\Entity\ContentHubFilter[] $contenthub_filters
  *   of Content Hub Filters.
  *   Array of Content Hub Filters.
  * @param array $asset
  *   The asset to process.
  */
-function acquia_contenthub_subscriber_process_filters(ContentHubEntityImportController $contenthub_import_controller, array $contenthub_filters, array $asset) {
+function acquia_contenthub_subscriber_process_filters(ImportEntityManager $import_entity_manager, array $contenthub_filters, array $asset) {
 
   foreach ($contenthub_filters as $contenthub_filter) {
 
@@ -103,7 +103,7 @@ function acquia_contenthub_subscriber_process_filters(ContentHubEntityImportCont
       $user = User::load($uid);
 
       // If Filter condition evaluates to TRUE, save entity with dependencies.
-      $contenthub_import_controller->saveDrupalEntity($asset['uuid'], TRUE, $user->uuid(), $status);
+      $import_entity_manager->importRemoteEntity($asset['uuid'], TRUE, $user->uuid(), $status);
 
       // If this filter matches, then stop processing other filters.
       // @TODO: Find a better way of handling different filters (ie. priority).

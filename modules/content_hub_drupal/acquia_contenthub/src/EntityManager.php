@@ -17,7 +17,6 @@ use Drupal\Core\Url;
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
-use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Drupal\Component\Utility\UrlHelper;
 
 /**
@@ -70,13 +69,6 @@ class EntityManager {
   protected $entityTypeBundleInfoManager;
 
   /**
-   * The Basic HTTP Kernel to make requests.
-   *
-   * @var \Symfony\Component\HttpKernel\HttpKernelInterface
-   */
-  protected $kernel;
-
-  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
@@ -85,9 +77,8 @@ class EntityManager {
       $container->get('config.factory'),
       $container->get('acquia_contenthub.client_manager'),
       $container->get('acquia_contenthub.acquia_contenthub_entities_tracking'),
-      $container->get('acquia_contenthub.entity_manager'),
-      $container->get('entity_type.bundle.info'),
-      $container->get('http_kernel.basic')
+      $container->get('entity_type.manager'),
+      $container->get('entity_type.bundle.info')
     );
   }
 
@@ -100,15 +91,20 @@ class EntityManager {
    *    The config factory.
    * @param \Drupal\acquia_contenthub\Client\ClientManagerInterface $client_manager
    *    The client manager.
+   * @param \Drupal\acquia_contenthub\ContentHubEntitiesTracking $acquia_contenthub_entities_tracking
+   *    The Content Hub Entities Tracking.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *    The Entity Type Manager.
+   * @param \Drupal\Core\Entity\EntityTypeBundleInfoInterface $entity_type_bundle_info_manager
+   *    The Entity Type Bundle Info Manager.
    */
-  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager, ContentHubEntitiesTracking $acquia_contenthub_entities_tracking, EntityTypeManagerInterface $entity_manager, EntityTypeBundleInfoInterface $entity_type_bundle_info_manager, HttpKernelInterface $kernel) {
+  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager, ContentHubEntitiesTracking $acquia_contenthub_entities_tracking, EntityTypeManagerInterface $entity_type_manager, EntityTypeBundleInfoInterface $entity_type_bundle_info_manager) {
     $this->baseRoot = isset($GLOBALS['base_root']) ? $GLOBALS['base_root'] : '';
     $this->loggerFactory = $logger_factory;
     $this->clientManager = $client_manager;
     $this->contentHubEntitiesTracking = $acquia_contenthub_entities_tracking;
-    $this->entityTypeManager = $entity_manager;
+    $this->entityTypeManager = $entity_type_manager;
     $this->entityTypeBundleInfoManager = $entity_type_bundle_info_manager;
-    $this->kernel = $kernel;
     // Get the content hub config settings.
     $this->config = $config_factory->get('acquia_contenthub.admin_settings');
   }
@@ -538,97 +534,6 @@ class EntityManager {
     /** @var \Drupal\acquia_contenthub\ContentHubEntityTypeConfigInterface[] $contenthub_entity_config_ids */
     $contenthub_entity_config_ids = $contenthub_entity_config_storage->loadMultiple();
     return $contenthub_entity_config_ids;
-  }
-
-  /**
-   * Loads the Remote Content Hub Entity.
-   *
-   * @param string $uuid
-   *   The Remote Entity UUID.
-   *
-   * @return \Drupal\acquia_contenthub\ContentHubEntityDependency|bool
-   *   The Content Hub Entity Dependency if found, FALSE otherwise.
-   */
-  public function loadRemoteEntity($uuid) {
-    if ($entity = $this->clientManager->createRequest('readEntity', array($uuid))) {
-      return new ContentHubEntityDependency($entity);
-    }
-    return FALSE;
-  }
-
-  /**
-   * Obtains First-level remote dependencies for the current Content Hub Entity.
-   *
-   * @param \Drupal\acquia_contenthub\ContentHubEntityDependency $content_hub_entity
-   *   The Content Hub Entity.
-   * @param bool|TRUE $use_chain
-   *   If the dependencies should be unique to the dependency chain or not.
-   *
-   * @return array
-   *   An array of \Drupal\acquia_contenthub\ContentHubEntityDependency.
-   */
-  public function getRemoteDependencies(ContentHubEntityDependency $content_hub_entity, $use_chain = TRUE) {
-    $dependencies = array();
-    $uuids = $content_hub_entity->getRemoteDependencies();
-
-    foreach ($uuids as $uuid) {
-      $content_hub_dependent_entity = $this->loadRemoteEntity($uuid);
-      if ($content_hub_dependent_entity === FALSE) {
-        continue;
-      }
-      // If this dependency is already tracked in the dependency chain
-      // then we don't need to consider it a dependency unless we're not using
-      // the chain.
-      if ($content_hub_entity->isInDependencyChain($content_hub_dependent_entity) && $use_chain) {
-        $content_hub_dependent_entity->setParent($content_hub_entity);
-        continue;
-      }
-      $content_hub_dependent_entity->setParent($content_hub_entity);
-      $dependencies[$uuid] = $content_hub_dependent_entity;
-    }
-    return $dependencies;
-  }
-
-  /**
-   * Obtains all dependencies for the current Content Hub Entity.
-   *
-   * It collects dependencies on all levels, flattening out the dependency array
-   * to avoid looping circular dependencies.
-   *
-   * @param \Drupal\acquia_contenthub\ContentHubEntityDependency $content_hub_entity
-   *   The Content Hub Entity.
-   * @param array $dependencies
-   *   An array of \Drupal\acquia_contenthub\ContentHubEntityDependency.
-   * @param bool|TRUE $use_chain
-   *   If the dependencies should be unique to the dependency chain or not.
-   *
-   * @return array
-   *   An array of \Drupal\acquia_contenthub\ContentHubEntityDependency.
-   */
-  public function getAllRemoteDependencies(ContentHubEntityDependency $content_hub_entity, &$dependencies, $use_chain = TRUE) {
-    // Obtaining dependencies of this entity.
-    $dep_dependencies = $this->getRemoteDependencies($content_hub_entity, $use_chain);
-
-    /** @var \Drupal\acquia_contenthub\ContentHubEntityDependency $content_hub_dependency */
-    foreach ($dep_dependencies as $uuid => $content_hub_dependency) {
-      if (isset($dependencies[$uuid])) {
-        continue;
-      }
-
-      // Also check if this dependency has been previously imported and has the
-      // same modified timestamp. If the 'modified' timestamp matches then we
-      // know we are trying to import an entity that has no change at all, then
-      // it does not need to be imported again.
-      if ($imported_entity = $this->contentHubEntitiesTracking->loadImportedByUuid($uuid)) {
-        if ($imported_entity->getModified() === $content_hub_dependency->getRawEntity()->getModified()) {
-          continue;
-        }
-      }
-
-      $dependencies[$uuid] = $content_hub_dependency;
-      $this->getAllRemoteDependencies($content_hub_dependency, $dependencies, $use_chain);
-    }
-    return array_reverse($dependencies, TRUE);
   }
 
   /**
