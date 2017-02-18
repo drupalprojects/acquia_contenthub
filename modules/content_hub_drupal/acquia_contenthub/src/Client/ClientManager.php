@@ -140,8 +140,6 @@ class ClientManager implements ClientManagerInterface {
     $hostname = isset($variables['hostname']) ? $variables['hostname'] : '';;
     $api = isset($variables['api']) ? $variables['api'] : '';
 
-    // We assume that the secret passed to this function is always
-    // unencrypted.
     $secret = isset($variables['secret']) ? $variables['secret'] : '';;
     $origin = isset($variables['origin']) ? $variables['origin'] : '';
 
