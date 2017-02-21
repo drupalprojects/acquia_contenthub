@@ -81,7 +81,7 @@ class ContentHubAccess implements AccessInterface {
     }
     else {
       if (empty($this->clientManager->isConnected())) {
-        return AccessResult::forbidden('Acquia Content Hub Client Manager not connected.');
+        return AccessResult::forbidden('Acquia Content Hub Client not connected.');
       }
       // If this user has no permission, then validate Request Signature.
       $headers = array_map('current', $request->headers->all());

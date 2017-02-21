@@ -422,7 +422,7 @@ class ContentHubSubscription {
    * @return \Symfony\Component\HttpFoundation\Request
    *   The HMAC wrapped request.
    */
-  public function setAuthentication(Request $request, $use_shared_secret = TRUE) {
+  public function setHmacAuthorization(Request $request, $use_shared_secret = TRUE) {
     if ($this->clientManager->isConnected()) {
       $request->headers->set('Date', gmdate('D, d M Y H:i:s T'));
       $secret = $use_shared_secret ? $this->getSharedSecret() : $this->config->get('secret_key');
