@@ -10,7 +10,7 @@ Copy the example.env file to .env and update it.
 The main script will do everything for you (build and install). Just provide the
 name of the directory the build should go into, the branch, where your docroot is, and what version of Drupal core to use:
 ```
-./create-drupal-8-ch.sh MYPROJECT master /Users/you/sites/ 8.1.*
+./create-drupal-8-ch.sh MYPROJECT master /Users/you/sites/ 8.2.*
 ```
 If you just want to build a codebase, or install Drupal on an existing codebase,
 you can run any of these scripts:
