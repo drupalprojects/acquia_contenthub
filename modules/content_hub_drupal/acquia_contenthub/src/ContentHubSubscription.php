@@ -48,7 +48,7 @@ class ContentHubSubscription {
   protected $settings;
 
   /**
-   * The Admin Settings Simple Configuration.
+   * The Content Hub Admin Settings Simple Configuration.
    *
    * @var \Drupal\Core\Config\Config
    */
@@ -413,12 +413,12 @@ class ContentHubSubscription {
    * @return \Symfony\Component\HttpFoundation\Request
    *   The HMAC wrapped request.
    */
-  public function hmacWrapper(Request $request, $use_shared_secret = TRUE) {
+  public function setHmacAuthorization(Request $request, $use_shared_secret = TRUE) {
     if ($this->clientManager->isConnected()) {
       $request->headers->set('Date', gmdate('D, d M Y H:i:s T'));
       $secret = $use_shared_secret ? $this->getSharedSecret() : $this->config->get('secret_key');
       $signature = $this->clientManager->getRequestSignature($request, $secret);
-      $request->headers->set('Authorization', 'Acquia ContentHub:' . $signature);
+      $request->headers->set('Authorization', 'Acquia ContentHub:' . $signature, FALSE);
     }
     return $request;
   }

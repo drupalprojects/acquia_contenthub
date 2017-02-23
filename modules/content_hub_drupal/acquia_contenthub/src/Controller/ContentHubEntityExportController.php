@@ -123,7 +123,7 @@ class ContentHubEntityExportController extends ControllerBase {
 
       // Creating an internal HMAC-signed request.
       $request = Request::create($url);
-      $request = $this->contentHubSubscription->hmacWrapper($request, TRUE);
+      $request = $this->contentHubSubscription->setHmacAuthorization($request, TRUE);
 
       /** @var \Drupal\Core\Render\HtmlResponse $response */
       $response = $this->kernel->handle($request, HttpKernelInterface::SUB_REQUEST);

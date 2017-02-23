@@ -255,7 +255,7 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
       ->willReturn('a_style_decorated_file_uri');
 
     $this->contentHubSubscription->expects($this->once())
-      ->method('hmacWrapper')
+      ->method('setHmacAuthorization')
       ->will($this->returnArgument(0));
 
     $response = $this->getMock('Drupal\Core\Render\HtmlResponse');
