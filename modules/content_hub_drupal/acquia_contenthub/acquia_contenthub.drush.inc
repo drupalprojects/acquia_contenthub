@@ -120,6 +120,11 @@ function acquia_contenthub_drush_command() {
     "aliases" => array("ach-regsec"),
   );
 
+  $items['acquia-contenthub-update-secret'] = [
+    'description' => dt('Updates the Shared Secret used for Webhook Verification'),
+    'aliases' => ['ach-upsec'],
+  ];
+
   return $items;
 }
 
@@ -410,4 +415,22 @@ function drush_acquia_contenthub_regenerate_secret() {
     drush_user_abort();
   }
 
+}
+
+/**
+ * Updates the Shared Secret from the Content Hub.
+ */
+function drush_acquia_contenthub_update_secret() {
+  /** @var \Drupal\acquia_contenthub\Client\ClientManager $client_manager */
+  $client_manager = \Drupal::service('acquia_contenthub.client_manager');
+  /** @var \Drupal\acquia_contenthub\ContentHubSubscription $subscription */
+  $subscription = \Drupal::service('acquia_contenthub.acquia_contenthub_subscription');
+
+  if ($client_manager->isConnected()) {
+    $subscription->getSettings();
+    drush_print(dt('The shared secret has been updated.'));
+  }
+  else {
+    drush_set_error(dt('The Content Hub client is not connected so the shared secret can not be updated.'));
+  }
 }
