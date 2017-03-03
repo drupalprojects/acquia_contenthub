@@ -14,7 +14,6 @@ use \GuzzleHttp\Exception\RequestException as RequestException;
 use \GuzzleHttp\Exception\ServerException as ServerException;
 use \GuzzleHttp\Exception\ClientException as ClientException;
 use \GuzzleHttp\Exception\BadResponseException as BadResponseException;
-use Drupal\acquia_contenthub\Cipher;
 use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Component\Render\FormattableMarkup;
@@ -107,11 +106,6 @@ class ClientManager implements ClientManagerInterface {
       $secret = $this->config->get('secret_key');
       $client_name = $this->config->get('client_name');
       $origin = $this->config->get('origin');
-      $encryption = (bool) $this->config->get('encryption_key_file');
-
-      if ($encryption) {
-        $secret = $this->cipher()->decrypt($secret);
-      }
 
       // If any of these variables is empty, then we do NOT have a valid
       // connection.
@@ -132,22 +126,6 @@ class ClientManager implements ClientManagerInterface {
   }
 
   /**
-   * Returns a cipher class for encrypting and decrypting text.
-   *
-   * @Todo Make this work!
-   *
-   * @return \Drupal\acquia_contenthub\CipherInterface
-   *   The Cipher object to use for encrypting the data.
-   */
-  public function cipher() {
-    // @todo Make sure this injects using proper service injection methods.
-    $config = $this->configFactory->get('acquia_contenthub.admin_settings');
-    $filepath = $config->get('encryption_key_file');
-    $cipher = new Cipher($filepath);
-    return $cipher;
-  }
-
-  /**
    * Resets the connection to allow to pass connection variables.
    *
    * This should be used when we need to pass connection variables instead
@@ -162,8 +140,6 @@ class ClientManager implements ClientManagerInterface {
     $hostname = isset($variables['hostname']) ? $variables['hostname'] : '';;
     $api = isset($variables['api']) ? $variables['api'] : '';
 
-    // We assume that the secret passed to this function is always
-    // unencrypted.
     $secret = isset($variables['secret']) ? $variables['secret'] : '';;
     $origin = isset($variables['origin']) ? $variables['origin'] : '';
 

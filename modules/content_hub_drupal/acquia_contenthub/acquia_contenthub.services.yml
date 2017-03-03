@@ -1,15 +1,15 @@
 services:
   acquia_contenthub.entity_manager:
     class: Drupal\acquia_contenthub\EntityManager
-    arguments: ['@logger.factory', '@config.factory', '@acquia_contenthub.client_manager', '@acquia_contenthub.acquia_contenthub_entities_tracking', '@entity_type.manager', '@entity_type.bundle.info', '@http_kernel.basic']
+    arguments: ['@logger.factory', '@config.factory', '@acquia_contenthub.client_manager', '@acquia_contenthub.acquia_contenthub_entities_tracking', '@entity_type.manager', '@entity_type.bundle.info']
 
   acquia_contenthub.import_entity_manager:
     class: Drupal\acquia_contenthub\ImportEntityManager
-    arguments: ['@acquia_contenthub.acquia_contenthub_entities_tracking', '@acquia_contenthub.acquia_contenthub_cdf.import_entity', '@diff.entity_comparison']
+    arguments: ['@database', '@logger.factory', '@serializer', '@entity.repository', '@acquia_contenthub.client_manager', '@acquia_contenthub.acquia_contenthub_entities_tracking', '@diff.entity_comparison']
 
   acquia_contenthub.acquia_contenthub_cdf.import_entity:
     class: Drupal\acquia_contenthub\Controller\ContentHubEntityImportController
-    arguments: ['@database', '@logger.factory', '@acquia_contenthub.entity_manager', '@serializer', '@entity.repository', '@acquia_contenthub.acquia_contenthub_entities_tracking']
+    arguments: ['@acquia_contenthub.import_entity_manager']
 
   acquia_contenthub.acquia_contenthub_entities_tracking:
     class: Drupal\acquia_contenthub\ContentHubEntitiesTracking
@@ -68,10 +68,10 @@ services:
     class: Drupal\acquia_contenthub\Routing\ResourceRoutes
     arguments: ['@acquia_contenthub.entity_manager', '@entity_type.manager']
 
-  access_check.acquia_contenthub.contenthub_access_check:
-    class: Drupal\acquia_contenthub\Access\ContentHubAccessCheck
+  access_check.acquia_contenthub.contenthub_access:
+    class: Drupal\acquia_contenthub\Access\ContentHubAccess
     tags:
-      - { name: access_check, applies_to: _contenthub_access_check }
+      - { name: access_check, applies_to: _contenthub_access }
     arguments: ['@logger.factory', '@acquia_contenthub.client_manager', '@acquia_contenthub.acquia_contenthub_subscription']
 
   acquia_contenthub.form.node_type_preview_image_form:

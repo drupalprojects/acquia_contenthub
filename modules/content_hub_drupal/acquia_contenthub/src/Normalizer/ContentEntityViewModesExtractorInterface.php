@@ -9,7 +9,7 @@ namespace Drupal\acquia_contenthub\Normalizer;
 use Drupal\Core\Entity\ContentEntityInterface;
 
 /**
- * Interface for CipherInterface.
+ * Interface for View Modes Extractor.
  */
 interface ContentEntityViewModesExtractorInterface {
 

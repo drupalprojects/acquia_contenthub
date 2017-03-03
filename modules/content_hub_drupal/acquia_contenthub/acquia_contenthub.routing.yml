@@ -34,7 +34,7 @@ acquia_contenthub.acquia_contenthub_cdf.entity:
   methods:
     - POST
   defaults:
-    _controller: 'Drupal\acquia_contenthub\Controller\ContentHubEntityImportController::saveDrupalEntity'
+    _controller: 'Drupal\acquia_contenthub\Controller\ContentHubEntityImportController::importEntity'
   requirements:
     _permission: 'administer acquia content hub'
     _access_rest_csrf: 'TRUE'
@@ -46,7 +46,7 @@ acquia_contenthub.content_entity_display.entity:
   defaults:
     _controller: '\Drupal\acquia_contenthub\Controller\ContentEntityDisplayController::viewEntityViewMode'
   requirements:
-    _contenthub_access_check : 'TRUE'
+    _contenthub_access : 'TRUE'
     entity_type: \w+ #word
     entity_id: \d+ #digit
     view_mode_name: \w+ #word
@@ -58,7 +58,7 @@ acquia_contenthub.acquia_contenthub_bulk_cdf:
   defaults:
     _controller: '\Drupal\acquia_contenthub\Controller\ContentHubEntityExportController::getDrupalEntities'
   requirements:
-    _contenthub_access_check : 'TRUE'
+    _contenthub_access : 'TRUE'
 
 route_callbacks:
   - 'acquia_contenthub.resource_routes:routes'

@@ -201,7 +201,7 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
       ])->toString();
 
       $request = Request::create($url);
-      $request = $this->contentHubSubscription->hmacWrapper($request);
+      $request = $this->contentHubSubscription->setHmacAuthorization($request);
 
       /** @var \Drupal\Core\Render\HtmlResponse $response */
       $response = $this->kernel->handle($request, HttpKernelInterface::SUB_REQUEST);

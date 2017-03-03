@@ -48,7 +48,7 @@ class ContentHubSubscription {
   protected $settings;
 
   /**
-   * The Admin Settings Simple Configuration.
+   * The Content Hub Admin Settings Simple Configuration.
    *
    * @var \Drupal\Core\Config\Config
    */
@@ -93,13 +93,8 @@ class ContentHubSubscription {
   public function getSettings() {
     if ($this->settings = $this->clientManager->createRequest('getSettings')) {
       $shared_secret = $this->settings->getSharedSecret();
-
-      // If encryption is activated, then encrypt the shared secret.
-      $encryption = $this->config->get('encryption_key_file', FALSE);
-      if ($encryption) {
-        $shared_secret = $this->clientManager->cipher()->encrypt($shared_secret);
-      }
       $this->config->set('shared_secret', $shared_secret);
+      $this->config->save();
       return $this->settings;
     }
     return FALSE;
@@ -185,10 +180,6 @@ class ContentHubSubscription {
    */
   public function getSharedSecret() {
     if ($shared_secret = $this->config->get('shared_secret')) {
-      $encryption = (bool) $this->config->get('encryption_key_file');
-      if ($encryption) {
-        $shared_secret = $this->clientManager->cipher()->decrypt($shared_secret);
-      }
       return $shared_secret;
     }
     else {
@@ -263,7 +254,7 @@ class ContentHubSubscription {
    * Hub, then we need to update it.
    */
   public function updateSharedSecret() {
-    if ($this->isConnected()) {
+    if ($this->clientManager->isConnected()) {
       if ($this->getSharedSecret() !== $this->clientManager->createRequest('getSettings')->getSharedSecret()) {
         // If this condition is met, then the locally stored shared secret is
         // outdated. We need to update the value from the Hub.
@@ -422,12 +413,12 @@ class ContentHubSubscription {
    * @return \Symfony\Component\HttpFoundation\Request
    *   The HMAC wrapped request.
    */
-  public function hmacWrapper(Request $request, $use_shared_secret = TRUE) {
+  public function setHmacAuthorization(Request $request, $use_shared_secret = TRUE) {
     if ($this->clientManager->isConnected()) {
       $request->headers->set('Date', gmdate('D, d M Y H:i:s T'));
       $secret = $use_shared_secret ? $this->getSharedSecret() : $this->config->get('secret_key');
       $signature = $this->clientManager->getRequestSignature($request, $secret);
-      $request->headers->set('Authorization', 'Acquia ContentHub:' . $signature);
+      $request->headers->set('Authorization', 'Acquia ContentHub:' . $signature, FALSE);
     }
     return $request;
   }
