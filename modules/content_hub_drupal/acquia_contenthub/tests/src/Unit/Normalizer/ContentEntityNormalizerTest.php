@@ -798,6 +798,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
       'getTranslation',
       'hasField',
       'toUrl',
+      'hasLinkTemplate',
     );
 
     $content_entity_mock = $this->getMockBuilder('Drupal\Core\Entity\ContentEntityBase')
@@ -835,6 +836,8 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $url->method('getRouteName')->willReturn('entity.node.canonical');
     $url->method('getRouteParameters')->willReturn(['node' => 1]);
     $content_entity_mock->method('toUrl')->willReturn($url);
+
+    $content_entity_mock->method('hasLinkTemplate')->willReturn(TRUE);
 
     return $content_entity_mock;
   }

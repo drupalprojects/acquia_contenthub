@@ -27,7 +27,7 @@ function acquia_contenthub_help($route_name, RouteMatchInterface $route_match) {
 function acquia_contenthub_entity_insert(EntityInterface $entity) {
   /** @var \Drupal\acquia_contenthub\EntityManager $entity_manager */
   $entity_manager = \Drupal::service('acquia_contenthub.entity_manager');
-  $entity_manager->entityAction($entity, 'INSERT');
+  $entity_manager->enqueueCandidateEntity($entity);
 }
 
 /**
@@ -36,7 +36,7 @@ function acquia_contenthub_entity_insert(EntityInterface $entity) {
 function acquia_contenthub_entity_update(EntityInterface $entity) {
   /** @var \Drupal\acquia_contenthub\EntityManager $entity_manager */
   $entity_manager = \Drupal::service('acquia_contenthub.entity_manager');
-  $entity_manager->entityAction($entity, 'UPDATE');
+  $entity_manager->enqueueCandidateEntity($entity);
 
   /** @var \Drupal\acquia_contenthub\ImportEntityManager $import_entity_manager */
   $import_entity_manager = \Drupal::service('acquia_contenthub.import_entity_manager');
@@ -49,7 +49,11 @@ function acquia_contenthub_entity_update(EntityInterface $entity) {
 function acquia_contenthub_entity_delete(EntityInterface $entity) {
   /** @var \Drupal\acquia_contenthub\EntityManager $entity_manager */
   $entity_manager = \Drupal::service('acquia_contenthub.entity_manager');
-  $entity_manager->entityAction($entity, 'DELETE');
+  $entity_manager->enqueueCandidateEntity($entity, FALSE);
+
+  /** @var \Drupal\acquia_contenthub\ImportEntityManager $import_entity_manager */
+  $import_entity_manager = \Drupal::service('acquia_contenthub.import_entity_manager');
+  $import_entity_manager->entityDelete($entity);
 }
 
 /**
@@ -62,33 +66,35 @@ function acquia_contenthub_entity_presave(EntityInterface $entity) {
 }
 
 /**
- * Sends entities to Content Hub using Bulk Upload.
+ * Process all candidate entities and insert/update/delete on Content Hub.
  */
-function acquia_contenthub_send_entities() {
+function acquia_contenthub_bulk_export() {
   /** @var \Drupal\acquia_contenthub\EntityManager $entity_manager */
   $entity_manager = \Drupal::service('acquia_contenthub.entity_manager');
 
+  $entity_manager->bulkExport();
+
+  // @TODO Move all code below from acquia_contenthub_bulk_export() to
+  // entity_manager's bulkExport().
   /** @var \Drupal\acquia_contenthub\Normalizer\ContentEntityCdfNormalizer $acquia_contenthub_normalizer */
   $acquia_contenthub_normalizer = \Drupal::service('acquia_contenthub.normalizer.entity.acquia_contenthub_cdf');
 
   /** @var \Drupal\acquia_contenthub\Controller\ContentHubEntityExportController $acquia_contenthub_export_controller */
   $acquia_contenthub_export_controller = \Drupal::service('acquia_contenthub.acquia_contenthub_export_entities');
 
-  $entities = $entity_manager->collectExportEntities();
-
   // Verify that the collected entities are not already included within the
   // the references of other collected entities.
-  $uuids = array_keys($entities);
-  foreach ($entities as $en) {
-    $entity = $en['entity'];
+  $candidate_entities = $entity_manager->getExportCandidateEntities();
+  $uuids = array_keys($candidate_entities);
+  foreach ($candidate_entities as $candidate_entity) {
     // Get referenced entities.
-    $referenced_entities = $acquia_contenthub_normalizer->getReferencedFields($entity);
+    $referenced_entities = $acquia_contenthub_normalizer->getReferencedFields($candidate_entity);
 
     // If entities are included as references then delete them from the
     // collected entities array.
-    foreach ($referenced_entities as $key => $ref_entity) {
-      if (in_array($ref_entity->uuid(), $uuids)) {
-        unset($entities[$ref_entity->uuid()]);
+    foreach ($referenced_entities as $key => $referenced_entity) {
+      if (in_array($referenced_entity->uuid(), $uuids)) {
+        unset($candidate_entities[$referenced_entity->uuid()]);
       }
     }
   }
@@ -96,16 +102,16 @@ function acquia_contenthub_send_entities() {
   // The collected entities are clean now and should all be processed.
   $exported_entities = [];
   $bulk_url_array = [];
-  foreach ($entities as $en) {
-    $entity = $en['entity'];
-    $entity_type = $entity->getEntityTypeId();
-    $entity_id = $entity->id();
+  foreach ($candidate_entities as $candidate_entity) {
+    $entity_type = $candidate_entity->getEntityTypeId();
+    $entity_id = $candidate_entity->id();
     $bulk_url_array[$entity_type][$entity_id] = $entity_id;
-    $exported_entities = array_merge($exported_entities, $acquia_contenthub_export_controller->getEntityCdfByInternalRequest($entity_type, $entity_id));
+    $exported_entity = $acquia_contenthub_export_controller->getEntityCdfByInternalRequest($entity_type, $entity_id);
+    $exported_entities = array_merge($exported_entities, $exported_entity['entities']);
   }
   // Eliminating duplicates.
   $exported_cdfs = [];
-  foreach ($exported_entities['entities'] as $cdf) {
+  foreach ($exported_entities as $cdf) {
     $exported_cdfs[$cdf['uuid']] = $cdf;
   }
 

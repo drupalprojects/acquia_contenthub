@@ -252,7 +252,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     }
 
     // Required Modified field.
-    if ($entity->get('changed')) {
+    if ($entity->hasField('changed') && $entity->get('changed')) {
       $modified = date('c', $entity->get('changed')->getValue()[0]['value']);
     }
     else {
@@ -371,10 +371,24 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
 
       // @TODO: This is to make it work with vocabularies. It should be
       // replaced with appropriate handling of taxonomy vocabulary entities.
-      if ($name == 'vid' && $entity->getEntityTypeId() == 'taxonomy_term') {
+      if ($name === 'vid' && $entity->getEntityTypeId() === 'taxonomy_term') {
         $attribute = new Attribute(Attribute::TYPE_STRING);
         $attribute->setValue($items[0]['target_id'], $langcode);
         $contenthub_entity->setAttribute('vocabulary', $attribute);
+        continue;
+      }
+
+      // To make it work with Paragraphs, we are converting the field
+      // 'parent_id' to 'parent_uuid' because Content Hub cannot deal with
+      // entity_id information.
+      if ($name === 'parent_id' && $entity->getEntityTypeId() === 'paragraph') {
+        $attribute = new Attribute(Attribute::TYPE_STRING);
+        $parent_id = $items[0]['value'];
+        $parent_type = $fields['parent_type']->getValue()[0]['value'];
+        $parent = $this->entityTypeManager->getStorage($parent_type)->load($parent_id);
+        $parent_uuid = $parent->uuid();
+        $attribute->setValue($parent_uuid, $langcode);
+        $contenthub_entity->setAttribute('parent_uuid', $attribute);
         continue;
       }
 
@@ -481,6 +495,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     $this->moduleHandler->alter('acquia_contenthub_cdf', $contenthub_entity, $context);
 
     // Adds the entity URL to CDF.
+    $value = NULL;
     if (empty($contenthub_entity->getAttribute('url'))) {
       global $base_path;
       switch ($entity->getEntityTypeId()) {
@@ -490,15 +505,19 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
 
         default:
           // Get entity URL fromRoute.
-          $route_name = $entity->toUrl()->getRouteName();
-          $route_params = $entity->toUrl()->getRouteParameters();
-          $value = Url::fromRoute($route_name, $route_params)->toString();
-          $value = str_replace($base_path, '/', $value);
-          $value = Url::fromUri($this->baseUrl . $value)->toUriString();
+          if ($entity->hasLinkTemplate('canonical')) {
+            $route_name = $entity->toUrl()->getRouteName();
+            $route_params = $entity->toUrl()->getRouteParameters();
+            $value = Url::fromRoute($route_name, $route_params)->toString();
+            $value = str_replace($base_path, '/', $value);
+            $value = Url::fromUri($this->baseUrl . $value)->toUriString();
+          }
           break;
       }
-      $att = new \Acquia\ContentHubClient\Attribute('string');
-      $contenthub_entity->setAttribute('url', $att->setValue($value, $langcode));
+      if (isset($value)) {
+        $att = new Attribute('string');
+        $contenthub_entity->setAttribute('url', $att->setValue($value, $langcode));
+      }
     }
 
     return $contenthub_entity;
@@ -657,6 +676,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     // Iterate over all attributes.
     foreach ($contenthub_entity->getAttributes() as $name => $attribute) {
 
+      $attribute = (array) $attribute;
       // If it is an excluded property, then skip it.
       if (in_array($name, $excluded_fields)) {
         continue;
@@ -763,6 +783,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       ),
       'array<reference>' => array(
         'entity_reference',
+        'entity_reference_revisions',
       ),
       'array<integer>' => array(
         'integer',
@@ -831,6 +852,9 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         'uid',
         'cid',
 
+        // Getting rid of workflow fields.
+        'status',
+
         // Do not send revisions.
         'revision_uid',
         'revision_translation_affected',
@@ -853,9 +877,13 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         'vid',
 
         // Getting rid of workflow fields.
-        'status',
         'sticky',
         'promote',
+      ],
+
+      // Excluded fields for paragraphs.
+      'paragraph' => [
+        'revision_id',
       ],
     ];
 
@@ -956,6 +984,25 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
           }
           break;
 
+        case 'paragraph':
+          // In case of paragraphs, we need to strip out the parent_uuid and
+          // change it for parent_id.
+          $attribute = $contenthub_entity->getAttribute('parent_uuid');
+          foreach ($langcodes as $lang) {
+            $uuid = $attribute['value'][$lang];
+            $parent_type = $contenthub_entity->getAttribute('parent_type');
+            $parent_type_id = reset($parent_type['value'][$lang]);
+            $parent_entity = $this->entityRepository->loadEntityByUuid($parent_type_id, $uuid);
+
+            // Replace parent_uuid attribute with parent_id.
+            $contenthub_entity->removeAttribute('parent_uuid');
+            $attribute = new Attribute(Attribute::TYPE_ARRAY_STRING);
+            $attribute->setValue([$parent_entity->id()], $lang);
+            $attributes = $contenthub_entity->getAttributes();
+            $attributes['parent_id'] = (array) $attribute;
+            $contenthub_entity->setAttributes($attributes);
+          }
+          break;
       }
 
       $entity = $this->entityTypeManager->getStorage($entity_type)->create($values);

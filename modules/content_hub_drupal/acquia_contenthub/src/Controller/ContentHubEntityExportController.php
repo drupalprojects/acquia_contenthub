@@ -203,13 +203,14 @@ class ContentHubEntityExportController extends ControllerBase {
    */
   public function trackExportedEntity($cdf, $set_exported = FALSE) {
     if ($exported_entity = $this->contentHubEntitiesTracking->loadExportedByUuid($cdf['uuid'])) {
-      $exported_entity->setModified($cdf['modified']);
+      $exported_entity->setModified($cdf['modified'])
+        ->setInitiated();
     }
     else {
       // Add a new tracking record with exported status set, and
       // imported status empty.
       $entity = $this->entityRepository->loadEntityByUuid($cdf['type'], $cdf['uuid']);
-      $this->contentHubEntitiesTracking->setExportedEntity(
+      $exported_entity = $this->contentHubEntitiesTracking->setExportedEntity(
         $cdf['type'],
         $entity->id(),
         $cdf['uuid'],

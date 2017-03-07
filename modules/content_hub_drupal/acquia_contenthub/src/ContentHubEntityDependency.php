@@ -91,7 +91,7 @@ class ContentHubEntityDependency {
     // By default "field collections" and "paragraphs" are post-dependencies.
     $post_dependencies = array(
       'field_collection_item' => 'field_collection_item',
-      'paragraphs_item' => 'paragraphs_item',
+      'paragraph' => 'paragraph',
     );
     return $post_dependencies;
   }
@@ -282,7 +282,6 @@ class ContentHubEntityDependency {
       'author',
       'parent',
       'comments',
-      'host_entity',
     );
   }
 

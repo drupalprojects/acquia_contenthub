@@ -30,6 +30,7 @@ abstract class WebTestBase extends SimpletestWebTestBase {
    * @var \Drupal\Core\Session\AccountInterface
    */
   protected $adminUser;
+
   /**
    * The permissions of the admin user.
    *

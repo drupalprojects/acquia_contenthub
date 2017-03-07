@@ -208,10 +208,7 @@ class ClientManager implements ClientManagerInterface {
     $http_verb = $request->getMethod();
 
     // Adding the Request Query string.
-    if (NULL !== $qs = $request->getQueryString()) {
-      $qs = '?' . $qs;
-    }
-    $path = $request->getBasePath() . $request->getPathInfo() . $qs;
+    $path = $request->getRequestUri();
     $body = $request->getContent();
 
     // If the headers are not given, then the request is probably not coming

@@ -60,6 +60,9 @@ install:
   - composer config repositories.acquia-content-hub-d8 path ../build
   - composer config repositories.acquia-content-hub-d8.symlink false
   - composer require acquia/content-hub-d8
+    # Adding paragraphs contrib module.
+  - composer require drupal/entity_reference_revisions:1.0 --profile
+  - composer require drupal/paragraphs:1.0 --profile
   - composer update
   - composer install
   - phpenv rehash
