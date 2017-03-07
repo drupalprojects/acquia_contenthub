@@ -182,12 +182,12 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
     $configured_view_modes = $contenthub_entity_config_id->getRenderingViewModes($entity_bundle_id);
 
     // Normalize.
-    $view_modes = $this->entityDisplayRepository->getViewModes($entity_type_id);
+    $view_modes = $this->entityDisplayRepository->getViewModeOptionsByBundle($entity_type_id, $entity_bundle_id);
 
     // Generate preview image URL, if possible.
     $preview_image_url = $this->getPreviewImageUrl($object);
 
-    foreach ($view_modes as $view_mode_id => $view_mode) {
+    foreach ($view_modes as $view_mode_id => $view_mode_label) {
       if (!in_array($view_mode_id, $configured_view_modes)) {
         continue;
       }
@@ -209,7 +209,7 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
       $normalized[$view_mode_id] = [
         'id' => $view_mode_id,
         'preview_image' => $preview_image_url,
-        'label' => $view_mode['label'],
+        'label' => $view_mode_label,
         'url' => $url,
         'html' => $response->getContent(),
       ];

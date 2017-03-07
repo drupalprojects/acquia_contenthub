@@ -173,11 +173,11 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
       ->with('bundle_1')
       ->willReturn(['view_mode_2']);
     $this->entityDisplayRepository->expects($this->once())
-      ->method('getViewModes')
-      ->with('entity_type_1')
+      ->method('getViewModeOptionsByBundle')
+      ->with('entity_type_1', 'bundle_1')
       ->willReturn([
-        'view_mode_1' => ['label' => 'view_mode_1 label'],
-        'view_mode_2' => ['label' => 'view_mode_2 label'],
+        'view_mode_1' => 'view_mode_1 label',
+        'view_mode_2' => 'view_mode_2 label',
       ]);
 
     $this->entityTypeConfig->expects($this->once())

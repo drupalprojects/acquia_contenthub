@@ -155,9 +155,6 @@ class EntityConfigSettingsForm extends ConfigFormBase {
     $form = array();
     foreach ($bundle as $bundle_id => $bundle_name) {
       $view_modes = $this->entityDisplayRepository->getViewModeOptionsByBundle($type, $bundle_id);
-      // Remove default view mode from the options, as it cannot be rendered.
-      // entityDisplayRepository->getViewModes doesn't return the default mode.
-      unset($view_modes['default']);
 
       $entity_type_label = $this->entityTypeManager->getDefinition($type)->getLabel();
       $form[$bundle_id] = array(
