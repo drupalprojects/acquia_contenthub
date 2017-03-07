@@ -127,7 +127,7 @@ class ParagraphsTest extends SimpletestWebTestBase {
 
     // Check that paragraphs are included in the CDF.
     $this->assertTrue(isset($output['entities']['0']['metadata']), 'Metadata is present');
-    $this->assertTrue(isset($output['entities']['0']['metadata']['view_modes']['teaser']), t('View mode %view_mode is present', ['%view_mode' => 'teaser']));
+    $this->assertTrue(isset($output['entities']['0']['metadata']['view_modes']['default']), t('View mode %view_mode is present', ['%view_mode' => 'default']));
     $this->assertEqual($output['entities']['0']['attributes']['field_client_data']['type'], 'array<reference>');
     $this->assertTrue(Uuid::isValid($paragraphs_uuid_0));
 
