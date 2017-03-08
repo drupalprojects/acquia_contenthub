@@ -1,13 +1,10 @@
 <?php
-/**
- * @file
- * Contains Drupal\acquia_contenthub\Form\NodeForm.
- */
 
 namespace Drupal\acquia_contenthub\Form;
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\acquia_contenthub\ContentHubEntitiesTracking;
 
 /**
@@ -100,7 +97,7 @@ class NodeForm {
    * @param string $submit_handler_name
    *   Submit handler's name.
    */
-  public function attachSubmitHandler(&$form_actions, $submit_handler_name) {
+  public function attachSubmitHandler(array &$form_actions, $submit_handler_name) {
     foreach (array_keys($form_actions) as $action) {
       if ($action === 'preview' || !isset($form_actions[$action]['#type']) || $form_actions[$action]['#type'] !== 'submit') {
         continue;
@@ -112,10 +109,10 @@ class NodeForm {
   /**
    * Save settings.
    *
-   * @param array $form_state
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   Form state.
    */
-  public function saveSettings($form_state) {
+  public function saveSettings(FormStateInterface $form_state) {
     if ($form_state->isValueEmpty('acquia_contenthub')) {
       return;
     }

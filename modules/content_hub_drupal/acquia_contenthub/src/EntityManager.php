@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\acquia_contenthub\EntityManager.
- */
-
 namespace Drupal\acquia_contenthub;
 
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -176,7 +171,7 @@ class EntityManager {
    * @param string $num
    *   Number of failed entities added to the pool.
    *
-   * @return string $total
+   * @return string
    *   The total number of entities that failed to bulk upload.
    */
   private function entityFailures($num = NULL) {
@@ -200,7 +195,7 @@ class EntityManager {
    *   Returns the response.
    */
   public function updateRemoteEntities($resource_url) {
-    if ($response = $this->clientManager->createRequest('updateEntities', array($resource_url))) {
+    if ($response = $this->clientManager->createRequest('updateEntities', [$resource_url])) {
       $response = json_decode($response->getBody(), TRUE);
     }
     return empty($response['success']) ? FALSE : TRUE;
@@ -257,11 +252,11 @@ class EntityManager {
     }
 
     $resource_url = $this->getResourceUrl($entity);
-    $args = array(
+    $args = [
       '%type' => $entity->getEntityTypeId(),
       '%uuid' => $entity->uuid(),
       '%id' => $entity->id(),
-    );
+    ];
     if (!$resource_url) {
       $this->loggerFactory->get('acquia_contenthub')->error($this->t('Error trying to form a unique resource Url for %type with uuid %uuid and id %id', $args));
       return;
@@ -305,12 +300,12 @@ class EntityManager {
     $entity_type_id = $entity->getEntityTypeId();
 
     $route_name = 'acquia_contenthub.entity.' . $entity_type_id . '.GET.acquia_contenthub_cdf';
-    $url_options = array(
+    $url_options = [
       'entity_type' => $entity_type_id,
       $entity_type_id => $entity->id(),
       '_format' => 'acquia_contenthub_cdf',
       'include_references' => $include_references,
-    );
+    ];
 
     return $this->getResourceUrlByRouteName($route_name, $url_options);
   }
@@ -326,7 +321,7 @@ class EntityManager {
    * @return string
    *   returns URL.
    */
-  private function getResourceUrlByRouteName($route_name, $url_options = array()) {
+  private function getResourceUrlByRouteName($route_name, array $url_options = []) {
     $url = Url::fromRoute($route_name, $url_options);
     $path = $url->toString();
 
@@ -358,7 +353,7 @@ class EntityManager {
    * @return string
    *   returns URL.
    */
-  public function getBulkResourceUrl($url_options = array()) {
+  public function getBulkResourceUrl(array $url_options = []) {
     $route_name = 'acquia_contenthub.acquia_contenthub_bulk_cdf';
     return $this->getResourceUrlByRouteName($route_name, $url_options);
   }
@@ -405,13 +400,13 @@ class EntityManager {
       // site. Add it to the pool of failed entities.
       if (isset($uuid)) {
         $this->entityFailures(1);
-        $args = array(
-          '%type' => $entity_type_id,
-          '%uuid' => $uuid,
-        );
 
         // We can use this pool of failed entities to display a message to the
         // user about the entities that failed to export.
+        // $args = [
+        // '%type' => $entity_type_id,
+        // '%uuid' => $uuid,
+        // ];
         // $message = new FormattableMarkup('Cannot export %type entity with
         // UUID = %uuid to Content Hub because it was previously imported
         // (did not originate from this site).', $args);
@@ -485,7 +480,7 @@ class EntityManager {
     $contenthub_entity_config_storage = $this->entityTypeManager->getStorage('acquia_contenthub_entity_config');
 
     /** @var \Drupal\acquia_contenthub\ContentHubEntityTypeConfigInterface[] $contenthub_entity_config_ids */
-    $contenthub_entity_config_ids = $contenthub_entity_config_storage->loadMultiple(array($entity_type_id));
+    $contenthub_entity_config_ids = $contenthub_entity_config_storage->loadMultiple([$entity_type_id]);
     $contenthub_entity_config_id = isset($contenthub_entity_config_ids[$entity_type_id]) ? $contenthub_entity_config_ids[$entity_type_id] : FALSE;
     return $contenthub_entity_config_id;
   }
@@ -521,7 +516,7 @@ class EntityManager {
     ];
 
     $types = $this->entityTypeManager->getDefinitions();
-    $entity_types = array();
+    $entity_types = [];
     foreach ($types as $type => $entity) {
       // We only support content entity types at the moment, since config
       // entities don't implement \Drupal\Core\TypedData\ComplexDataInterface.

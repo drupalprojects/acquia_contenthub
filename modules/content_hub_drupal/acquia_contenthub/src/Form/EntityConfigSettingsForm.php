@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Contains Drupal\acquia_contenthub\Form\EntityConfigSettingsForm.
- */
 
 namespace Drupal\acquia_contenthub\Form;
 
@@ -99,10 +95,10 @@ class EntityConfigSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $form['description'] = array(
+    $form['description'] = [
       '#type' => 'item',
-      '#description' => t('Select the bundles of the entity types you would like to publish to Acquia Content Hub. <br/><br/><strong>Optional</strong><br/>Choose a view mode for each of the selected bundles to be rendered before sending to Acquia Content Hub. <br/>You can choose the view modes to use for rendering the items of different datasources and bundles. We recommend using a dedicated view mode to make sure that only relevant data (especially no field labels) will be transferred to Content Hub.'),
-    );
+      '#description' => $this->t('Select the bundles of the entity types you would like to publish to Acquia Content Hub. <br/><br/><strong>Optional</strong><br/>Choose a view mode for each of the selected bundles to be rendered before sending to Acquia Content Hub. <br/>You can choose the view modes to use for rendering the items of different datasources and bundles. We recommend using a dedicated view mode to make sure that only relevant data (especially no field labels) will be transferred to Content Hub.'),
+    ];
 
     $form['entity_config']['entities'] = $this->buildEntitiesForm();
     $form['entity_config']['user_role'] = $this->buildUserRoleForm();
@@ -117,20 +113,20 @@ class EntityConfigSettingsForm extends ConfigFormBase {
    *   Entities form.
    */
   private function buildEntitiesForm() {
-    $form = array(
+    $form = [
       '#type' => 'fieldgroup',
-      '#title' => t('Entities'),
+      '#title' => $this->t('Entities'),
       '#tree' => TRUE,
-    );
+    ];
     $entity_types = $this->entityManager->getAllowedEntityTypes();
     foreach ($entity_types as $type => $bundle) {
-      $form[$type] = array(
+      $form[$type] = [
         '#title' => $type,
         '#type' => 'details',
         '#tree' => TRUE,
-        '#description' => "Select the content types that you would like to publish to Content Hub.",
+        '#description' => $this->t('Select the content types that you would like to publish to Content Hub.'),
         '#open' => TRUE,
-      );
+      ];
       $form[$type] += $this->buildEntitiesBundleForm($type, $bundle);
     }
     return $form;
@@ -147,24 +143,24 @@ class EntityConfigSettingsForm extends ConfigFormBase {
    * @return array
    *   Entities bundle form.
    */
-  private function buildEntitiesBundleForm($type, $bundle) {
+  private function buildEntitiesBundleForm($type, array $bundle) {
     /** @var \Drupal\acquia_contenthub\Entity\ContentHubEntityTypeConfig $contenthub_entity_config_id */
     $contenthub_entity_config_id = $this->entityManager->getContentHubEntityTypeConfigurationEntity($type);
 
     // Building the form.
-    $form = array();
+    $form = [];
     foreach ($bundle as $bundle_id => $bundle_name) {
       $view_modes = $this->entityDisplayRepository->getViewModeOptionsByBundle($type, $bundle_id);
 
       $entity_type_label = $this->entityTypeManager->getDefinition($type)->getLabel();
-      $form[$bundle_id] = array(
+      $form[$bundle_id] = [
         '#type' => 'fieldset',
-        '#title' => $this->t('%entity_type_label » %bundle_name', array('%entity_type_label' => $entity_type_label, '%bundle_name' => $bundle_name)),
+        '#title' => $this->t('%entity_type_label » %bundle_name', ['%entity_type_label' => $entity_type_label, '%bundle_name' => $bundle_name]),
         '#collapsible' => TRUE,
-      );
+      ];
       $enable_viewmodes = FALSE;
       $enable_index = FALSE;
-      $rendering = array();
+      $rendering = [];
 
       if ($contenthub_entity_config_id) {
         $enable_viewmodes = $contenthub_entity_config_id->isEnabledViewModes($bundle_id);
@@ -191,20 +187,20 @@ class EntityConfigSettingsForm extends ConfigFormBase {
         '#disabled' => empty($view_modes),
         '#default_value' => empty($view_modes) ? FALSE : $enable_viewmodes,
         '#description' => empty($view_modes) ? $this->t('It is disabled because there are no available view modes. Please enable at least one.') : NULL,
-        '#states' => array(
+        '#states' => [
           // Only show this field when the 'enable_index' checkbox is enabled.
-          'visible' => array(
+          'visible' => [
             ':input[name="entities[' . $type . '][' . $bundle_id . '][enable_index]"]' => ['checked' => TRUE],
-          ),
-        ),
+          ],
+        ],
       ];
 
       $title = empty($view_modes) ? NULL : $this->t('Do you want to include the result of any of the following view mode(s)?');
-      $default_value = (empty($view_modes) || empty($rendering)) ? array() : $rendering;
-      $first_element = array(
+      $default_value = (empty($view_modes) || empty($rendering)) ? [] : $rendering;
+      $first_element = [
         key($view_modes) => key($view_modes),
-      );
-      $form[$bundle_id]['rendering'] = array(
+      ];
+      $form[$bundle_id]['rendering'] = [
         '#type' => 'select',
         '#options' => $view_modes,
         '#multiple' => TRUE,
@@ -217,7 +213,7 @@ class EntityConfigSettingsForm extends ConfigFormBase {
           ],
         ],
         '#description' => $this->t('You can hold ctrl (or cmd) key to select multiple view mode(s). Including any of these view modes is usually done in combination with Acquia Lift. Please read the documentation for more information.'),
-      );
+      ];
     }
     return $form;
   }
@@ -248,15 +244,15 @@ class EntityConfigSettingsForm extends ConfigFormBase {
   private function buildUserRoleForm() {
     $user_role = $this->config('acquia_contenthub.entity_config')->get('user_role');
     $user_role_names = user_role_names();
-    $form = array(
+    $form = [
       '#type' => 'select',
       '#title' => $this->t('User Role'),
-      '#description' => $this->t('Your item will be rendered as seen by a user with the selected role. We recommend to just use "@anonymous" here to prevent data leaking out to unauthorized roles.', array('@anonymous' => $user_role_names[AccountInterface::ANONYMOUS_ROLE])),
+      '#description' => $this->t('Your item will be rendered as seen by a user with the selected role. We recommend to just use "@anonymous" here to prevent data leaking out to unauthorized roles.', ['@anonymous' => $user_role_names[AccountInterface::ANONYMOUS_ROLE]]),
       '#options' => $user_role_names,
       '#multiple' => FALSE,
       '#default_value' => $user_role ?: AccountInterface::ANONYMOUS_ROLE,
       '#required' => TRUE,
-    );
+    ];
     return $form;
   }
 
@@ -306,7 +302,7 @@ class EntityConfigSettingsForm extends ConfigFormBase {
   public function getEntityTypes() {
     $types = $this->entityTypeManager->getDefinitions();
 
-    $entity_types = array();
+    $entity_types = [];
     foreach ($types as $type => $entity) {
       // We only support content entity types at the moment, since config
       // entities don't implement \Drupal\Core\TypedData\ComplexDataInterface.

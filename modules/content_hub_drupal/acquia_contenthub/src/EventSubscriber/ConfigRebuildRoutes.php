@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Rebuilds routes whenever there is a change in configuration.
- */
 
 namespace Drupal\acquia_contenthub\EventSubscriber;
 

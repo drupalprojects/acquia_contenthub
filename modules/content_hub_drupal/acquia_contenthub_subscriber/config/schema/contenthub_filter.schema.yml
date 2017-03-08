@@ -32,4 +32,3 @@ acquia_contenthub_subscriber.contenthub_filter.*:
     author:
       type: integer
       label: 'Author'
-

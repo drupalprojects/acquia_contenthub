@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\acquia_contenthub\ContentHubException.
- */
-
 namespace Drupal\acquia_contenthub;
 
 /**

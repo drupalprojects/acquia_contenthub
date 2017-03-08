@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\acquia_contenthub\Normalizer\NormalizerBase.
- */
-
 namespace Drupal\acquia_contenthub\Normalizer;
 
 use Drupal\serialization\Normalizer\NormalizerBase as SerializationNormalizerBase;

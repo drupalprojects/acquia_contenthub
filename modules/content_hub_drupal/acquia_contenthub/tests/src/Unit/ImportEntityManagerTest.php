@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Tests\acquia_contenthub\Unit\ImportEntityManagerTest.
- */
-
 namespace Drupal\Tests\acquia_contenthub\Unit;
 
 use Drupal\Tests\UnitTestCase;
@@ -323,7 +318,6 @@ class ImportEntityManagerTest extends UnitTestCase {
 
     $this->importEntityManager->entityPresave($node);
   }
-
 
   /**
    * Tests the entityPresave() method, compare, and no setLocalChange.

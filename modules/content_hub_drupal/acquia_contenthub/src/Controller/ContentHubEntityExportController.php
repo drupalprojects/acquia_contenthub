@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Export Entity Controller.
- */
 
 namespace Drupal\acquia_contenthub\Controller;
 
@@ -132,7 +128,7 @@ class ContentHubEntityExportController extends ControllerBase {
     }
     catch (\Exception $e) {
       // Do nothing, route does not exist.
-      $bulk_cdf = array();
+      $bulk_cdf = [];
     }
     return empty($bulk_cdf) ? ['entities' => []] : $bulk_cdf;
   }
@@ -201,7 +197,7 @@ class ContentHubEntityExportController extends ControllerBase {
    * @param bool $set_exported
    *   Set the export status to exported in the tracking table.
    */
-  public function trackExportedEntity($cdf, $set_exported = FALSE) {
+  public function trackExportedEntity(array $cdf, $set_exported = FALSE) {
     if ($exported_entity = $this->contentHubEntitiesTracking->loadExportedByUuid($cdf['uuid'])) {
       $exported_entity->setModified($cdf['modified'])
         ->setInitiated();

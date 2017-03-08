@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Contains \Drupal\Tests\acquia_contenthub\Unit\ContentHubEntitiesTrackingTest.
- */
 
 namespace Drupal\Tests\acquia_contenthub\Unit;
 
@@ -105,7 +101,6 @@ class ContentHubEntitiesTrackingTest extends UnitTestCase {
 
     return new ContentHubEntitiesTracking($database, $config_factory);
   }
-
 
   /**
    * Test for Exported Entities.

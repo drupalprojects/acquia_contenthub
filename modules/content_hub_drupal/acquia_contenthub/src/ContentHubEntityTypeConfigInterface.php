@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Defines the interface for ContentHubEntityTypeConfig class.
- */
 
 namespace Drupal\acquia_contenthub;
 
@@ -55,7 +51,7 @@ interface ContentHubEntityTypeConfigInterface {
    * @param array $bundles
    *   An array of bundles.
    */
-  public function setBundles($bundles);
+  public function setBundles(array $bundles);
 
   /**
    * Obtains the Preview Image Field for this particular bundle.

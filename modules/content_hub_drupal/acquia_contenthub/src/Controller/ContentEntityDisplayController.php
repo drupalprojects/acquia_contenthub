@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\acquia_contenthub\Controller\ContentEntityDisplayController.
- */
-
 namespace Drupal\acquia_contenthub\Controller;
 
 use Drupal\acquia_contenthub\Normalizer\ContentEntityViewModesExtractor;

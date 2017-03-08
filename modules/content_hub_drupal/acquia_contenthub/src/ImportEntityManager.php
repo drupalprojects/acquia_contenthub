@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\acquia_contenthub\ImportEntityManager.
- */
-
 namespace Drupal\acquia_contenthub;
 
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -228,13 +223,13 @@ class ImportEntityManager {
    *   The Content Hub Entity.
    * @param array $dependencies
    *   An array of \Drupal\acquia_contenthub\ContentHubEntityDependency.
-   * @param bool|TRUE $use_chain
+   * @param bool|true $use_chain
    *   If the dependencies should be unique to the dependency chain or not.
    *
    * @return array
    *   An array of \Drupal\acquia_contenthub\ContentHubEntityDependency.
    */
-  private function getAllRemoteDependencies(ContentHubEntityDependency $content_hub_entity, &$dependencies, $use_chain = TRUE) {
+  private function getAllRemoteDependencies(ContentHubEntityDependency $content_hub_entity, array &$dependencies, $use_chain = TRUE) {
     // Obtaining dependencies of this entity.
     $dep_dependencies = $this->getRemoteDependencies($content_hub_entity, $use_chain);
 
@@ -264,7 +259,7 @@ class ImportEntityManager {
    *
    * @param \Drupal\acquia_contenthub\ContentHubEntityDependency $content_hub_entity
    *   The Content Hub Entity.
-   * @param bool|TRUE $use_chain
+   * @param bool|true $use_chain
    *   If the dependencies should be unique to the dependency chain or not.
    *
    * @return array
@@ -389,7 +384,7 @@ class ImportEntityManager {
    * @return bool|null
    *   The Drupal entity being created.
    */
-  private function importRemoteEntityDependencies(ContentHubEntityDependency $contenthub_entity, &$dependencies) {
+  private function importRemoteEntityDependencies(ContentHubEntityDependency $contenthub_entity, array &$dependencies) {
     // Un-managed assets are also pre-dependencies for an entity and they would
     // need to be saved before we can create the current entity.
     $this->saveUnManagedAssets($contenthub_entity);

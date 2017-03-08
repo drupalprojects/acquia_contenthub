@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Import Entity Controller.
- */
 
 namespace Drupal\acquia_contenthub\Controller;
 

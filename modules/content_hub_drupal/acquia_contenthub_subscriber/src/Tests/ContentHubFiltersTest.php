@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Contains \Drupal\acquia_contenthub_subscriber\Tests\ContentHubFiltersTest.
- */
 
 namespace Drupal\acquia_contenthub_subscriber\Tests;
 
@@ -108,7 +104,7 @@ class ContentHubFiltersTest extends WebTestBase {
    *
    * @param \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface $filter
    *   The filter to obtain through GET request.
-   * @param bool|FALSE $multi
+   * @param bool|false $multi
    *   TRUE if querying 'all', FALSE otherwise.
    */
   protected function getHttpRequest(ContentHubFilterInterface $filter, $multi = FALSE) {
@@ -128,7 +124,7 @@ class ContentHubFiltersTest extends WebTestBase {
    * @param array $filter
    *   The filter values.
    */
-  protected function postHttpRequest($filter) {
+  protected function postHttpRequest(array $filter) {
     // Create a JSON version of a simple content hub filter.
     $serialized = $this->container->get('serializer')->serialize($filter, 'json');
 
@@ -149,7 +145,7 @@ class ContentHubFiltersTest extends WebTestBase {
    * @param array $saved_filter
    *   The filter values.
    */
-  protected function patchHttpRequest($saved_filter) {
+  protected function patchHttpRequest(array $saved_filter) {
     // Applying changes to the entity.
     $filter = $saved_filter;
     $filter['name'] = $saved_filter['name'] . ' - updated';
@@ -175,7 +171,7 @@ class ContentHubFiltersTest extends WebTestBase {
    * @param array $filter
    *   The filter values.
    */
-  protected function deleteHttpRequest($filter) {
+  protected function deleteHttpRequest(array $filter) {
     // Patch to the REST service to modify the content hub filter.
     $method = 'DELETE';
     $url = $this->getContentHubFilterResourceUrl($method, $filter['id']);

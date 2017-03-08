@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * ContentHubFilter List Builder.
- */
 
 namespace Drupal\acquia_contenthub_subscriber\Controller;
 

@@ -1,12 +1,8 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\acquia_contenthub\Normalizer\ContentEntityViewModesExtractor.
- */
-
 namespace Drupal\acquia_contenthub\Normalizer;
 
+use Drupal\Core\Session\AnonymousUserSession;
 use Drupal\Component\Utility\Crypt;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
@@ -123,12 +119,11 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
     $contenthub_entity_config_storage = $this->entityTypeManager->getStorage('acquia_contenthub_entity_config');
 
     /** @var \Drupal\acquia_contenthub\ContentHubEntityTypeConfigInterface[] $contenthub_entity_config_ids */
-    $contenthub_entity_config_ids = $contenthub_entity_config_storage->loadMultiple(array($entity_type_id));
+    $contenthub_entity_config_ids = $contenthub_entity_config_storage->loadMultiple([$entity_type_id]);
     $contenthub_entity_config_id = isset($contenthub_entity_config_ids[$entity_type_id]) ? $contenthub_entity_config_ids[$entity_type_id] : FALSE;
 
     return $contenthub_entity_config_id;
   }
-
 
   /**
    * Checks whether the given class is supported for normalization.
@@ -147,7 +142,7 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
     }
     $supported = (array) $this->supportedInterfaceOrClass;
 
-    return (bool) array_filter($supported, function($name) use ($data) {
+    return (bool) array_filter($supported, function ($name) use ($data) {
       return $data instanceof $name;
     });
   }
@@ -253,7 +248,7 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
       $entity = $entity->{$field_key}->entity;
     }
 
-    if (!in_array($entity->bundle(), array('image', 'file'))) {
+    if (!in_array($entity->bundle(), ['image', 'file'])) {
       return '';
     }
     $file_uri = $entity->getFileUri();
@@ -289,7 +284,7 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
   public function getViewModeMinimalHtml(ContentEntityInterface $object, $view_mode) {
     // Switch to anonymous user for rendering as configured role.
     $entity_type_id = $object->getEntityTypeId();
-    $this->accountSwitcher->switchTo(new \Drupal\Core\Session\AnonymousUserSession());
+    $this->accountSwitcher->switchTo(new AnonymousUserSession());
     $build = $this->entityTypeManager->getViewBuilder($entity_type_id)
       ->view($object, $view_mode);
 

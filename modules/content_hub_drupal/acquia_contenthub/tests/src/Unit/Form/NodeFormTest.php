@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Tests\acquia_contenthub\Unit\Form\NodeFormTest.
- */
-
 namespace Drupal\Tests\acquia_contenthub\Unit\Form;
 
 use Drupal\Tests\UnitTestCase;
@@ -279,7 +274,6 @@ class NodeFormTest extends UnitTestCase {
 
     $this->nodeForm->saveSettings($form_state);
   }
-
 
   /**
    * Tests the saveSettings() method, actually set and save.

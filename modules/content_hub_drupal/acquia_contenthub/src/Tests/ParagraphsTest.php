@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\acquia_contenthub\Tests\ParagraphsTest.
- */
-
 namespace Drupal\acquia_contenthub\Tests;
 
 use Drupal\simpletest\WebTestBase as SimpletestWebTestBase;

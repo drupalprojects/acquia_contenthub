@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Tests\acquia_contenthub\Unit\Encoder\ContentHubCdfEncoderTest.
- */
-
 namespace Drupal\Tests\acquia_contenthub\Unit\Encoder;
 
 use Drupal\acquia_contenthub\Encoder\ContentHubCdfEncoder;

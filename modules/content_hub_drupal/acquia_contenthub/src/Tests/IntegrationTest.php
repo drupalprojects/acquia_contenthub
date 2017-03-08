@@ -1,11 +1,7 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\acquia_contenthub\Tests\IntegrationTest.
- */
-
 namespace Drupal\acquia_contenthub\Tests;
+
 use Drupal\node\NodeInterface;
 
 /**
@@ -18,14 +14,14 @@ class IntegrationTest extends WebTestBase {
   /**
    * The sample article we generate.
    *
-   * @var \Drupal\node\NodeInterface $article
+   * @var \Drupal\node\NodeInterface
    */
   protected $article;
 
   /**
    * The sample page we generate.
    *
-   * @var \Drupal\node\NodeInterface $article
+   * @var \Drupal\node\NodeInterface
    */
   protected $page;
 
@@ -48,7 +44,7 @@ class IntegrationTest extends WebTestBase {
     $this->createSampleContent();
 
     // Configure Acquia Content Hub for article nodes with view modes.
-    $this->configureContentHubContentTypes('node', array('article'));
+    $this->configureContentHubContentTypes('node', ['article']);
     $this->checkCdfOutput($this->article);
 
     // Enable view-modes for article nodes.
@@ -70,8 +66,8 @@ class IntegrationTest extends WebTestBase {
    */
   public function createSampleContent() {
     // Add one article and a page.
-    $this->article = $this->drupalCreateNode(array('type' => 'article'));
-    $this->page = $this->drupalCreateNode(array('type' => 'page'));
+    $this->article = $this->drupalCreateNode(['type' => 'article']);
+    $this->page = $this->drupalCreateNode(['type' => 'page']);
   }
 
   /**
@@ -83,11 +79,11 @@ class IntegrationTest extends WebTestBase {
    *   The view mode to check in the CDF.
    */
   public function checkCdfOutput(NodeInterface $entity, $view_mode = NULL) {
-    $output = $this->drupalGetJSON($entity->getEntityTypeId() . '/' . $entity->id(), array('query' => array('_format' => 'acquia_contenthub_cdf')));
+    $output = $this->drupalGetJSON($entity->getEntityTypeId() . '/' . $entity->id(), ['query' => ['_format' => 'acquia_contenthub_cdf']]);
     $this->assertResponse(200);
     if (!empty($view_mode)) {
       $this->assertTrue(isset($output['entities']['0']['metadata']), 'Metadata is present');
-      $this->assertTrue(isset($output['entities']['0']['metadata']['view_modes'][$view_mode]), t('View mode %view_mode is present', array('%view_mode' => $view_mode)));
+      $this->assertTrue(isset($output['entities']['0']['metadata']['view_modes'][$view_mode]), t('View mode %view_mode is present', ['%view_mode' => $view_mode]));
     }
     else {
       $this->assertFalse(isset($output['entities']['0']['metadata']), 'Metadata is not present');
@@ -108,10 +104,10 @@ class IntegrationTest extends WebTestBase {
     $this->drupalGet('admin/config/services/acquia-contenthub/configuration');
     $this->assertResponse(200);
 
-    $edit = array(
+    $edit = [
       'entities[' . $entity_type . '][' . $bundle . '][enable_viewmodes]' => TRUE,
-      'entities[' . $entity_type . '][' . $bundle . '][rendering][]' => array($view_mode),
-    );
+      'entities[' . $entity_type . '][' . $bundle . '][rendering][]' => [$view_mode],
+    ];
     $this->drupalPostForm(NULL, $edit, $this->t('Save configuration'));
     $this->assertResponse(200);
 

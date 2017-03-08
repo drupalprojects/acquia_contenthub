@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Keeps track of all Content Hub Imported Entities.
- */
 
 namespace Drupal\acquia_contenthub;
 

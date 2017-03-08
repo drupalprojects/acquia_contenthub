@@ -3,8 +3,8 @@
  * Content Hub Subscriber.
  */
 
-(function($) {
-  window.onload = function() {
+(function ($) {
+  window.onload = function () {
     var ember_app = drupalSettings.acquia_contenthub_subscriber.ember_app;
     // @Todo Need to discuss how creating an iframe on the fly helps.
     // Var iframe = document.createElement('iframe');

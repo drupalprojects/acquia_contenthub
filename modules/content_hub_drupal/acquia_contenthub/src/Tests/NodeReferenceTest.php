@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\acquia_contenthub\Tests\NodeFormTest.
- */
-
 namespace Drupal\acquia_contenthub\Tests;
 
 /**
@@ -151,7 +146,7 @@ class NodeReferenceTest extends WebTestBase {
    * @return bool
    *   TRUE if the Entity UUID was found, FALSE otherwise.
    */
-  protected function findEntityUuid($uuid, $entities) {
+  protected function findEntityUuid($uuid, array $entities) {
     foreach ($entities['entities'] as $entity) {
       if ($entity['uuid'] == $uuid) {
         return TRUE;

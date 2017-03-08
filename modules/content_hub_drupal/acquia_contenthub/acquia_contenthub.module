@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Contains acquia_contenthub.module.
@@ -92,7 +93,7 @@ function acquia_contenthub_bulk_export() {
 
     // If entities are included as references then delete them from the
     // collected entities array.
-    foreach ($referenced_entities as $key => $referenced_entity) {
+    foreach ($referenced_entities as $referenced_entity) {
       if (in_array($referenced_entity->uuid(), $uuids)) {
         unset($candidate_entities[$referenced_entity->uuid()]);
       }

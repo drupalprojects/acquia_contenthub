@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Contains \Drupal\Tests\acquia_contenthub\Unit\EntityManagerTest.
- */
 
 namespace Drupal\Tests\acquia_contenthub\Unit;
 

@@ -1,12 +1,8 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\acquia_contenthub\Normalizer\ContentEntityCdfNormalizer.
- */
-
 namespace Drupal\acquia_contenthub\Normalizer;
 
+use Drupal\Core\Field\EntityReferenceFieldItemListInterface;
 use Acquia\ContentHubClient\Asset;
 use Acquia\ContentHubClient\Attribute;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -59,7 +55,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
   /**
    * The Config factory.
    *
-   * @param \Drupal\Core\Config\ConfigFactoryInterface $config
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
    */
   protected $config;
 
@@ -337,13 +333,13 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    * @param array $context
    *   Additional Context such as the account.
    *
-   * @return \Acquia\ContentHubClient\Entity ContentHubEntity
+   * @return \Acquia\ContentHubClient\Entity\ContentHubEntity
    *   The Content Hub Entity with all the data in it.
    *
    * @throws \Drupal\acquia_contenthub\ContentHubException
    *   The Exception will be thrown if something is going awol.
    */
-  protected function addFieldsToContentHubEntity(ContentHubEntity $contenthub_entity, \Drupal\Core\Entity\ContentEntityInterface $entity, $langcode = 'und', array $context = array()) {
+  protected function addFieldsToContentHubEntity(ContentHubEntity $contenthub_entity, ContentEntityInterface $entity, $langcode = 'und', array $context = []) {
     /** @var \Drupal\Core\Field\FieldItemListInterface[] $fields */
     $fields = $entity->getFields();
 
@@ -409,7 +405,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       }
 
       $values = [];
-      if ($field instanceof \Drupal\Core\Field\EntityReferenceFieldItemListInterface) {
+      if ($field instanceof EntityReferenceFieldItemListInterface) {
 
         /** @var \Drupal\Core\Entity\EntityInterface[] $referenced_entities */
         $referenced_entities = $field->referencedEntities();
@@ -420,11 +416,11 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
          */
         foreach ($referenced_entities as $key => $referenced_entity) {
           // In the case of images/files, etc... we need to add the assets.
-          $file_types = array(
+          $file_types = [
             'image',
             'file',
             'video',
-          );
+          ];
 
           // Special case for type as we do not want the reference for the
           // bundle.
@@ -462,7 +458,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         }
       }
       try {
-        $attribute = new \Acquia\ContentHubClient\Attribute($type);
+        $attribute = new Attribute($type);
       }
       catch (\Exception $e) {
         $args['%type'] = $type;
@@ -534,12 +530,13 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    * @param array $context
    *   Additional Context such as the account.
    *
-   * @return \Drupal\Core\Entity\ContentEntityInterface[] $referenced_entities
+   * @return \Drupal\Core\Entity\ContentEntityInterface[]
    *   All referenced entities.
    */
-  public function getReferencedFields(ContentEntityInterface $entity, array $context = array()) {
+  public function getReferencedFields(ContentEntityInterface $entity, array $context = []) {
     /** @var \Drupal\acquia_contenthub\Entity\ContentHubEntityTypeConfig[] $content_hub_entity_type_ids */
     $content_hub_entity_type_ids = $this->entityManager->getContentHubEntityTypeConfigurationEntities();
+
     /** @var \Drupal\Core\Field\FieldItemListInterface[] $fields */
     $fields = $entity->getFields();
     $referenced_entities = [];
@@ -554,7 +551,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         continue;
       }
 
-      if ($field instanceof \Drupal\Core\Field\EntityReferenceFieldItemListInterface) {
+      if ($field instanceof EntityReferenceFieldItemListInterface) {
 
         // Before checking each individual entity, verify if we can skip all
         // of them at once by checking their type.
@@ -604,10 +601,10 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    * @param int $depth
    *   The depth of the referenced entity (levels down from main entity).
    *
-   * @return \Drupal\Core\Entity\ContentEntityInterface[] $referenced_entities
+   * @return \Drupal\Core\Entity\ContentEntityInterface[]
    *   All referenced entities.
    */
-  public function getMultilevelReferencedFields(ContentEntityInterface $entity, &$referenced_entities, array $context = array(), $depth = 0) {
+  public function getMultilevelReferencedFields(ContentEntityInterface $entity, array &$referenced_entities, array $context = [], $depth = 0) {
     $depth++;
     $maximum_depth = $this->config->get('acquia_contenthub.entity_config')->get('dependency_depth');
     $maximum_depth = is_int($maximum_depth) ? $maximum_depth : 3;
@@ -620,10 +617,10 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
 
     // Obtaining all the referenced entities for the current entity.
     $ref_entities = $this->getReferencedFields($entity, $context);
-    foreach ($ref_entities as $key => $entity) {
+    foreach ($ref_entities as $entity) {
       if (!in_array($entity->uuid(), $uuids)) {
         // @TODO: This if-condition is a hack to avoid Vocabulary entities.
-        if ($entity instanceof \Drupal\Core\Entity\ContentEntityInterface) {
+        if ($entity instanceof ContentEntityInterface) {
           $referenced_entities[] = $entity;
 
           // Only search for dependencies if we are below the maximum depth
@@ -654,13 +651,9 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    * @return \Drupal\Core\Entity\ContentEntityInterface
    *   The Drupal Entity after integrating data from Content Hub.
    */
-  protected function addFieldsToDrupalEntity(\Drupal\Core\Entity\ContentEntityInterface $entity, ContentHubEntity $contenthub_entity, $langcode = LanguageInterface::LANGCODE_NOT_SPECIFIED, array $context = array()) {
+  protected function addFieldsToDrupalEntity(ContentEntityInterface $entity, ContentHubEntity $contenthub_entity, $langcode = LanguageInterface::LANGCODE_NOT_SPECIFIED, array $context = []) {
     /** @var \Drupal\Core\Field\FieldItemListInterface[] $fields */
     $fields = $entity->getFields();
-
-    // Get our field mapping. This maps drupal field types to Content Hub
-    // attribute types.
-    $type_mapping = $this->getFieldTypeMapping();
 
     // Ignore the entity ID and revision ID.
     // Excluded comes here.
@@ -683,11 +676,11 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       }
 
       // In the case of images/files, etc... we need to add the assets.
-      $file_types = array(
+      $file_types = [
         'image',
         'file',
         'video',
-      );
+      ];
 
       $field = isset($fields[$name]) ? $fields[$name] : NULL;
       if (isset($field)) {
@@ -696,8 +689,8 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         $value = $attribute['value'][$langcode];
         $field->setValue([]);
 
-        if ($field instanceof \Drupal\Core\Field\EntityReferenceFieldItemListInterface) {
-          foreach ($value as $delta => $item) {
+        if ($field instanceof EntityReferenceFieldItemListInterface) {
+          foreach ($value as $item) {
             $uuid = in_array($field_type, $file_types) ? $this->removeBracketsUuid($item) : $item;
             $entity_type = $field->getFieldDefinition()->getSettings()['target_type'];
             $referenced_entity = $this->entityRepository->loadEntityByUuid($entity_type, $uuid);
@@ -708,7 +701,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         }
         else {
           if ($field instanceof FieldItemListInterface && is_array($value)) {
-            foreach ($value as $delta => $json_item) {
+            foreach ($value as $json_item) {
               // Assigning the output.
               $item = json_decode($json_item, TRUE) ?: $json_item;
               $field->appendItem($item);
@@ -732,7 +725,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    * @param array $values
    *   The attribute's values.
    */
-  public function appendToAttribute(Attribute $attribute, $values) {
+  public function appendToAttribute(Attribute $attribute, array $values) {
     $old_values = $attribute->getValues();
     $values = array_merge($old_values, $values);
     $attribute->setValues($values);
@@ -762,9 +755,9 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
   public function getFieldTypeMapping() {
     $mapping = [];
     // It's easier to write and understand this array in the form of
-    // $default_mapping => array($data_types) and flip it below.
-    $default_mapping = array(
-      'string' => array(
+    // $default_mapping => [$data_types] and flip it below.
+    $default_mapping = [
+      'string' => [
         // These are special field names that we do not want to parse as
         // arrays.
         'title',
@@ -773,35 +766,35 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         // This is a special field that we will want to parse as string for now.
         // @TODO: Replace this to work with taxonomy_vocabulary entities.
         'vid',
-      ),
-      'array<string>' => array(
+      ],
+      'array<string>' => [
         'fallback',
         'text_with_summary',
         'image',
         'file',
         'video',
-      ),
-      'array<reference>' => array(
+      ],
+      'array<reference>' => [
         'entity_reference',
         'entity_reference_revisions',
-      ),
-      'array<integer>' => array(
+      ],
+      'array<integer>' => [
         'integer',
         'timespan',
         'timestamp',
-      ),
-      'array<number>' => array(
+      ],
+      'array<number>' => [
         'decimal',
         'float',
-      ),
+      ],
       // Types we know about but want/have to ignore.
-      NULL => array(
+      NULL => [
         'password',
-      ),
-      'array<boolean>' => array(
+      ],
+      'array<boolean>' => [
         'boolean',
-      ),
-    );
+      ],
+    ];
 
     foreach ($default_mapping as $contenthub_type => $data_types) {
       foreach ($data_types as $data_type) {
@@ -891,7 +884,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     $entity_type_id = $entity->getEntityTypeId();
     $excluded = array_merge($excluded_fields['global'], isset($excluded_fields[$entity_type_id]) ? $excluded_fields[$entity_type_id] : []);
 
-    $excluded_to_alter = array();
+    $excluded_to_alter = [];
 
     // Allow users to define more excluded properties.
     // Allow other modules to intercept and define what default type they want
@@ -916,7 +909,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    * @return array
    *   Returns denormalized data.
    */
-  public function denormalize($data, $class, $format = NULL, array $context = array()) {
+  public function denormalize($data, $class, $format = NULL, array $context = []) {
     $context += ['account' => NULL];
 
     // Exit if the class does not support denormalization of the given data,

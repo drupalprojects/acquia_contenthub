@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Makes Content Hub Search Queries using the elastic search endpoint.
- */
 
 namespace Drupal\acquia_contenthub;
 
@@ -50,7 +46,7 @@ class ContentHubSearch {
    *   Returns elasticSearch query response hits.
    */
   public function executeSearchQuery(array $query) {
-    if ($query_response = $this->clientManager->createRequest('searchEntity', array($query))) {
+    if ($query_response = $this->clientManager->createRequest('searchEntity', [$query])) {
       return $query_response['hits'];
     }
     return FALSE;
@@ -70,18 +66,18 @@ class ContentHubSearch {
       $items = array_map('trim', explode(',', $search_term));
       $last_item = array_pop($items);
 
-      $query['query'] = array(
-        'query_string' => array(
+      $query['query'] = [
+        'query_string' => [
           'query' => $last_item,
           'default_operator' => 'and',
-        ),
-      );
+        ],
+      ];
       $query['_source'] = TRUE;
-      $query['highlight'] = array(
-        'fields' => array(
+      $query['highlight'] = [
+        'fields' => [
           '*' => new \stdClass(),
-        ),
-      );
+        ],
+      ];
       $result = $this->executeSearchQuery($query);
       return $result ? $result['hits'] : FALSE;
     }
@@ -99,16 +95,16 @@ class ContentHubSearch {
   public function getReferenceFilters($search_term) {
     if ($search_term) {
 
-      $match[] = array('match' => array('_all' => $search_term));
+      $match[] = ['match' => ['_all' => $search_term]];
 
       $query['query']['filtered']['query']['bool']['must'] = $match;
       $query['query']['filtered']['query']['bool']['must_not']['term']['data.type'] = 'taxonomy_term';
       $query['_source'] = TRUE;
-      $query['highlight'] = array(
-        'fields' => array(
+      $query['highlight'] = [
+        'fields' => [
           '*' => new \stdClass(),
-        ),
-      );
+        ],
+      ];
       $result = $this->executeSearchQuery($query);
 
       return $result ? $result['hits'] : FALSE;
@@ -132,7 +128,7 @@ class ContentHubSearch {
    * @return int|mixed
    *   Returns query result.
    */
-  public function getSearchResponse(array $typed_terms, $webhook_uuid = '', $type = '', $options = array()) {
+  public function getSearchResponse(array $typed_terms, $webhook_uuid = '', $type = '', array $options = []) {
     $origins = '';
     foreach ($typed_terms as $typed_term) {
       if ($typed_term['filter'] !== '_all') {
@@ -153,12 +149,12 @@ class ContentHubSearch {
         }
         // Retrieve results for any language.
         else {
-          $match[] = array(
-            'multi_match' => array(
+          $match[] = [
+            'multi_match' => [
               'query' => $typed_term['value'],
-              'fields' => array('data.attributes.' . $typed_term['filter'] . '.value.*'),
-            ),
-          );
+              'fields' => ['data.attributes.' . $typed_term['filter'] . '.value.*'],
+            ],
+          ];
         }
       }
       else {
@@ -167,17 +163,17 @@ class ContentHubSearch {
           $tags = implode(', ', $array_ref);
         }
         if ($tags) {
-          $match[] = array('match' => array($typed_term['filter'] => "*" . $typed_term['value'] . "*" . ',' . $tags));
+          $match[] = ['match' => [$typed_term['filter'] => "*" . $typed_term['value'] . "*" . ',' . $tags]];
         }
         else {
-          $match[] = array(
-            'match' => array(
-              $typed_term['filter'] => array(
+          $match[] = [
+            'match' => [
+              $typed_term['filter'] => [
                 "query" => "*" . $typed_term['value'] . "*" ,
                 "operator" => "and",
-              ),
-            ),
-          );
+              ],
+            ],
+          ];
         }
       }
     }
@@ -186,17 +182,17 @@ class ContentHubSearch {
       $query['query']['filtered']['query']['bool']['must'] = $match;
     }
     if (!empty($origins)) {
-      $match[] = array('match' => array('data.origin' => $origins));
+      $match[] = ['match' => ['data.origin' => $origins]];
       $query['query']['filtered']['query']['bool']['must'] = $match;
     }
     $query['query']['filtered']['filter']['term']['data.type'] = 'node';
     $query['size'] = !empty($options['count']) ? $options['count'] : 10;
     $query['from'] = !empty($options['start']) ? $options['start'] : 0;
-    $query['highlight'] = array(
-      'fields' => array(
+    $query['highlight'] = [
+      'fields' => [
         '*' => new \stdClass(),
-      ),
-    );
+      ],
+    ];
     if (!empty($options['sort']) && strtolower($options['sort']) !== 'relevance') {
       $query['sort']['data.modified'] = strtolower($options['sort']);
     }
@@ -219,7 +215,7 @@ class ContentHubSearch {
    *   Reference terms Uuid array.
    */
   public function getReferenceDocs($str_val) {
-    $ref_uuid = array();
+    $ref_uuid = [];
     $ref_result = $this->getFilters($str_val);
     if ($ref_result) {
       foreach ($ref_result as $rows) {
@@ -246,23 +242,23 @@ class ContentHubSearch {
    * @return int|mixed
    *   Returns query response.
    */
-  public function parseSearchString($str_val, $webhook_uuid = '', $type = '', $options = array()) {
+  public function parseSearchString($str_val, $webhook_uuid = '', $type = '', array $options = []) {
     if ($str_val) {
       $search_terms = Tags::explode($str_val);
       foreach ($search_terms as $search_term) {
         $check_for_filter = preg_match('/[:]/', $search_term);
         if ($check_for_filter) {
           list($filter, $value) = explode(':', $search_term);
-          $typed_terms[] = array(
+          $typed_terms[] = [
             'filter' => $filter,
             'value' => $value,
-          );
+          ];
         }
         else {
-          $typed_terms[] = array(
+          $typed_terms[] = [
             'filter' => '_all',
             'value' => $search_term,
-          );
+          ];
         }
       }
 
@@ -302,7 +298,7 @@ class ContentHubSearch {
    * @return mixed
    *   Returns query result.
    */
-  public function buildChronologicalQuery($options = array()) {
+  public function buildChronologicalQuery(array $options = []) {
 
     $query['query']['match_all'] = new \stdClass();
     $query['sort']['data.modified'] = 'desc';

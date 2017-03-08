@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Plugin REST Resource for ContentHubFilter.
- */
 
 namespace Drupal\acquia_contenthub_subscriber\Plugin\rest\resource;
 
@@ -98,13 +94,13 @@ class ContentHubFilterResource extends ResourceBase {
   /**
    * Validates input from user.
    *
-   * @param \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface|NULL $contenthub_filter
+   * @param \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface|null $contenthub_filter
    *   The Content Hub Filter entity.
    * @param bool $is_new
    *   Validate taken into consideration it is a new entity or an existent one.
    */
   public function validate(ContentHubFilterInterface $contenthub_filter, $is_new = TRUE) {
-    $messages = array();
+    $messages = [];
     if (!empty($contenthub_filter->uuid())) {
       if (!Uuid::isValid($contenthub_filter->uuid())) {
         $messages[] = t('The filter has an invalid "uuid" field.');
@@ -141,7 +137,6 @@ class ContentHubFilterResource extends ResourceBase {
     }
 
     // @TODO: Validate other fields.
-
     if (count($messages) > 0) {
       $message = implode("\n", $messages);
       throw new HttpException(422, $message);
@@ -165,7 +160,7 @@ class ContentHubFilterResource extends ResourceBase {
 
     $entities = NULL;
     if (!empty($contenthub_filter) && $contenthub_filter !== 'all') {
-      $entities = array();
+      $entities = [];
       $entities[] = $contenthub_filter;
     }
     $filters = $this->entityManager->getStorage('contenthub_filter')->loadMultiple($entities);
@@ -181,7 +176,7 @@ class ContentHubFilterResource extends ResourceBase {
       return $response;
     }
     elseif ($contenthub_filter == 'all') {
-      $response = new ResourceResponse(array());
+      $response = new ResourceResponse([]);
       $response->addCacheableDependency($filters);
       return $response;
     }
@@ -193,7 +188,7 @@ class ContentHubFilterResource extends ResourceBase {
   /**
    * Responds to POST requests.
    *
-   * @param \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface|NULL $contenthub_filter
+   * @param \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface|null $contenthub_filter
    *   The Content Hub Filter.
    *
    * @return \Drupal\rest\ResourceResponse
@@ -226,27 +221,27 @@ class ContentHubFilterResource extends ResourceBase {
 
     // We are ONLY creating new entities through POST requests.
     if (!$contenthub_filter->isNew()) {
-      $message = t('Only new entities can be created. Filter "!name" already exists (id = "!id", uuid = "!uuid").', array(
+      $message = t('Only new entities can be created. Filter "!name" already exists (id = "!id", uuid = "!uuid").', [
         '!id' => $contenthub_filter->id(),
         '!name' => $contenthub_filter->name,
         '!uuid' => $contenthub_filter->uuid(),
-      ));
+      ]);
       throw new BadRequestHttpException($message);
     }
 
     // Validation has passed, now try to save the entity.
     try {
       $contenthub_filter->save();
-      $this->logger->notice('Created entity %type with ID %id.', array('%type' => $contenthub_filter->getEntityTypeId(), '%id' => $contenthub_filter->id()));
+      $this->logger->notice('Created entity %type with ID %id.', ['%type' => $contenthub_filter->getEntityTypeId(), '%id' => $contenthub_filter->id()]);
 
       // Convert back the Dates to format "m-d-Y".
       $contenthub_filter->changeDateFormatYearMonthDay2MonthDayYear();
       return new ResourceResponse($contenthub_filter);
     }
     catch (EntityStorageException $e) {
-      $message = new FormattableMarkup('Internal Server Error [!message].', array(
+      $message = new FormattableMarkup('Internal Server Error [!message].', [
         '!message' => $e->getMessage(),
-      ));
+      ]);
       throw new HttpException(500, $message, $e);
     }
   }
@@ -298,16 +293,16 @@ class ContentHubFilterResource extends ResourceBase {
     // Validation has passed, now try to save the original updated entity.
     try {
       $contenthub_filter_updated->save();
-      $this->logger->notice('Updated entity %type with ID %id.', array('%type' => $contenthub_filter_updated->getEntityTypeId(), '%id' => $contenthub_filter_updated->id()));
+      $this->logger->notice('Updated entity %type with ID %id.', ['%type' => $contenthub_filter_updated->getEntityTypeId(), '%id' => $contenthub_filter_updated->id()]);
 
       // Convert back the Dates to format "m-d-Y".
       $contenthub_filter_updated->changeDateFormatYearMonthDay2MonthDayYear();
       return new ResourceResponse($contenthub_filter_updated);
     }
     catch (EntityStorageException $e) {
-      $message = new FormattableMarkup('Internal Server Error [!message].', array(
+      $message = new FormattableMarkup('Internal Server Error [!message].', [
         '!message' => $e->getMessage(),
-      ));
+      ]);
       throw new HttpException(500, $message, $e);
     }
   }
@@ -340,10 +335,10 @@ class ContentHubFilterResource extends ResourceBase {
       // DELETE responses have an empty body.
       return new ModifiedResourceResponse(NULL, 204);
     }
-    catch (\Drupal\Core\Entity\EntityStorageException $e) {
-      $message = new FormattableMarkup('Internal Server Error [!message].', array(
+    catch (EntityStorageException $e) {
+      $message = new FormattableMarkup('Internal Server Error [!message].', [
         '!message' => $e->getMessage(),
-      ));
+      ]);
       throw new HttpException(500, $message, $e);
 
     }

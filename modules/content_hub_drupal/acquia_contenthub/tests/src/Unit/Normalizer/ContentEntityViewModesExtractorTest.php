@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Tests\acquia_contenthub\Unit\Normalizer\ContentEntityViewModesExtractorTest.
- */
-
 namespace Drupal\Tests\acquia_contenthub\Unit\Normalizer;
 
 use Drupal\Tests\UnitTestCase;

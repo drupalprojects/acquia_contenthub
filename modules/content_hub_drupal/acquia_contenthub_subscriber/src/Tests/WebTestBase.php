@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\acquia_contenthub_subscriber\Tests\WebTestBase.
- */
-
 namespace Drupal\acquia_contenthub_subscriber\Tests;
 
 use Drupal\Core\StringTranslation\StringTranslationTrait;
@@ -24,10 +19,10 @@ abstract class WebTestBase extends SimpletestWebTestBase {
    *
    * @var string[]
    */
-  public static $modules = array(
+  public static $modules = [
     'acquia_contenthub',
     'acquia_contenthub_subscriber',
-  );
+  ];
 
   /**
    * An admin user used for this test.
@@ -40,14 +35,14 @@ abstract class WebTestBase extends SimpletestWebTestBase {
    *
    * @var string[]
    */
-  protected $adminUserPermissions = array(
+  protected $adminUserPermissions = [
     'administer acquia content hub',
     'access administration pages',
     'restful get contenthub_filter',
     'restful post contenthub_filter',
     'restful patch contenthub_filter',
     'restful delete contenthub_filter',
-  );
+  ];
 
   /**
    * A user without Acquia Content Hub admin permission.
@@ -119,12 +114,12 @@ abstract class WebTestBase extends SimpletestWebTestBase {
     parent::setUp();
     $this->defaultFormat = 'json';
     $this->defaultMimeType = 'application/json';
-    $this->defaultAuth = array('cookie');
+    $this->defaultAuth = ['cookie'];
     $this->entityConfigStorage = $this->container->get('entity_type.manager')->getStorage('contenthub_filter');
 
     // Create the users used for the tests.
     $this->adminUser = $this->drupalCreateUser($this->adminUserPermissions);
-    $this->unauthorizedUser = $this->drupalCreateUser(array('access administration pages'));
+    $this->unauthorizedUser = $this->drupalCreateUser(['access administration pages']);
     $this->anonymousUser = $this->drupalCreateUser();
 
     // Get the URL generator.
@@ -156,70 +151,70 @@ abstract class WebTestBase extends SimpletestWebTestBase {
     if (!isset($mime_type)) {
       $mime_type = $this->defaultMimeType;
     }
-    if (!in_array($method, array('GET', 'HEAD', 'OPTIONS', 'TRACE'))) {
+    if (!in_array($method, ['GET', 'HEAD', 'OPTIONS', 'TRACE'])) {
       // GET the CSRF token first for writing requests.
       $requested_token = $this->drupalGet('/rest/session/token');
     }
 
     $url = $this->buildUrl($url) . '?_format=json';
 
-    $curl_options = array();
+    $curl_options = [];
     switch ($method) {
       case 'GET':
         // Set query if there are additional GET parameters.
-        $curl_options = array(
+        $curl_options = [
           CURLOPT_HTTPGET => TRUE,
           CURLOPT_CUSTOMREQUEST => 'GET',
           CURLOPT_URL => $url,
           CURLOPT_NOBODY => FALSE,
-          CURLOPT_HTTPHEADER => array(
+          CURLOPT_HTTPHEADER => [
             'Accept: ' . $mime_type,
-          ),
-        );
+          ],
+        ];
         break;
 
       case 'POST':
-        $curl_options = array(
+        $curl_options = [
           CURLOPT_HTTPGET => FALSE,
           CURLOPT_POST => TRUE,
           CURLOPT_POSTFIELDS => $body,
           CURLOPT_URL => $url,
           CURLOPT_NOBODY => FALSE,
-          CURLOPT_HTTPHEADER => $csrf_token !== FALSE ? array(
+          CURLOPT_HTTPHEADER => $csrf_token !== FALSE ? [
             'Content-Type: ' . $mime_type,
             'X-CSRF-Token: ' . ($csrf_token === NULL ? $requested_token : $csrf_token),
-          ) : array(
+          ] : [
             'Content-Type: ' . $mime_type,
-          ),
-        );
+          ],
+        ];
         break;
 
       case 'PATCH':
-        $curl_options = array(
+        $curl_options = [
           CURLOPT_HTTPGET => FALSE,
           CURLOPT_CUSTOMREQUEST => 'PATCH',
           CURLOPT_POSTFIELDS => $body,
           CURLOPT_URL => $url,
           CURLOPT_NOBODY => FALSE,
-          CURLOPT_HTTPHEADER => $csrf_token !== FALSE ? array(
+          CURLOPT_HTTPHEADER => $csrf_token !== FALSE ? [
             'Content-Type: ' . $mime_type,
             'X-CSRF-Token: ' . ($csrf_token === NULL ? $requested_token : $csrf_token),
-          ) : array(
+          ] : [
             'Content-Type: ' . $mime_type,
-          ),
-        );
+          ],
+        ];
         break;
 
       case 'DELETE':
-        $curl_options = array(
+        $curl_options = [
           CURLOPT_HTTPGET => FALSE,
           CURLOPT_CUSTOMREQUEST => 'DELETE',
           CURLOPT_URL => $url,
           CURLOPT_NOBODY => FALSE,
-          CURLOPT_HTTPHEADER => $csrf_token !== FALSE ? array(
+          CURLOPT_HTTPHEADER => $csrf_token !== FALSE ? [
             'X-CSRF-Token: ' . ($csrf_token === NULL ? $requested_token : $csrf_token),
-          ) : array(),
-        );
+          ] : [],
+        ];
         break;
     }
 
@@ -283,11 +278,10 @@ abstract class WebTestBase extends SimpletestWebTestBase {
    *   TRUE if the assertion succeeded, FALSE otherwise.
    */
   protected function assertResponseBody($expected, $message = '', $group = 'REST Response') {
-    return $this->assertIdentical($expected, $this->responseBody, $message ? $message : strtr('Response body @expected (expected) is equal to @response (actual).', array(
+    return $this->assertIdentical($expected, $this->responseBody, $message ? $message : strtr('Response body @expected (expected) is equal to @response (actual).', [
       '@expected' => var_export($expected, TRUE),
-      '@response' => var_export($this->responseBody,
-        TRUE),
-    )
+      '@response' => var_export($this->responseBody, TRUE),
+    ]
     ), $group);
   }
 
@@ -306,16 +300,16 @@ abstract class WebTestBase extends SimpletestWebTestBase {
   protected function entityValues($entity_type_id) {
     switch ($entity_type_id) {
       case 'node':
-        return array('title' => $this->randomString(), 'type' => 'resttest');
+        return ['title' => $this->randomString(), 'type' => 'resttest'];
 
       case 'node_type':
-        return array(
+        return [
           'type' => 'article',
           'name' => $this->randomMachineName(),
-        );
+        ];
 
       case 'user':
-        return array('name' => $this->randomMachineName());
+        return ['name' => $this->randomMachineName()];
 
       case 'taxonomy_vocabulary':
         return [
@@ -327,7 +321,7 @@ abstract class WebTestBase extends SimpletestWebTestBase {
         if ($this->isConfigEntity($entity_type_id)) {
           return $this->configEntityValues($entity_type_id);
         }
-        return array();
+        return [];
     }
   }
 

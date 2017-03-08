@@ -1,35 +1,11 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Tests\acquia_contenthub\Unit\Polyfill\ImageStyleOptions.
- *
- * This file polyfills all the functions that are defined in global namespace
- * in Drupal environment but not available in PHPUnit context.
- */
-
-namespace Drupal\Tests\acquia_contenthub\Unit\Polyfill\Drupal {
-  /**
-   * Polyfill controller.
-   *
-   * This class manages polyfilled global functions.
-   */
-  class PolyfillController {
-    /**
-     * Function return values.
-     *
-     * @var array manages functions' return values.
-     */
-    public static $return = [];
-
-  }
-
-}
-
 namespace {
+
   use Drupal\Tests\acquia_contenthub\Unit\Polyfill\Drupal\PolyfillController;
 
   if (!function_exists('acquia_polyfill_controller_set_return')) {
+
     /**
      * Set polyfill return value.
      *
@@ -41,9 +17,11 @@ namespace {
     function acquia_polyfill_controller_set_return($function_name, $return_value) {
       PolyfillController::$return[$function_name] = $return_value;
     }
+
   }
 
   if (!function_exists('t')) {
+
     /**
      * Mock Drupal's t function.
      *
@@ -58,9 +36,11 @@ namespace {
     function t($string, array $args = []) {
       return strtr($string, $args);
     }
+
   }
 
   if (!function_exists('image_style_options')) {
+
     /**
      * Mock Drupal's image_style_options function.
      *
@@ -73,9 +53,11 @@ namespace {
     function image_style_options($include_empty = TRUE) {
       return PolyfillController::$return['image_style_options'];
     }
+
   }
 
   if (!function_exists('file_create_url')) {
+
     /**
      * Mock Drupal's file_create_url function.
      *
@@ -88,6 +70,26 @@ namespace {
     function file_create_url($uri) {
       return 'file_create_url:' . $uri;
     }
+
+  }
+
+}
+
+namespace Drupal\Tests\acquia_contenthub\Unit\Polyfill\Drupal {
+
+  /**
+   * Polyfill controller.
+   *
+   * This class manages polyfilled global functions.
+   */
+  class PolyfillController {
+    /**
+     * Function return values.
+     *
+     * @var arraymanagesfunctionsreturnvalues
+     */
+    public static $return = [];
+
   }
 
 }
