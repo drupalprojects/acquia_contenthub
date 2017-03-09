@@ -2,12 +2,10 @@
 
 namespace Drupal\acquia_contenthub\Normalizer;
 
-use Drupal\Core\Session\AnonymousUserSession;
-use Drupal\Component\Utility\Crypt;
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Render\Markup;
 use Drupal\Core\Render\RendererInterface;
 use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\Core\Session\AccountSwitcherInterface;
@@ -16,6 +14,7 @@ use Drupal\image\Entity\ImageStyle;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Drupal\acquia_contenthub\ContentHubSubscription;
+use Drupal\acquia_contenthub\Session\ContentHubUserSession;
 
 /**
  * Extracts the rendered view modes from a given ContentEntity Object.
@@ -34,6 +33,13 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
    * @var \Drupal\Core\Session\AccountProxyInterface
    */
   protected $currentUser;
+
+  /**
+   * The user session used to render a Content Hub content.
+   *
+   * @var \Drupal\acquia_contenthub\Session\ContentHubUserSession
+   */
+  protected $renderUser;
 
   /**
    * The entity manager.
@@ -78,6 +84,13 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
   protected $contentHubSubscription;
 
   /**
+   * The Config factory.
+   *
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
+   */
+  protected $config;
+
+  /**
    * Constructs a ContentEntityViewModesExtractor object.
    *
    * @param \Drupal\Core\Session\AccountProxyInterface $current_user
@@ -94,8 +107,10 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
    *   The Account Switcher Service.
    * @param \Drupal\acquia_contenthub\ContentHubSubscription $contenthub_subscription
    *   The Content Hub Subscription.
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
+   *   The config factory.
    */
-  public function __construct(AccountProxyInterface $current_user, EntityDisplayRepositoryInterface $entity_display_repository, EntityTypeManagerInterface $entity_type_manager, RendererInterface $renderer, HttpKernelInterface $kernel, AccountSwitcherInterface $account_switcher, ContentHubSubscription $contenthub_subscription) {
+  public function __construct(AccountProxyInterface $current_user, EntityDisplayRepositoryInterface $entity_display_repository, EntityTypeManagerInterface $entity_type_manager, RendererInterface $renderer, HttpKernelInterface $kernel, AccountSwitcherInterface $account_switcher, ContentHubSubscription $contenthub_subscription, ConfigFactoryInterface $config_factory) {
     $this->currentUser = $current_user;
     $this->entityDisplayRepository = $entity_display_repository;
     $this->entityTypeManager = $entity_type_manager;
@@ -103,6 +118,8 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
     $this->kernel = $kernel;
     $this->accountSwitcher = $account_switcher;
     $this->contentHubSubscription = $contenthub_subscription;
+    $this->config = $config_factory;
+    $this->renderUser = new ContentHubUserSession($this->config->get('acquia_contenthub.entity_config')->get('user_role'));
   }
 
   /**
@@ -268,8 +285,8 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
   /**
    * Renders all the view modes that are configured to be rendered.
    *
-   * In this method we also switch to an anonymous user because we only want
-   * to see what the Anonymous user's see.
+   * In this method we also switch to an user with role defined in the module
+   * entity configuration.
    *
    * @param \Drupal\Core\Entity\ContentEntityInterface $object
    *   The Content Entity Object.
@@ -282,91 +299,35 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
    *   The render array for the complete page, as minimal as possible.
    */
   public function getViewModeMinimalHtml(ContentEntityInterface $object, $view_mode) {
-    // Switch to anonymous user for rendering as configured role.
+    // Creating a fake user account to give as context to the normalization.
+    $account = $this->renderUser;
+    // Checking for entity access permission to this particular account.
+    $entity_access = $object->access('view', $account, TRUE);
+    if (!$entity_access->isAllowed()) {
+      return [];
+    }
+
+    $this->accountSwitcher->switchTo($this->renderUser);
+
+    // Render View Mode.
     $entity_type_id = $object->getEntityTypeId();
-    $this->accountSwitcher->switchTo(new AnonymousUserSession());
     $build = $this->entityTypeManager->getViewBuilder($entity_type_id)
       ->view($object, $view_mode);
 
-    // Add our cacheableDependency. If this config changes, clear the render
+    // Add our cacheable dependency. If this config changes, clear the render
     // cache.
     $contenthub_entity_config_id = $this->getContentHubEntityTypeConfigEntity($entity_type_id);
     $this->renderer->addCacheableDependency($build, $contenthub_entity_config_id);
 
-    // Wrap our view mode in the most minimal HTML possible.
-    $html = $this->getMinimalHtml($build);
+    // Add a role cacheable dependency.
+    $render_role_id = $this->config->get('acquia_contenthub.entity_config')->get('user_role');
+    $render_role = $this->entityTypeManager->getStorage('user_role')->load($render_role_id);
+    $this->renderer->addCacheableDependency($build, $render_role);
+
     // Restore user account.
     $this->accountSwitcher->switchBack();
-    return $html;
-  }
 
-  /**
-   * Renders a given render array in minimal HTML.
-   *
-   * Minimal HTML is in this case defined as:
-   * - valid HTML
-   * - <head> only containing CSS and JS
-   * - <body> only containing the passed in content plus footer JS
-   * - i.e. no meta tags, no title, no theme CSS …
-   *
-   *
-   * Renders a HTML response with a hardcoded HTML template (i.e. no theme
-   * involved), optimized for the purposes of Content Hub, with only the
-   * absolutely minimal HTML required.
-   *
-   * Only $body still goes through the theme system, because it is rendered
-   * using Render API, which itself calls the theme system, and hence uses the
-   * active theme.
-   *
-   * @param array $body
-   *   A render array.
-   *
-   * @return array
-   *   The render array for the complete page, as minimal as possible.
-   */
-  protected function getMinimalHtml(array $body) {
-    // Attachments to render the CSS, header JS and footer JS.
-    // @see \Drupal\Core\Render\HtmlResponseSubscriber
-    $html_attachments = [];
-    $types = [
-      'styles' => 'css',
-      'scripts' => 'js',
-      'scripts_bottom' => 'js-bottom',
-    ];
-    $placeholder_token = Crypt::randomBytesBase64(55);
-    foreach ($types as $type => $placeholder_name) {
-      $placeholder = '<' . $placeholder_name . '-placeholder token="' . $placeholder_token . '">';
-      $html_attachments['html_response_attachment_placeholders'][$type] = $placeholder;
-    }
-
-    // Hardcoded equivalent of core/modules/system/templates/html.html.twig.
-    $html_top = <<<HTML
-<!DOCTYPE html>
-<html>
-  <head>
-    <css-placeholder token="$placeholder_token">
-    <js-placeholder token="$placeholder_token">
-  </head>
-  <body>
-HTML;
-    $html_bottom = <<<HTML
-    <js-bottom-placeholder token="$placeholder_token">
-  </body>
-</html>
-HTML;
-
-    // Render array representing the entire HTML to be rendered.
-    $html = [
-      '#prefix' => Markup::create($html_top),
-      'body' => $body,
-      '#suffix' => Markup::create($html_bottom),
-      '#attached' => $html_attachments,
-    ];
-
-    // Render the render array.
-    $this->renderer->renderRoot($html);
-
-    return $html;
+    return $build;
   }
 
 }

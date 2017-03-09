@@ -197,3 +197,21 @@ function acquia_contenthub_form_node_type_form_submit(array $form, FormStateInte
   $settings = $form_state->getValue('acquia_contenthub');
   \Drupal::service('acquia_contenthub.form.node_type_preview_image_form')->saveSettings($node_type, $settings);
 }
+
+/**
+ * Implements hook_theme().
+ */
+function acquia_contenthub_theme($existing, $type, $theme, $path) {
+  return [
+    'html__acquia_contenthub' => [
+      'template' => 'html--acquia-contenthub',
+      'render element' => 'html',
+      'preprocess functions' => ['template_preprocess_html'],
+    ],
+    'page__acquia_contenthub' => [
+      'template' => 'page--acquia-contenthub',
+      'render element' => 'page',
+      'preprocess functions' => ['template_preprocess_page'],
+    ],
+  ];
+}

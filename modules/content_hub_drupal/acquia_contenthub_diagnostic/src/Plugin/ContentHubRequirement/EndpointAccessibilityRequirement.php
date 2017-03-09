@@ -201,7 +201,7 @@ class EndpointAccessibilityRequirement extends ContentHubRequirementBase {
    * @param string $endpoint
    *    Url of endpoint.
    * @param string $method
-   *    Method of the request. (e.g GET or POST)
+   *    Method of the request. (e.g GET or POST).
    *
    * @return string
    *    The authorization header.

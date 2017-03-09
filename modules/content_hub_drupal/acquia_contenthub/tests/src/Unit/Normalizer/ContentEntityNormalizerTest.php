@@ -4,6 +4,7 @@ namespace Drupal\Tests\acquia_contenthub\Unit\Normalizer;
 
 use Acquia\ContentHubClient\Entity;
 use Drupal\acquia_contenthub\Normalizer\ContentEntityCdfNormalizer;
+use Drupal\acquia_contenthub\Session\ContentHubUserSession;
 use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Session\AccountInterface;
@@ -18,7 +19,22 @@ use Drupal\Tests\UnitTestCase;
  */
 class ContentEntityNormalizerTest extends UnitTestCase {
 
+  /**
+   * Enable or disable the backup and restoration of the $GLOBALS array.
+   *
+   * @var bool
+   */
   protected $backupGlobals = FALSE;
+
+  /**
+   * The acquia_contenthub.entity_config array.
+   *
+   * @var array
+   */
+  protected $configEntity = [
+    'dependency_depth' => 3,
+    'user_role'        => AccountInterface::ANONYMOUS_ROLE,
+  ];
 
   /**
    * The dependency injection container.
@@ -112,6 +128,13 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   protected $languageManager;
 
   /**
+   * User Context (Expected to be Anonymous for this test).
+   *
+   * @var \Drupal\acquia_contenthub\Session\ContentHubUserSession
+   */
+  protected $userContext;
+
+  /**
    * {@inheritdoc}
    */
   protected function setUp() {
@@ -153,6 +176,8 @@ class ContentEntityNormalizerTest extends UnitTestCase {
       ->getMock();
 
     $this->languageManager = $this->getMock('Drupal\Core\Language\LanguageManagerInterface');
+
+    $this->userContext = new ContentHubUserSession(AccountInterface::ANONYMOUS_ROLE);
 
     $this->contentEntityNormalizer = new ContentEntityCdfNormalizer($this->configFactory, $this->contentEntityViewModesExtractor, $this->moduleHandler, $this->entityRepository, $this->kernel, $this->renderer, $this->entityManager, $this->entityTypeManager, $this->exportController, $this->languageManager);
   }
@@ -213,12 +238,12 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $this->createMockContainerResponse();
 
     $definitions = [
-      'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, NULL, ['0' => ['value' => 'test']]),
+      'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, $this->userContext, ['0' => ['value' => 'test']]),
     ];
 
     // Set our Serializer and expected serialized return value for the given
     // fields.
-    $serializer = $this->getFieldsSerializer($definitions);
+    $serializer = $this->getFieldsSerializer($definitions, $this->userContext);
     $this->contentEntityNormalizer->setSerializer($serializer);
 
     // Create our Content Entity.
@@ -261,12 +286,12 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $this->createMockContainerResponse();
 
     $definitions = [
-      'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, NULL, [['value' => 'test'], ['value' => 'test2']]),
+      'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, $this->userContext, [['value' => 'test'], ['value' => 'test2']]),
     ];
 
     // Set our Serializer and expected serialized return value for the given
     // fields.
-    $serializer = $this->getFieldsSerializer($definitions);
+    $serializer = $this->getFieldsSerializer($definitions, $this->userContext);
     $this->contentEntityNormalizer->setSerializer($serializer);
 
     // Create our Content Entity.
@@ -313,14 +338,14 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $this->createMockContainerResponse();
 
     $definitions = [
-      'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, NULL, ['0' => ['value' => 'test']]),
-      'created' => $this->createMockFieldListItem('created', 'timestamp', TRUE, NULL, ['0' => ['value' => '1458811508']]),
-      'changed' => $this->createMockFieldListItem('changed', 'timestamp', TRUE, NULL, ['0' => ['value' => '1458811509']]),
+      'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, $this->userContext, ['0' => ['value' => 'test']]),
+      'created' => $this->createMockFieldListItem('created', 'timestamp', TRUE, $this->userContext, ['0' => ['value' => '1458811508']]),
+      'changed' => $this->createMockFieldListItem('changed', 'timestamp', TRUE, $this->userContext, ['0' => ['value' => '1458811509']]),
     ];
 
     // Set our Serializer and expected serialized return value for the given
     // fields.
-    $serializer = $this->getFieldsSerializer($definitions);
+    $serializer = $this->getFieldsSerializer($definitions, $this->userContext);
     $this->contentEntityNormalizer->setSerializer($serializer);
 
     // Create our Content Entity.
@@ -357,12 +382,12 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   public function testNormalizeWithNoFieldValue() {
     $this->createMockContainerResponse();
     $definitions = [
-      'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, NULL, []),
+      'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, $this->userContext, []),
     ];
 
     // Set our Serializer and expected serialized return value for the given
     // fields.
-    $serializer = $this->getFieldsSerializer($definitions);
+    $serializer = $this->getFieldsSerializer($definitions, $this->userContext);
     $this->contentEntityNormalizer->setSerializer($serializer);
 
     // Create our Content Entity.
@@ -393,12 +418,12 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   public function testNormalizeWithFieldNameAsType() {
     $this->createMockContainerResponse();
     $definitions = [
-      'title' => $this->createMockFieldListItem('title', 'string', TRUE, NULL, ['0' => ['value' => 'test']]),
+      'title' => $this->createMockFieldListItem('title', 'string', TRUE, $this->userContext, ['0' => ['value' => 'test']]),
     ];
 
     // Set our Serializer and expected serialized return value for the given
     // fields.
-    $serializer = $this->getFieldsSerializer($definitions);
+    $serializer = $this->getFieldsSerializer($definitions, $this->userContext);
     $this->contentEntityNormalizer->setSerializer($serializer);
 
     // Create our Content Entity.
@@ -427,12 +452,12 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   public function testNormalizeWithNonStringFieldType() {
     $this->createMockContainerResponse();
     $definitions = [
-      'voted' => $this->createMockFieldListItem('voted', 'boolean', TRUE, NULL, ['0' => ['value' => TRUE]]),
+      'voted' => $this->createMockFieldListItem('voted', 'boolean', TRUE, $this->userContext, ['0' => ['value' => TRUE]]),
     ];
 
     // Set our Serializer and expected serialized return value for the given
     // fields.
-    $serializer = $this->getFieldsSerializer($definitions);
+    $serializer = $this->getFieldsSerializer($definitions, $this->userContext);
     $this->contentEntityNormalizer->setSerializer($serializer);
 
     // Create our Content Entity.
@@ -461,12 +486,12 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   public function testNormalizeWithComplexFieldValues() {
     $this->createMockContainerResponse();
     $definitions = [
-      'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, NULL, ['0' => ['value' => 'test', 'random_key' => 'random_data']]),
+      'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, $this->userContext, ['0' => ['value' => 'test', 'random_key' => 'random_data']]),
     ];
 
     // Set our Serializer and expected serialized return value for the given
     // fields.
-    $serializer = $this->getFieldsSerializer($definitions);
+    $serializer = $this->getFieldsSerializer($definitions, $this->userContext);
     $this->contentEntityNormalizer->setSerializer($serializer);
 
     // Create our Content Entity.
@@ -494,13 +519,13 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   public function testNormalizeWithFieldWithoutAccess() {
     $this->createMockContainerResponse();
     $definitions = [
-      'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, NULL, ['0' => ['value' => 'test']]),
-      'field_2' => $this->createMockFieldListItem('field_2', 'string', FALSE, NULL, ['0' => ['value' => 'test']]),
+      'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, $this->userContext, ['0' => ['value' => 'test']]),
+      'field_2' => $this->createMockFieldListItem('field_2', 'string', FALSE, $this->userContext, ['0' => ['value' => 'test']]),
     ];
 
     // Set our Serializer and expected serialized return value for the given
     // fields.
-    $serializer = $this->getFieldsSerializer($definitions);
+    $serializer = $this->getFieldsSerializer($definitions, $this->userContext);
     $this->contentEntityNormalizer->setSerializer($serializer);
 
     // Create our Content Entity.
@@ -615,12 +640,12 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   public function testNormalizeReferenceField() {
     $this->createMockContainerResponse();
     $definitions = [
-      'field_ref' => $this->createMockEntityReferenceFieldItemList('field_ref', TRUE, NULL),
+      'field_ref' => $this->createMockEntityReferenceFieldItemList('field_ref', TRUE, $this->userContext),
     ];
 
     // Set our Serializer and expected serialized return value for the given
     // fields.
-    $serializer = $this->getFieldsSerializer($definitions);
+    $serializer = $this->getFieldsSerializer($definitions, $this->userContext);
     $this->contentEntityNormalizer->setSerializer($serializer);
 
     // Create our Content Entity.
@@ -652,12 +677,12 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     // NOTE: If you set the machine name of the mock field to 'type' things
     // don't work. Going with 'field_ref'.
     $definitions = [
-      'field_ref' => $this->createMockEntityReferenceFieldItemList('field_ref', TRUE, NULL),
+      'field_ref' => $this->createMockEntityReferenceFieldItemList('field_ref', TRUE, $this->userContext),
     ];
 
     // Set our Serializer and expected serialized return value for the given
     // fields.
-    $serializer = $this->getFieldsSerializer($definitions);
+    $serializer = $this->getFieldsSerializer($definitions, $this->userContext);
     $this->contentEntityNormalizer->setSerializer($serializer);
 
     // Create our Content Entity.
@@ -795,6 +820,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
       'getTranslation',
       'hasField',
       'toUrl',
+      'access',
       'hasLinkTemplate',
     ];
 
@@ -834,6 +860,10 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $url->method('getRouteParameters')->willReturn(['node' => 1]);
     $content_entity_mock->method('toUrl')->willReturn($url);
 
+    $access = $this->getMock('Drupal\Core\Access\AccessResultInterface');
+    $access->method('isAllowed')->willReturn(TRUE);
+    $content_entity_mock->method('access')->withAnyParameters()->willReturn($access);
+
     $content_entity_mock->method('hasLinkTemplate')->willReturn(TRUE);
 
     return $content_entity_mock;
@@ -864,9 +894,16 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   public function createMockForContentHubEntityConfig() {
     $contenthub_entity_config = $this->getMockBuilder('Drupal\Core\Config\ImmutableConfig')
       ->disableOriginalConstructor()
-      ->setMethods(array('get'))
+      ->setMethods(['get'])
       ->getMockForAbstractClass();
-    $contenthub_entity_config->method('get')->with('dependency_depth')->willReturn(3);
+    $contenthub_entity_config
+      ->method('get')
+      ->willReturnCallback(function ($argument) {
+        if (isset($this->configEntity[$argument])) {
+          return $this->configEntity[$argument];
+        }
+        return NULL;
+      });
 
     return $contenthub_entity_config;
   }

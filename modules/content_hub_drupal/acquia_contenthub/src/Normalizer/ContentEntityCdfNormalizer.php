@@ -5,6 +5,7 @@ namespace Drupal\acquia_contenthub\Normalizer;
 use Drupal\Core\Field\EntityReferenceFieldItemListInterface;
 use Acquia\ContentHubClient\Asset;
 use Acquia\ContentHubClient\Attribute;
+use Drupal\acquia_contenthub\Session\ContentHubUserSession;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Component\Render\FormattableMarkup;
 use Drupal\acquia_contenthub\ContentHubException;
@@ -216,10 +217,18 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    *   Return normalized data.
    */
   public function normalize($entity, $format = NULL, array $context = []) {
-    $context += ['account' => NULL];
-
     // Exit if the class does not support normalizing to the given format.
     if (!$this->supportsNormalization($entity, $format)) {
+      return NULL;
+    }
+
+    // Creating a fake user account to give as context to the normalization.
+    $account = new ContentHubUserSession($this->config->get('acquia_contenthub.entity_config')->get('user_role'));
+    $context += ['account' => $account];
+
+    // Checking for entity access permission to this particular account.
+    $entity_access = $entity->access('view', $account, TRUE);
+    if (!$entity_access->isAllowed()) {
       return NULL;
     }
 

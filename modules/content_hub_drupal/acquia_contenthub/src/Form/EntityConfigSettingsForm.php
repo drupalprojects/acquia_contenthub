@@ -2,17 +2,19 @@
 
 namespace Drupal\acquia_contenthub\Form;
 
+use Drupal\acquia_contenthub\EntityManager;
 use Drupal\Core\Entity\ContentEntityType;
+use Drupal\Core\Entity\EntityDisplayRepository;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Form\ConfigFormBase;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\Core\Entity\EntityDisplayRepository;
-use Drupal\Core\Url;
 use Drupal\Core\Link;
-use Drupal\acquia_contenthub\EntityManager;
+use Drupal\Core\Url;
+use Drupal\user\PermissionHandlerInterface;
+use Drupal\user\RoleStorageInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Defines the form to configure the entity types and bundles to be exported.
@@ -48,6 +50,20 @@ class EntityConfigSettingsForm extends ConfigFormBase {
   protected $entityManager;
 
   /**
+   * The role storage.
+   *
+   * @var \Drupal\user\RoleStorageInterface
+   */
+  protected $roleStorage;
+
+  /**
+   * The permission handler.
+   *
+   * @var \Drupal\user\PermissionHandlerInterface
+   */
+  protected $permissionHandler;
+
+  /**
    * {@inheritdoc}
    */
   public function getFormId() {
@@ -65,12 +81,18 @@ class EntityConfigSettingsForm extends ConfigFormBase {
    *   The entity display repository.
    * @param \Drupal\acquia_contenthub\EntityManager $entity_manager
    *   The entity manager for Content Hub.
+   * @param \Drupal\user\RoleStorageInterface $role_storage
+   *   The role storage.
+   * @param \Drupal\user\PermissionHandlerInterface $permission_handler
+   *   The permission handler.
    */
-  public function __construct(EntityTypeManagerInterface $entity_type_manager, EntityTypeBundleInfoInterface $entity_type_bundle_info_manager, EntityDisplayRepository $entity_display_repository, EntityManager $entity_manager) {
+  public function __construct(EntityTypeManagerInterface $entity_type_manager, EntityTypeBundleInfoInterface $entity_type_bundle_info_manager, EntityDisplayRepository $entity_display_repository, EntityManager $entity_manager, RoleStorageInterface $role_storage, PermissionHandlerInterface $permission_handler) {
     $this->entityTypeManager = $entity_type_manager;
     $this->entityTypeBundleInfoManager = $entity_type_bundle_info_manager;
     $this->entityDisplayRepository = $entity_display_repository;
     $this->entityManager = $entity_manager;
+    $this->roleStorage = $role_storage;
+    $this->permissionHandler = $permission_handler;
   }
 
   /**
@@ -81,7 +103,9 @@ class EntityConfigSettingsForm extends ConfigFormBase {
     $entity_type_manager = $container->get('entity_type.manager');
     $entity_display_repository = $container->get('entity_display.repository');
     $entity_manager = $container->get('acquia_contenthub.entity_manager');
-    return new static($entity_type_manager, $entity_type_bundle_info_manager, $entity_display_repository, $entity_manager);
+    $role_storage = $container->get('entity.manager')->getStorage('user_role');
+    $permission_handler = $container->get('user.permissions');
+    return new static($entity_type_manager, $entity_type_bundle_info_manager, $entity_display_repository, $entity_manager, $role_storage, $permission_handler);
   }
 
   /**
@@ -102,6 +126,7 @@ class EntityConfigSettingsForm extends ConfigFormBase {
 
     $form['entity_config']['entities'] = $this->buildEntitiesForm();
     $form['entity_config']['user_role'] = $this->buildUserRoleForm();
+    $form['entity_config']['user_role_warning'] = $this->buildUserRoleWarningForm();
 
     return parent::buildForm($form, $form_state);
   }
@@ -254,6 +279,81 @@ class EntityConfigSettingsForm extends ConfigFormBase {
       '#required' => TRUE,
     ];
     return $form;
+  }
+
+  /**
+   * Build user role form warning.
+   *
+   * @return array
+   *   User role warning form.
+   */
+  private function buildUserRoleWarningForm() {
+    $admin_roles = $this->getRestrictedRoles();
+    $form = [];
+    if (!empty($admin_roles)) {
+      $states = [];
+      foreach ($admin_roles as $role_id => $role_label) {
+        $states[] = [':input[name="user_role"]' => ['value' => $role_id]];
+      }
+      $form = [
+        'container' => [
+          '#type' => 'container',
+          '#states' => [
+            'visible' => $states,
+          ],
+          'warning' => [
+            '#type' => 'inline_template',
+            '#template' => '<div class="permission"><span class="title">{{ title }}</span></div>',
+            '#context' => [
+              'title' => $this->t('Warning: This role has security implications.'),
+            ],
+          ],
+          '#attributes' => [
+            'id' => 'user-warning-role',
+          ],
+        ],
+      ];
+    }
+
+    return $form;
+  }
+
+  /**
+   * Gets the roles to display in this form.
+   *
+   * @return \Drupal\user\RoleInterface[]
+   *   An array of role objects.
+   */
+  private function getRoles() {
+    return $this->roleStorage->loadMultiple();
+  }
+
+  /**
+   * Get roles with security implications.
+   *
+   * @return array
+   *   An array of admin roles and roles with restrict access flag set for any
+   *   of role permission.
+   */
+  private function getRestrictedRoles() {
+    $admin_roles = [];
+    $permissions = $this->permissionHandler->getPermissions();
+
+    foreach ($this->getRoles() as $role_name => $role) {
+      if ($role->isAdmin()) {
+        $admin_roles[$role_name] = $role->label();
+      }
+      else {
+        foreach ($role->getPermissions() as $permission_name) {
+          if (!empty($permissions[$permission_name]['restrict access'])) {
+            $admin_roles[$role_name] = $role->label();
+            continue;
+          }
+        }
+      }
+    }
+
+    return $admin_roles;
   }
 
   /**
