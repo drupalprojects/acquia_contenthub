@@ -195,16 +195,14 @@ class ContentHubFiltersTest extends WebTestBase {
     // Test Multi GET request.
     $method = 'GET';
     $url = $this->getContentHubFilterResourceUrl($method);
-    $response = $this->httpRequest($url, $method, NULL, 'application/json');
+    $this->httpRequest($url, $method, NULL, 'application/json');
     $this->assertResponse(403);
-    $this->assertText($response, '{"message":""}');
 
     // Test a single GET request.
     $method = 'GET';
     $url = $this->getContentHubFilterResourceUrl($method, $saved_filter->id());
     $this->httpRequest($url, $method, NULL, 'application/json');
     $this->assertResponse(403);
-    $this->assertResponseBody('{"message":""}');
 
     // Test POST request.
     $filter = $this->createContentHubFilter();
@@ -213,7 +211,6 @@ class ContentHubFiltersTest extends WebTestBase {
     $serialized = $this->container->get('serializer')->serialize($filter, 'json');
     $this->httpRequest($url, $method, $serialized, 'application/json');
     $this->assertResponse(403);
-    $this->assertResponseBody('{"message":""}');
 
     // Test PATCH request.
     $method = 'PATCH';

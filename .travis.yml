@@ -53,13 +53,14 @@ before_install:
 install:
   - composer create-project acquia/lightning-project:^8.1.0 drupal --no-interaction --no-install
   - cd drupal
-  - composer config --global repo.packagist composer https://packagist.org
   # see https://github.com/drupal-composer/drupal-project/issues/175
-  - composer config --global repositories.0 composer https://packages.drupal.org/8
+  - composer config repositories.acquia_contenthub path ../build
+  - composer config repositories.acquia_contenthub.symlink false
+  - composer config --unset repositories.0
+  - composer config repositories.drupal composer https://packages.drupal.org/8
   - composer require drupal/core:$DRUPAL --no-update
-  - composer config repositories.acquia-content-hub-d8 path ../build
-  - composer config repositories.acquia-content-hub-d8.symlink false
-  - composer require acquia/content-hub-d8
+  - composer require drupal/acquia_contenthub:*
+  - cat composer.json
     # Adding paragraphs contrib module.
   - composer require drupal/entity_reference_revisions:1.0 --profile
   - composer require drupal/paragraphs:1.0 --profile
@@ -75,7 +76,7 @@ before_script:
   - echo "always_populate_raw_post_data=-1" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
 
 script:
-  - vendor/bin/phpcs -v --standard=Drupal,DrupalPractice --extensions=php,module,inc,install,test,profile,theme,js,css,info,txt ./modules/content_hub_drupal/
+  - vendor/bin/phpcs -v --standard=Drupal,DrupalPractice --extensions=php,module,inc,install,test,profile,theme,js,css,info,txt ./build
   - cd drupal/docroot
   - mkdir themes
   - cd core

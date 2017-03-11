@@ -1,8 +1,8 @@
 {
-  "name": "acquia/content-hub-d8",
+  "name": "drupal/acquia_contenthub",
   "type": "drupal-module",
   "description": "Module allowing Drupal sites to connect to Acquia Content Hub.",
-  "license": "proprietary",
+  "license": "GPL-2.0+",
   "repositories": [
     {
       "type": "vcs",
@@ -11,11 +11,5 @@
   ],
   "require": {
     "acquia/content-hub-php": "dev-master"
-  },
-  "scripts": {
-    "post-install-cmd": [
-        "@install-pre-commit"
-    ],
-    "install-pre-commit": "if [ -x ../.git/hooks ]; then cp pre-commit ../.git/hooks/pre-commit; fi"
   }
 }
