@@ -15,6 +15,8 @@ use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Component\Utility\UrlHelper;
 use GuzzleHttp\Exception\RequestException;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\node\NodeInterface;
+use Drupal\paragraphs\ParagraphInterface;
 
 /**
  * Provides a service for managing entity actions for Content Hub.
@@ -82,6 +84,13 @@ class EntityManager {
   ];
 
   /**
+   * The "shutdown function is registered" flag.
+   *
+   * @var bool
+   */
+  private $shutdownFunctionRegistered = FALSE;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
@@ -141,28 +150,110 @@ class EntityManager {
    *   TRUE if the entity action is 'EXPORT'; FALSE, if it is 'UNEXPORT'.
    */
   public function enqueueCandidateEntity($entity, $do_export = TRUE) {
-    $action = $do_export ? SELF::EXPORT : SELF::UNEXPORT;
-    // Comparing entity's origin with site's origin.
-    $origin = $this->config->get('origin');
-    if (isset($entity->__content_hub_origin) && $entity->__content_hub_origin !== $origin) {
-      unset($entity->__content_hub_origin);
-      return;
-    }
-
     // Early return, if entity is not eligible.
     if (!$this->isEligibleEntity($entity)) {
       return;
     }
+    // Register shutdown function.
+    $this->registerShutdownFunction();
 
-    $this->candidateEntities[$action][$entity->uuid()] = $entity;
-
-    // Register shutdown function to send/delete entities to/from Content Hub.
-    $acquia_contenthub_shutdown_function = 'acquia_contenthub_bulk_export';
-    $callbacks = drupal_register_shutdown_function();
-    $callback_functions = array_column($callbacks, 'callback');
-    if (!in_array($acquia_contenthub_shutdown_function, $callback_functions)) {
-      drupal_register_shutdown_function($acquia_contenthub_shutdown_function);
+    $unexporting_entities = [];
+    $exporting_entities = [];
+    // Only care about the case where entity is 1) node, and 2) updating.
+    if ($entity instanceof NodeInterface && isset($entity->original)) {
+      // We also know the $do_export at this point should be TRUE.
+      $old_is_published = $entity->original->isPublished();
+      $new_is_published = $entity->isPublished();
+      if (!$new_is_published) {
+        $do_export = FALSE;
+      }
+      // If "published to unpublished", unexport it and its old descendants.
+      if ($old_is_published && !$new_is_published) {
+        $unexporting_entities += $entity->original->referencedEntities();
+      }
+      // If "unpublished to published", export it and its new descendants.
+      if (!$old_is_published && $new_is_published) {
+        $exporting_entities += $entity->referencedEntities();
+      }
     }
+
+    // If "to published", we have to move any disassociated entities exporting
+    // list to unexporting list.
+    if ($do_export && $entity instanceof EntityInterface && isset($entity->original)) {
+      // Find all UUIDs of the exported entities.
+      $exporting_entities_uuids = [];
+      foreach ($exporting_entities as $exporting_entity) {
+        $exporting_entities_uuids[$exporting_entity->uuid()] = TRUE;
+      }
+
+      $exported_entities = $entity->original->referencedEntities();
+      // For each exported entity, check if it still remains associated.
+      foreach ($exported_entities as $key => $exported_entity) {
+        // If remain associated, leave it alone.
+        if (isset($exporting_entities_uuids[$exported_entity->uuid()])) {
+          continue;
+        }
+        // Otherwise, if disassociated, move it from export to unexport queue.
+        $unexporting_entities[] = $exported_entity;
+        unset($exported_entities[$key]);
+      }
+    }
+
+    // Enqueue unexport and export entities separately.
+    $this->enqueueQualifiedEntities($unexporting_entities, FALSE);
+    $this->enqueueQualifiedEntities($exporting_entities, TRUE);
+    $action = $do_export ? SELF::EXPORT : SELF::UNEXPORT;
+    $this->candidateEntities[$action][$entity->uuid()] = $entity;
+  }
+
+  /**
+   * Enqueue array of entities with an operation to be performed on Content Hub.
+   *
+   * @param array $entities
+   *   A list of entities.
+   * @param bool $do_export
+   *   TRUE if the entity action is 'EXPORT'; FALSE, if it is 'UNEXPORT'.
+   */
+  private function enqueueQualifiedEntities(array $entities, $do_export) {
+    foreach ($entities as $entity) {
+      // TODO: Paragraphs' handling is hardcoded in Export Entity Manager right
+      // now, but need to be refactored out of this class in the future.
+      if (!$entity instanceof ParagraphInterface) {
+        continue;
+      }
+      $this->enqueueCandidateParagraph($entity, $do_export);
+    }
+  }
+
+  /**
+   * Enqueue a paragraph with an operation to be performed on Content Hub.
+   *
+   * @param \Drupal\paragraphs\ParagraphInterface $paragraph
+   *   The Paragraph object.
+   * @param bool $do_export
+   *   TRUE if the entity action is 'EXPORT'; FALSE, if it is 'UNEXPORT'.
+   */
+  private function enqueueCandidateParagraph(ParagraphInterface $paragraph, $do_export) {
+    // Early return, if entity is not eligible.
+    if (!$this->isEligibleEntity($paragraph)) {
+      return;
+    }
+    $referenced_entities = $paragraph->referencedEntities();
+    $this->enqueueQualifiedEntities($referenced_entities, $do_export);
+    $action = $do_export ? SELF::EXPORT : SELF::UNEXPORT;
+    $this->candidateEntities[$action][$paragraph->uuid()] = $paragraph;
+  }
+
+  /**
+   * Register shutdown function.
+   */
+  private function registerShutdownFunction() {
+    if ($this->shutdownFunctionRegistered) {
+      return;
+    }
+    // Register shutdown function to send/delete entities to/from Content Hub.
+    drupal_register_shutdown_function('acquia_contenthub_bulk_export');
+    $this->shutdownFunctionRegistered = TRUE;
   }
 
   /**
@@ -205,8 +296,8 @@ class EntityManager {
    * Bulk-export all the enqueued entities.
    */
   public function bulkExport() {
-    $this->unexportCandidateEntities();
     $this->unexportDisqualifiedExportCandidateEntities();
+    $this->unexportCandidateEntities();
   }
 
   /**
@@ -228,8 +319,8 @@ class EntityManager {
     foreach ($candidate_entites as $uuid => $candidate_entity) {
       $root_ancestor_entity = $this->findRootAncestorEntity($candidate_entity);
       // If root ancestor is not published, delete the current entity.
-      if (method_exists($root_ancestor_entity, 'isPublished') && !$root_ancestor_entity->isPublished()) {
-        $this->deleteRemoteEntity($candidate_entity);
+      if ($root_ancestor_entity instanceof NodeInterface && !$root_ancestor_entity->isPublished()) {
+        $this->candidateEntities[SELF::UNEXPORT][$uuid] = $candidate_entity;
         unset($this->candidateEntities[SELF::EXPORT][$uuid]);
       }
     }
