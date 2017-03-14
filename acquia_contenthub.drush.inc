@@ -6,6 +6,9 @@
  */
 
 use Drupal\Component\Uuid\Uuid;
+use Drupal\Core\Url;
+use Drush\Log\LogLevel;
+use Drupal\Core\Form\FormState;
 
 /**
  * Implements hook_drush_command().
@@ -126,6 +129,28 @@ function acquia_contenthub_drush_command() {
     'aliases' => ['ach-upsec'],
   ];
 
+  $items['acquia-contenthub-connect-site'] = array(
+    'description' => "Connects a site with contenthub.",
+    'aliases' => ['ach-connect'],
+    'bootstrap' => DRUSH_BOOTSTRAP_MAX,
+  );
+  $items['acquia-contenthub-disconnect-site'] = array(
+    'description' => 'Disconnects a site with contenthub.',
+    'aliases' => ['ach-disconnect'],
+    'bootstrap' => DRUSH_BOOTSTRAP_MAX,
+  );
+  $items['acquia-contenthub-webhooks'] = array(
+    'description' => dt("Perform a webhook management operation."),
+    'aliases' => ['ach-wh'],
+    'bootstrap' => DRUSH_BOOTSTRAP_MAX,
+    'required-arguments' => 1,
+    'arguments' => [
+      'op' => dt('The operation to use. Options are: register, unregister, list.'),
+    ],
+    'options' => [
+      'webhook_url' => dt('The webhook URL to register or unregister.'),
+    ],
+  );
   return $items;
 }
 
@@ -432,5 +457,104 @@ function drush_acquia_contenthub_update_secret() {
   }
   else {
     drush_set_error(dt('The Content Hub client is not connected so the shared secret can not be updated.'));
+  }
+}
+
+/**
+ * Connects a site with Content Hub.
+ */
+function drush_acquia_contenthub_connect_site($api_key = '', $secret = '', $hostname = '', $client_name = '') {
+  $config_factory = \Drupal::configFactory();
+  $uuid_service = \Drupal::service('uuid');
+
+  $config = $config_factory->getEditable('acquia_contenthub.admin_settings');
+  $config_api_key = $config->get('api_key');
+
+  if (!empty($config_api_key)) {
+    drush_log(dt('Site is already connected to Content Hub. Skipping.'), LogLevel::CANCEL);
+    return;
+  }
+
+  $hostname = !empty($hostname) ? $hostname : drush_prompt(dt('What is the Content Hub API URL?'), 'https://us-east-1.content-hub.acquia.com');
+  $api_key = !empty($api_key) ? $api_key : drush_prompt(dt('What is your Content Hub API Key?'));
+  $secret = !empty($secret) ? $secret : drush_prompt(dt('What is your Content Hub API Secret?'));
+  $client_uuid = $uuid_service->generate();
+  $client_name = !empty($client_name) ? $client_name : drush_prompt(dt('What is the client name for this site?'), $client_uuid);
+
+  $form_state = new FormState();
+  $values['api_key'] = $api_key;
+  $values['secret_key'] = $secret;
+  $values['hostname'] = $hostname;
+  $values['client_name'] = $client_name . '_' . $client_uuid;
+  $values['op'] = t('Save configuration');
+  $form_state->setValues($values);
+  \Drupal::formBuilder()->submitForm('Drupal\acquia_contenthub\Form\ContentHubSettingsForm', $form_state);
+}
+
+/**
+ * Disconnects a site from Content Hub.
+ */
+function drush_acquia_contenthub_disconnect_site() {
+  /** @var \Drupal\acquia_contenthub\ContentHubSubscription $subscription */
+  $subscription = \Drupal::service('acquia_contenthub.acquia_contenthub_subscription');
+  $subscription->disconnectClient();
+  // disconnectClient always returns false. Check config to be sure of success.
+  $config_factory = \Drupal::configFactory();
+  $config = $config_factory->getEditable('acquia_contenthub.admin_settings');
+  $webhook_uuid = $config->get('webhook_uuid');
+  if (!$webhook_uuid) {
+    drush_log(dt('Site has been disconnected from Content Hub.'), LogLevel::SUCCESS);
+  }
+}
+
+/**
+ * Content Hub webhook operations.
+ */
+function drush_acquia_contenthub_webhooks($op, $webhook_url = NULL) {
+  $config_factory = \Drupal::configFactory();
+  /** @var \Drupal\acquia_contenthub\Client\ClientManager $client_manager */
+  $client_manager = \Drupal::service('acquia_contenthub.client_manager');
+  /** @var \Drupal\acquia_contenthub\ContentHubSubscription $subscription */
+  $subscription = \Drupal::service('acquia_contenthub.acquia_contenthub_subscription');
+
+  if (empty($webhook_url)) {
+    $webhook_url = Url::fromUri('internal:/acquia-contenthub/webhook', ['absolute' => TRUE])->toString();
+  }
+  if ($client_manager->isConnected()) {
+    $config = $config_factory->getEditable('acquia_contenthub.admin_settings');
+    switch ($op) {
+      case 'register':
+        $success = $subscription->registerWebhook($webhook_url);
+        if (!$success) {
+          drush_log(dt('Registering webhooks encountered an error.'), LogLevel::CANCEL);
+        }
+        else {
+          $webhook_uuid = $config->get('webhook_uuid');
+          drush_log(dt('Registered Content Hub Webhook: @uuid', ['@uuid' => $webhook_uuid]), LogLevel::SUCCESS);
+        }
+        break;
+
+      case 'unregister':
+        $webhook_url = $config->get('webhook_url');
+        $success = $subscription->unregisterWebhook($webhook_url);
+        if (!$success) {
+          drush_log(dt('There was an error unregistering the URL: @url', ['@url' => $webhook_url]), LogLevel::CANCEL);
+        }
+        break;
+
+      case 'list':
+        $webhooks = $subscription->getSettings()->getWebhooks();
+        foreach ($webhooks as $index => $webhook) {
+          drush_print($index + 1 . '. ' . $webhook['url'] . ' - ' . $webhook['uuid']);
+        }
+        break;
+
+      default:
+        // Invalid operation.
+        drush_set_error(dt('The op "@op" is invalid', ['@op' => $op]));
+    }
+  }
+  else {
+    drush_set_error(dt('The Content Hub client is not connected so the webhook operations could not be performed.'));
   }
 }
