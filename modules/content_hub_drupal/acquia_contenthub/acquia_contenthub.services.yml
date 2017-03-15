@@ -39,7 +39,7 @@ services:
 
   acquia_contenthub.normalizer.content_entity_view_modes_extractor:
     class: Drupal\acquia_contenthub\Normalizer\ContentEntityViewModesExtractor
-    arguments: ['@current_user', '@entity_display.repository', '@entity_type.manager', '@renderer', '@http_kernel.basic', '@account_switcher', '@acquia_contenthub.acquia_contenthub_subscription']
+    arguments: ['@current_user', '@entity_display.repository', '@entity_type.manager', '@renderer', '@http_kernel.basic', '@account_switcher', '@acquia_contenthub.acquia_contenthub_subscription', '@config.factory']
 
   acquia_contenthub.encoder.acquia_contenthub_cdf:
     class: Drupal\acquia_contenthub\Encoder\ContentHubCdfEncoder
@@ -54,6 +54,12 @@ services:
   acquia_contenthub.config_rebuild_routes:
     class: Drupal\acquia_contenthub\EventSubscriber\ConfigRebuildRoutes
     arguments: ['@router.builder']
+    tags:
+      - { name: event_subscriber }
+
+  acquia_contenthub.content_hub_view_subscriber:
+    class: Drupal\acquia_contenthub\EventSubscriber\ContentHubViewSubscriber
+    arguments: ['@current_route_match', '@config.factory', '@account_switcher']
     tags:
       - { name: event_subscriber }
 

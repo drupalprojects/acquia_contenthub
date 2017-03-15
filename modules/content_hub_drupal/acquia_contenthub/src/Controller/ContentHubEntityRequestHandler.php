@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Decorator for REST module's RequestHandler.
- */
-
 namespace Drupal\acquia_contenthub\Controller;
 
 use Drupal\acquia_contenthub\EntityManager;
@@ -91,7 +86,7 @@ class ContentHubEntityRequestHandler extends RequestHandler {
     // Determine the request parameters that should be passed to the resource
     // plugin.
     $route_parameters = $route_match->getParameters();
-    $parameters = array();
+    $parameters = [];
     // Filter out all internal parameters starting with "_".
     foreach ($route_parameters as $key => $parameter) {
       if ($key{0} !== '_') {
@@ -102,7 +97,7 @@ class ContentHubEntityRequestHandler extends RequestHandler {
     // Invoke the operation on the resource plugin.
     $serializer = $this->container->get('serializer');
     $unserialized = NULL;
-    $response = call_user_func_array(array($resource, $method), array_merge($parameters, [$unserialized, $request]));
+    $response = call_user_func_array([$resource, $method], array_merge($parameters, [$unserialized, $request]));
 
     // Render response.
     $data = $response->getResponseData();

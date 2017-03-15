@@ -1,13 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\acquia_contenthub\AcquiaContentHubServiceProvider.
- *
- * Filename MUST be CamelCase modulename (AcquiaContentHub) + ServiceProvider
- * for it to have any effect.
- */
-
 namespace Drupal\acquia_contenthub;
 
 use Drupal\Core\DependencyInjection\ContainerBuilder;

@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Keeps track of all Content Hub Imported Entities.
- */
 
 namespace Drupal\acquia_contenthub;
 
@@ -21,16 +17,18 @@ class ContentHubEntitiesTracking {
 
   // Internal constants, should not be used outside of this class.
   // Typical import status flows are:
-  // 0) (status X) -> (same status X).
-  // 1) enabled <-> disabled.
-  // 2) enabled -> local change.
-  // 3) disabled -> local change.
-  // 4) local change -> pending sync -> enabled.
-  // 5) disabled -> pending sync -> enabled.
+  // 0) (status X)     -> (same status X).
+  // 1) enabled       <-> disabled.
+  // 2) enabled        -> local change.
+  // 3) disabled       -> local change.
+  // 4) local change   -> pending sync     -> enabled.
+  // 5) disabled       -> pending sync     -> enabled.
+  // 6) is dependent  <x> (i.e. status is immutable).
   const AUTO_UPDATE_ENABLED  = 'AUTO_UPDATE_ENABLED';
   const AUTO_UPDATE_DISABLED = 'AUTO_UPDATE_DISABLED';
   const PENDING_SYNC         = 'PENDING_SYNC';
   const HAS_LOCAL_CHANGE     = 'HAS_LOCAL_CHANGE';
+  const IS_DEPENDENT         = 'IS_DEPENDENT';
 
   // 1) initiated -> exported.
   const INITIATED = 'INITIATED';
@@ -58,6 +56,13 @@ class ContentHubEntitiesTracking {
   protected $trackingEntity;
 
   /**
+   * The list of locally-cached entities.
+   *
+   * @var array
+   */
+  protected $cachedTrackingEntities = [];
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
@@ -78,16 +83,6 @@ class ContentHubEntitiesTracking {
   public function __construct(Connection $database, ConfigFactoryInterface $config_factory) {
     $this->database = $database;
     $this->contentHubAdminConfig = $config_factory->get('acquia_contenthub.admin_settings');
-
-    // Making sure we reset the imported entity so we can load it again.
-    $this->reset();
-  }
-
-  /**
-   * Resets the Tracking Entity Information.
-   */
-  protected function reset() {
-    $this->trackingEntity = NULL;
   }
 
   /**
@@ -137,6 +132,7 @@ class ContentHubEntitiesTracking {
       return FALSE;
     }
 
+    // Set the current tracking entity.
     $this->trackingEntity = (object) [
       'entity_type' => $entity_type,
       'entity_id' => $entity_id,
@@ -146,6 +142,9 @@ class ContentHubEntitiesTracking {
       'status_export' => $status_export,
       'status_import' => $status_import,
     ];
+
+    // Cache the entity object.
+    $this->cachedTrackingEntities[$entity_type][$entity_id] = $this->trackingEntity;
 
     return $this;
   }
@@ -307,6 +306,16 @@ class ContentHubEntitiesTracking {
   }
 
   /**
+   * Check if the entity is a dependent of another entity.
+   *
+   * @return bool
+   *   TRUE if the entity is a dependent, FALSE otherwise.
+   */
+  public function isDependent() {
+    return $this->getImportStatus() === self::IS_DEPENDENT;
+  }
+
+  /**
    * Returns the modified timestamp.
    *
    * @return string
@@ -376,12 +385,18 @@ class ContentHubEntitiesTracking {
    * Sets the Import Status.
    *
    * @param string $status_import
-   *   Could be ENABLED, DISABLED, PENDING_SYNC, or HAS_LOCAL_CHANGE.
+   *   See the constants for possible values.
    *
    * @return \Drupal\acquia_contenthub\ContentHubEntitiesTracking|bool
    *   This ContentHubEntitiesTracking object if succeeds, FALSE otherwise.
+   *
+   * @throws \Exception
+   *   When trying to set status as "IS_DEPENDENT", which is immutable.
    */
   protected function setImportStatus($status_import) {
+    if ($this->isDependent()) {
+      throw new \Exception('The "IS_DEPENDENT" status is immutable, and cannot be set again.');
+    }
     $this->getTrackingEntity()->status_import = $status_import;
     return $this;
   }
@@ -431,13 +446,28 @@ class ContentHubEntitiesTracking {
   }
 
   /**
+   * Sets the entity to the state of "is a dependent".
+   *
+   * @return \Drupal\acquia_contenthub\ContentHubEntitiesTracking
+   *   This ContentHubEntitiesTracking object.
+   */
+  public function setDependent() {
+    $this->setImportStatus(self::IS_DEPENDENT);
+    return $this;
+  }
+
+  /**
    * Sets the modified timestamp.
    *
    * @param string $modified
    *   Sets the modified timestamp.
+   *
+   * @return \Drupal\acquia_contenthub\ContentHubEntitiesTracking
+   *   This ContentHubEntitiesTracking object.
    */
   public function setModified($modified) {
     $this->getTrackingEntity()->modified = $modified;
+    return $this;
   }
 
   /**
@@ -469,17 +499,17 @@ class ContentHubEntitiesTracking {
   public function save() {
     // If we reached here then we have a valid input and can save safely.
     $result = $this->database->merge(self::TABLE)
-      ->key(array(
+      ->key([
         'entity_id' => $this->getEntityId(),
         'entity_type' => $this->getEntityType(),
         'entity_uuid' => $this->getUuid(),
-      ))
-      ->fields(array(
+      ])
+      ->fields([
         'status_export' => $this->getExportStatus(),
         'status_import' => $this->getImportStatus(),
         'modified' => $this->getModified(),
         'origin' => $this->getOrigin(),
-      ))
+      ])
       ->execute();
 
     switch ($result) {
@@ -494,13 +524,16 @@ class ContentHubEntitiesTracking {
    * Deletes the entry for this particular entity.
    */
   public function delete() {
-    if (!empty($this->getEntityType()) && !empty($this->getEntityId())) {
+    $entity_type = $this->getEntityType();
+    $entity_id = $this->getEntityId();
+    if (!empty($entity_type) && !empty($entity_id)) {
+      unset($this->cachedTrackingEntities[$entity_type][$entity_id]);
       return $this->database->delete(self::TABLE)
         ->condition('entity_type', $this->getEntityType())
         ->condition('entity_id', $this->getEntityId())
         ->execute();
     }
-    elseif (Uuid::isValid($this->getUuid())) {
+    if (Uuid::isValid($this->getUuid())) {
       return $this->database->delete(self::TABLE)
         ->condition('entity_uuid', $this->getUuid())
         ->execute();
@@ -558,7 +591,13 @@ class ContentHubEntitiesTracking {
    *   This ContentHubEntitiesTracking object if succeeds, FALSE otherwise.
    */
   protected function loadByDrupalEntity($entity_type, $entity_id) {
-    $this->reset();
+    // Utilize local cache to skip database calls.
+    if (isset($this->cachedTrackingEntities[$entity_type][$entity_id])) {
+      $tracking_entity = $this->cachedTrackingEntities[$entity_type][$entity_id];
+      $this->setTrackingEntity($tracking_entity->entity_type, $tracking_entity->entity_id, $tracking_entity->entity_uuid, $tracking_entity->modified, $tracking_entity->origin, $tracking_entity->status_export, $tracking_entity->status_import);
+      return $this;
+    }
+
     $result = $this->database->select(self::TABLE, 'ci')
       ->fields('ci')
       ->condition('entity_type', $entity_type)
@@ -618,7 +657,6 @@ class ContentHubEntitiesTracking {
    *   This ContentHubEntitiesTracking object if succeeds, FALSE otherwise.
    */
   public function loadByUuid($entity_uuid) {
-    $this->reset();
     if (!Uuid::isValid($entity_uuid)) {
       return FALSE;
     }
@@ -653,7 +691,7 @@ class ContentHubEntitiesTracking {
         ->execute()
         ->fetchAll();
     }
-    return array();
+    return [];
   }
 
 }

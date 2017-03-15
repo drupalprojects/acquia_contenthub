@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Content Hub Filter Interface.
- */
 
 namespace Drupal\acquia_contenthub_subscriber;
 
@@ -16,7 +12,7 @@ interface ContentHubFilterInterface extends ConfigEntityInterface {
   /**
    * Returns the Publish setting in human-readable format.
    *
-   * @return string.
+   * @return string
    *   Returns the Human readable version of the publish setting.
    */
   public function getPublishSetting();

@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Content Hub Entity Type Configuration Entity.
- */
-
 namespace Drupal\acquia_contenthub\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
@@ -107,7 +102,7 @@ class ContentHubEntityTypeConfig extends ConfigEntityBase implements ContentHubE
    * @param array $bundles
    *   An array of bundles configuration.
    */
-  public function setBundles($bundles) {
+  public function setBundles(array $bundles) {
     $this->bundles = $bundles;
   }
 

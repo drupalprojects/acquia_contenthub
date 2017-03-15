@@ -1,11 +1,7 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\acquia_contenthub\Normalizer\ContentEntityViewModesExtractorInterface.
- */
-
 namespace Drupal\acquia_contenthub\Normalizer;
+
 use Drupal\Core\Entity\ContentEntityInterface;
 
 /**

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Post update functions for Acquia Content Hub.

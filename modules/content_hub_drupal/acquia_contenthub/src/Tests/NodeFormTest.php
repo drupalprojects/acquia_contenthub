@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\acquia_contenthub\Tests\NodeFormTest.
- */
-
 namespace Drupal\acquia_contenthub\Tests;
 
 /**
@@ -19,7 +14,7 @@ class NodeFormTest extends WebTestBase {
   /**
    * The sample article we generate.
    *
-   * @var \Drupal\node\NodeInterface $article
+   * @var \Drupal\node\NodeInterface
    */
   private $article;
 
@@ -28,7 +23,7 @@ class NodeFormTest extends WebTestBase {
    */
   public function testNodeForm() {
     $this->drupalLogin($this->adminUser);
-    $this->article = $this->drupalCreateNode(array('type' => 'article'));
+    $this->article = $this->drupalCreateNode(['type' => 'article']);
 
     // A normal node should not have Acquia Content Hub settings.
     $this->drupalGet('node/' . $this->article->id() . '/edit');
@@ -59,7 +54,7 @@ class NodeFormTest extends WebTestBase {
    */
   public function testNodeFormIntroduceLocalChange() {
     $this->drupalLogin($this->adminUser);
-    $this->article = $this->drupalCreateNode(array('type' => 'article'));
+    $this->article = $this->drupalCreateNode(['type' => 'article']);
 
     // Convert the node into a Content Hub node.
     $this->convertToContentHubEntity($this->article);

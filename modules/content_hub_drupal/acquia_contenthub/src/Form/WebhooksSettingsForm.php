@@ -1,14 +1,10 @@
 <?php
-/**
- * @file
- * Contains Drupal\acquia_contenthub\Form\WebhooksSettingsForm.
- */
 
 namespace Drupal\acquia_contenthub\Form;
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Form\ConfigFormBase;
-use Drupal\Core\Config\ConfigFactory;
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\acquia_contenthub\ContentHubSubscription;
 use Drupal\Core\Url;
@@ -36,12 +32,12 @@ class WebhooksSettingsForm extends ConfigFormBase {
   /**
    * WebhooksSettingsForm constructor.
    *
-   * @param \Drupal\core\Config\ConfigFactory $config_factory
+   * @param \Drupal\core\Config\ConfigFactoryInterface $config_factory
    *   The client manager.
    * @param \Drupal\acquia_contenthub\ContentHubSubscription $contenthub_subscription
    *   The content hub subscription.
    */
-  public function __construct(ConfigFactory $config_factory, ContentHubSubscription $contenthub_subscription) {
+  public function __construct(ConfigFactoryInterface $config_factory, ContentHubSubscription $contenthub_subscription) {
     $this->configFactory = $config_factory;
     $this->contentHubSubscription = $contenthub_subscription;
   }
@@ -50,9 +46,14 @@ class WebhooksSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
+    /** @var ConfigFactoryInterface $config_factory */
+    $config_factory = $container->get('config.factory');
+    /** @var ContentHubSubscription $contenthub_subscription */
+    $contenthub_subscription = $container->get('acquia_contenthub.acquia_contenthub_subscription');
+
     return new static(
-      $container->get('config.factory'),
-      $container->get('acquia_contenthub.acquia_contenthub_subscription')
+      $config_factory,
+      $contenthub_subscription
     );
   }
 
@@ -75,19 +76,20 @@ class WebhooksSettingsForm extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->configFactory->getEditable('acquia_contenthub.admin_settings');
-    $form['webhook_settings'] = array(
+
+    $form['webhook_settings'] = [
       '#type' => 'fieldset',
-      '#title' => t('Administer Webhooks'),
+      '#title' => $this->t('Administer Webhooks'),
       '#collapsible' => TRUE,
-      '#description' => t('Manage Acquia Content Hub Webhooks'),
-    );
+      '#description' => $this->t('Manage Acquia Content Hub Webhooks'),
+    ];
     if ($config->get('webhook_url')) {
       $webhook_url = $config->get('webhook_url');
     }
     else {
-      $webhook_url = Url::fromUri('internal:/acquia-contenthub/webhook', array(
+      $webhook_url = Url::fromUri('internal:/acquia-contenthub/webhook', [
         'absolute' => TRUE,
-      ))->toString();
+      ])->toString();
     }
     $webhook_uuid = $config->get('webhook_uuid');
 
@@ -112,21 +114,21 @@ class WebhooksSettingsForm extends ConfigFormBase {
     }
 
     if ((bool) $webhook_uuid) {
-      $title = t('Receive Webhooks (uuid = %uuid)', array(
+      $title = $this->t('Receive Webhooks (uuid = %uuid)', [
         '%uuid' => $webhook_uuid,
-      ));
+      ]);
     }
     else {
-      $title = t('Receive Webhooks');
+      $title = $this->t('Receive Webhooks');
     }
 
-    $form['webhook_settings']['webhook_url'] = array(
+    $form['webhook_settings']['webhook_url'] = [
       '#type' => 'textfield',
-      '#title' => t('Acquia Content Hub URL'),
-      '#description' => t('Please use a full URL (Ex. http://example.com/acquia-contenthub/webhook). This is the end-point where this site will receive webhooks from Acquia Content Hub.'),
+      '#title' => $this->t('Acquia Content Hub URL'),
+      '#description' => $this->t('Please use a full URL (Ex. http://example.com/acquia-contenthub/webhook). This is the end-point where this site will receive webhooks from Acquia Content Hub.'),
       '#default_value' => $webhook_url,
       '#required' => TRUE,
-    );
+    ];
 
     $form['webhook_settings']['webhook_uuid'] = [
       '#type' => 'checkbox',
@@ -165,20 +167,20 @@ class WebhooksSettingsForm extends ConfigFormBase {
 
     // User clicked Submit, but url is already registered.
     if ($webhook_register && $webhook_uuid) {
-      drupal_set_message('No change in webhook status was taken.', 'warning');
+      drupal_set_message($this->t('No change in webhook status was taken.'), 'warning');
     }
     // User wants to register and is currently not registered.
     elseif ($webhook_register) {
       $success = $this->contentHubSubscription->registerWebhook($webhook_url);
       if (!$success) {
-        drupal_set_message('There was a problem trying to register this webhook.', 'error');
+        drupal_set_message($this->t('There was a problem trying to register this webhook.'), 'error');
       }
     }
     // User wants to unregister thier webhook.
     else {
       $success = $this->contentHubSubscription->unregisterWebhook($webhook_url);
       if (!$success) {
-        drupal_set_message('There was a problem trying to unregister this webhook.', 'error');
+        drupal_set_message($this->t('There was a problem trying to unregister this webhook.'), 'error');
       }
     }
 

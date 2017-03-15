@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * ContentHub Drush Commands.
@@ -10,115 +11,120 @@ use Drupal\Component\Uuid\Uuid;
  * Implements hook_drush_command().
  */
 function acquia_contenthub_drush_command() {
-  $items["acquia-contenthub-local"] = array(
-    "description" => "Prints the CDF from a local source (drupal site)",
-    "arguments" => array(
-      "entity-type" => "Entity type",
-      "entity-id" => "Entity identifier or entity's UUID",
-    ),
-    "outputformat" => array(
-      "default" => "json",
+  $items['acquia-contenthub-local'] = [
+    'description' => 'Prints the CDF from a local source (drupal site)',
+    'arguments' => [
+      'entity-type' => 'Entity type',
+      'entity-id' => 'Entity identifier or entity\'s UUID',
+    ],
+    'outputformat' => [
+      'default' => 'json',
       'pipe-format' => 'config',
       'variable-name' => 'variables',
-      'table-metadata' => array(
+      'table-metadata' => [
         'format' => 'var_export',
-      ),
-      'require-engine-capability' => array('format-list'),
-    ),
-    "required-arguments" => 2,
-    "aliases" => array("ach-lo"),
-  );
+      ],
+      'require-engine-capability' => ['format-list'],
+    ],
+    'required-arguments' => 2,
+    'aliases' => ['ach-lo'],
+  ];
 
-  $items["acquia-contenthub-remote"] = array(
-    "description" => "Prints the CDF from a remote source (Content Hub)",
-    "arguments" => array(
-      "uuid" => "Entity's UUID",
-    ),
-    "required-arguments" => 1,
-    "outputformat" => array(
-      "default" => "json",
+  $items['acquia-contenthub-remote'] = [
+    'description' => 'Prints the CDF from a remote source (Content Hub)',
+    'arguments' => [
+      'uuid' => 'Entity\'s UUID',
+    ],
+    'required-arguments' => 1,
+    'outputformat' => [
+      'default' => 'json',
       'pipe-format' => 'config',
       'variable-name' => 'variables',
-      'table-metadata' => array(
+      'table-metadata' => [
         'format' => 'var_export',
-      ),
-      'require-engine-capability' => array('format-list'),
-    ),
-    "aliases" => array("ach-re"),
-  );
+      ],
+      'require-engine-capability' => ['format-list'],
+    ],
+    'aliases' => ['ach-re'],
+  ];
 
-  $items["acquia-contenthub-compare"] = array(
-    "description" => "Loads the CDF from a local and remote source, compares them and prints the differences.",
-    "arguments" => array(
-      "entity-type" => "Entity type",
-      "uuid" => "Entity's UUID",
-    ),
-    "required-arguments" => 2,
-    "aliases" => array("ach-comp"),
-  );
+  $items['acquia-contenthub-compare'] = [
+    'description' => 'Loads the CDF from a local and remote source, compares them and prints the differences.',
+    'arguments' => [
+      'entity-type' => 'Entity type',
+      'uuid' => 'Entity\'s UUID',
+    ],
+    'required-arguments' => 2,
+    'aliases' => ['ach-comp'],
+  ];
 
-  $items["acquia-contenthub-list"] = array(
-    "description" => "List entities from the Content Hub using the listEntities() method.",
-    "options" => array(
-      "limit" => array(
-        "description" => "The number of entities to be listed",
-        "example_value" => "5",
-      ),
-      "start" => array(
-        "description" => "The offset to start listing the entities (Useful for pagination).",
-        "example_value" => "5",
-      ),
-      "origin" => array(
-        "description" => "The Client's Origin UUID.",
-        "example_value" => "00000000-0000-0000-0000-000000000000",
-      ),
-      "language" => array(
-        "description" => "The Language that will be used to filter field values.",
-        "example_value" => "en",
-      ),
-      "attributes" => array(
-        "description" => "The attributes to display for all listed entities",
-        "example_value" => "status,title",
-      ),
-      "type" => array(
-        "description" => "The entity type",
-        "example-value" => "node",
-      ),
-      "filters" => array(
-        "description" => "Filters entities according to a set of of conditions as a key=value pair separated by commas. You could use regex too.",
-        "example_value" => "title=New*,status=1",
-      ),
-    ),
-    "outputformat" => array(
-      "default" => "json",
+  $items['acquia-contenthub-list'] = [
+    'description' => 'List entities from the Content Hub using the listEntities() method.',
+    'options' => [
+      'limit' => [
+        'description' => 'The number of entities to be listed',
+        'example_value' => '5',
+      ],
+      'start' => [
+        'description' => 'The offset to start listing the entities (Useful for pagination).',
+        'example_value' => '5',
+      ],
+      'origin' => [
+        'description' => 'The Client\'s Origin UUID.',
+        'example_value' => '00000000-0000-0000-0000-000000000000',
+      ],
+      'language' => [
+        'description' => 'The Language that will be used to filter field values.',
+        'example_value' => 'en',
+      ],
+      'attributes' => [
+        'description' => 'The attributes to display for all listed entities',
+        'example_value' => 'status,title',
+      ],
+      'type' => [
+        'description' => 'The entity type',
+        'example-value' => 'node',
+      ],
+      'filters' => [
+        'description' => 'Filters entities according to a set of of conditions as a key=value pair separated by commas. You could use regex too.',
+        'example_value' => 'title=New*,status=1',
+      ],
+    ],
+    'outputformat' => [
+      'default' => 'json',
       'pipe-format' => 'config',
       'variable-name' => 'variables',
-      'table-metadata' => array(
+      'table-metadata' => [
         'format' => 'var_export',
-      ),
-      'require-engine-capability' => array('format-list'),
-    ),
-    "aliases" => array("ach-list"),
-  );
+      ],
+      'require-engine-capability' => ['format-list'],
+    ],
+    'aliases' => ['ach-list'],
+  ];
 
-  $items["acquia-contenthub-delete"] = array(
-    "description" => "Deletes a single entity from the Content Hub",
-    "arguments" => array(
-      "uuid" => "Entity's UUID",
-    ),
-    "required-arguments" => 1,
-    "aliases" => array("ach-del"),
-  );
+  $items['acquia-contenthub-delete'] = [
+    'description' => 'Deletes a single entity from the Content Hub',
+    'arguments' => [
+      'uuid' => 'Entity\'s UUID',
+    ],
+    'required-arguments' => 1,
+    'aliases' => ['ach-del'],
+  ];
 
-  $items["acquia-contenthub-purge"] = array(
-    "description" => "Deletes all entities from the Content Hub",
-    "aliases" => array("ach-purge"),
-  );
+  $items['acquia-contenthub-purge'] = [
+    'description' => 'Deletes all entities from the Content Hub',
+    'aliases' => ['ach-purge'],
+  ];
 
-  $items["acquia-contenthub-regenerate-secret"] = array(
-    "description" => "Regenerates the Shared Secret used for Webhook Verification",
-    "aliases" => array("ach-regsec"),
-  );
+  $items['acquia-contenthub-regenerate-secret'] = [
+    'description' => 'Regenerates the Shared Secret used for Webhook Verification',
+    'aliases' => ['ach-regsec'],
+  ];
+
+  $items['acquia-contenthub-update-secret'] = [
+    'description' => dt('Updates the Shared Secret used for Webhook Verification'),
+    'aliases' => ['ach-upsec'],
+  ];
 
   return $items;
 }
@@ -147,9 +153,9 @@ function drush_acquia_contenthub_local($entity_type, $entity_id) {
     return drush_set_error(dt("Missing required parameters: entity_type and entity_id (or entity's uuid)"));
   }
   elseif (!$entity_type_manager->getDefinition($entity_type)) {
-    return drush_set_error(dt("Entity type @entity_type does not exist", array(
+    return drush_set_error(dt("Entity type @entity_type does not exist", [
       '@entity_type' => $entity_type,
-    )));
+    ]));
   }
   else {
     if (Uuid::isValid($entity_id)) {
@@ -161,10 +167,10 @@ function drush_acquia_contenthub_local($entity_type, $entity_id) {
   }
 
   if (!$entity) {
-    drush_print(dt("Entity having entity_type = @entity_type and entity_id = @entity_id does not exist.", array(
+    drush_print(dt("Entity having entity_type = @entity_type and entity_id = @entity_id does not exist.", [
       '@entity_type' => $entity_type,
       '@entity_id' => $entity_id,
-    )));
+    ]));
   }
   // If nothing else, return our object structure.
   $output = $serializer->normalize($entity, 'acquia_contenthub_cdf');
@@ -184,13 +190,13 @@ function drush_acquia_contenthub_remote($uuid) {
   if (Uuid::isValid($uuid)) {
     /** @var \Drupal\acquia_contenthub\Client\ClientManager $client_manager */
     $client_manager = \Drupal::service('acquia_contenthub.client_manager');
-    if ($entity = $client_manager->createRequest('readEntity', array($uuid))) {
+    if ($entity = $client_manager->createRequest('readEntity', [$uuid])) {
       return (array) $entity;
     }
     else {
-      drush_print(dt("The Content Hub does not have an entity with UUID = @uuid.", array(
+      drush_print(dt("The Content Hub does not have an entity with UUID = @uuid.", [
         '@uuid' => $uuid,
-      )));
+      ]));
     }
   }
   else {
@@ -198,7 +204,6 @@ function drush_acquia_contenthub_remote($uuid) {
   }
   return FALSE;
 }
-
 
 /**
  * Compares a CDF entity from local and remote source.
@@ -237,13 +242,13 @@ function drush_acquia_contenthub_compare($entity_type, $uuid) {
   $local_entity = $entity_repository->loadEntityByUuid($entity_type, $uuid);
   $local_cdf = $serializer->normalize($local_entity, 'acquia_contenthub_cdf');
   if (!$local_cdf) {
-    $local_cdf = array();
+    $local_cdf = [];
   }
 
   // Get the Remote CDF version.
   $remote_cdf = $client->readEntity($uuid);
   if (!$remote_cdf) {
-    $remote_cdf = array();
+    $remote_cdf = [];
   }
 
   $local_compare = array_diff($local_cdf, (array) $remote_cdf);
@@ -265,7 +270,7 @@ function drush_acquia_contenthub_list() {
   $client_manager = \Drupal::service('acquia_contenthub.client_manager');
   $client = $client_manager->getConnection();
 
-  $options = array();
+  $options = [];
 
   // Obtaining the limit.
   $limit = drush_get_option("limit");
@@ -356,19 +361,19 @@ function drush_acquia_contenthub_delete($uuid) {
     return drush_set_error(dt("Argument provided is not a UUID."));
   }
   else {
-    if (drush_confirm(dt('Are you sure you want to delete the entity with uuid = @uuid from the Content Hub? There is no way back from this action!', array(
+    if (drush_confirm(dt('Are you sure you want to delete the entity with uuid = @uuid from the Content Hub? There is no way back from this action!', [
       '@uuid' => $uuid,
-    )))) {
+    ]))) {
       $client = $client_manager->getConnection();
       if ($client->deleteEntity($uuid)) {
-        drush_print(dt("Entity with UUID = @uuid has been successfully deleted from the Content Hub.", array(
+        drush_print(dt("Entity with UUID = @uuid has been successfully deleted from the Content Hub.", [
           '@uuid' => $uuid,
-        )));
+        ]));
       }
       else {
-        return drush_set_error(dt("Entity with UUID = @uuid cannot be deleted.", array(
+        return drush_set_error(dt("Entity with UUID = @uuid cannot be deleted.", [
           '@uuid' => $uuid,
-        )));
+        ]));
       }
     }
     else {
@@ -410,4 +415,22 @@ function drush_acquia_contenthub_regenerate_secret() {
     drush_user_abort();
   }
 
+}
+
+/**
+ * Updates the Shared Secret from the Content Hub.
+ */
+function drush_acquia_contenthub_update_secret() {
+  /** @var \Drupal\acquia_contenthub\Client\ClientManager $client_manager */
+  $client_manager = \Drupal::service('acquia_contenthub.client_manager');
+  /** @var \Drupal\acquia_contenthub\ContentHubSubscription $subscription */
+  $subscription = \Drupal::service('acquia_contenthub.acquia_contenthub_subscription');
+
+  if ($client_manager->isConnected()) {
+    $subscription->getSettings();
+    drush_print(dt('The shared secret has been updated.'));
+  }
+  else {
+    drush_set_error(dt('The Content Hub client is not connected so the shared secret can not be updated.'));
+  }
 }

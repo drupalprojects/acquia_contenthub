@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Handles Content Hub Content Subscriptions and Updates.
@@ -7,13 +8,6 @@
 use \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface;
 use \Drupal\acquia_contenthub\ImportEntityManager;
 use Drupal\user\Entity\User;
-
-/**
- * @file
- * Implements entity auto-updates through webhooks.
- */
-
-use Drupal\Core\Entity\EntityInterface;
 
 /**
  * Implements hook_acquia_contenthub_process_webhook_alter().
@@ -36,7 +30,6 @@ function acquia_contenthub_subscriber_acquia_contenthub_process_webhook_alter($w
   // post dependencies.
   foreach ($assets as $asset) {
     // @TODO: We need to exclude post-dependencies (entity dependent).
-
     // New entities are handled by Content Hub Filters.
     if (!$contenthub_entity_tracking->loadByUuid($asset['uuid'])) {
       acquia_contenthub_subscriber_process_filters($import_entity_manager, $filters, $asset);
@@ -48,26 +41,6 @@ function acquia_contenthub_subscriber_acquia_contenthub_process_webhook_alter($w
       continue;
     }
     $import_entity_manager->importRemoteEntity($asset['uuid']);
-  }
-}
-
-/**
- * Implements hook_entity_delete().
- */
-function acquia_contenthub_subscriber_entity_delete(EntityInterface $entity) {
-  // @TODO: Discuss flags like $entity->importedFromContentHub. Refer CHMS-929.
-  // @TODO: Make phpstrom 'goto function' work with Drupal-8 services.
-
-  // Get entity's uuid. D8 has direct core function for it.
-  // Note: Some config and non rename-able entities will return NULL.
-  $entity_uuid = $entity->uuid();
-  if (isset($entity_uuid)) {
-    // If this is an imported entity, delete its track record.
-    /** @var \Drupal\acquia_contenthub\ContentHubEntitiesTracking $contenthub_entities_tracking */
-    $contenthub_entities_tracking = \Drupal::service('acquia_contenthub.acquia_contenthub_entities_tracking');
-    if ($imported_entity = $contenthub_entities_tracking->loadImportedByUuid($entity_uuid)) {
-      $imported_entity->delete();
-    }
   }
 }
 

@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Tests\acquia_contenthub\Unit\ImportEntityManagerTest.
- */
-
 namespace Drupal\Tests\acquia_contenthub\Unit;
 
 use Drupal\Tests\UnitTestCase;
@@ -74,6 +69,20 @@ class ImportEntityManagerTest extends UnitTestCase {
   }
 
   /**
+   * Tests the entityUpdate() method, node is during sync.
+   *
+   * @covers ::entityUpdate
+   */
+  public function testEntityUpdateNodeIsDuringSync() {
+    $node = $this->getMock('\Drupal\node\NodeInterface');
+    $node->__contenthub_entity_syncing = TRUE;
+    $this->contentHubEntitiesTracking->expects($this->never())
+      ->method('loadImportedByDrupalEntity');
+
+    $this->importEntityManager->entityUpdate($node);
+  }
+
+  /**
    * Tests the entityUpdate() method, node is not imported.
    *
    * @covers ::entityUpdate
@@ -81,40 +90,15 @@ class ImportEntityManagerTest extends UnitTestCase {
   public function testEntityUpdateNodeNotImported() {
     $node = $this->getMock('\Drupal\node\NodeInterface');
     $node->expects($this->once())
-      ->method('id')
-      ->willReturn(12);
-    $node->expects($this->once())
       ->method('getEntityTypeId')
       ->willReturn('node');
+    $node->expects($this->once())
+      ->method('id')
+      ->willReturn(12);
     $this->contentHubEntitiesTracking->expects($this->once())
       ->method('loadImportedByDrupalEntity')
       ->with('node', 12)
       ->willReturn(NULL);
-
-    $this->importEntityManager->entityUpdate($node);
-  }
-
-  /**
-   * Tests the entityUpdate() method, node is during sync.
-   *
-   * @covers ::entityUpdate
-   */
-  public function testEntityUpdateNodeIsDuringSync() {
-    $node = $this->getMock('\Drupal\node\NodeInterface');
-    $node->expects($this->once())
-      ->method('id')
-      ->willReturn(12);
-    $node->expects($this->once())
-      ->method('getEntityTypeId')
-      ->willReturn('node');
-    $this->contentHubEntitiesTracking->expects($this->once())
-      ->method('loadImportedByDrupalEntity')
-      ->with('node', 12)
-      ->willReturn($this->contentHubEntitiesTracking);
-    $node->__contenthub_synchronized = TRUE;
-
-    $this->contentHubEntitiesTracking->expects($this->never())
-      ->method('isPendingSync');
 
     $this->importEntityManager->entityUpdate($node);
   }
@@ -127,11 +111,11 @@ class ImportEntityManagerTest extends UnitTestCase {
   public function testEntityUpdateNodeIsPendingSync() {
     $node = $this->getMock('\Drupal\node\NodeInterface');
     $node->expects($this->once())
-      ->method('id')
-      ->willReturn(12);
-    $node->expects($this->once())
       ->method('getEntityTypeId')
       ->willReturn('node');
+    $node->expects($this->once())
+      ->method('id')
+      ->willReturn(12);
     $this->contentHubEntitiesTracking->expects($this->once())
       ->method('loadImportedByDrupalEntity')
       ->with('node', 12)
@@ -177,18 +161,49 @@ class ImportEntityManagerTest extends UnitTestCase {
   }
 
   /**
+   * Tests the entityPresave() method, node has no original.
+   *
+   * @covers ::entityPresave
+   */
+  public function testEntityPresaveNodeHasNoOriginal() {
+    $node = $this->getMock('\Drupal\node\NodeInterface');
+    $this->contentHubEntitiesTracking->expects($this->never())
+      ->method('loadImportedByDrupalEntity');
+
+    $this->importEntityManager->entityPresave($node);
+  }
+
+  /**
+   * Tests the entityPresave() method, node is during sync.
+   *
+   * @covers ::entityPresave
+   */
+  public function testEntityPresaveNodeIsDuringSync() {
+    $original_node = $this->getMock('\Drupal\node\NodeInterface');
+    $node = $this->getMock('\Drupal\node\NodeInterface');
+    $node->original = $original_node;
+    $node->__contenthub_entity_syncing = TRUE;
+    $this->contentHubEntitiesTracking->expects($this->never())
+      ->method('loadImportedByDrupalEntity');
+
+    $this->importEntityManager->entityPresave($node);
+  }
+
+  /**
    * Tests the entityPresave() method, node is not imported.
    *
    * @covers ::entityPresave
    */
   public function testEntityPresaveNodeNotImported() {
+    $original_node = $this->getMock('\Drupal\node\NodeInterface');
     $node = $this->getMock('\Drupal\node\NodeInterface');
-    $node->expects($this->once())
-      ->method('id')
-      ->willReturn(12);
+    $node->original = $original_node;
     $node->expects($this->once())
       ->method('getEntityTypeId')
       ->willReturn('node');
+    $node->expects($this->once())
+      ->method('id')
+      ->willReturn(12);
     $this->contentHubEntitiesTracking->expects($this->once())
       ->method('loadImportedByDrupalEntity')
       ->with('node', 12)
@@ -197,7 +212,50 @@ class ImportEntityManagerTest extends UnitTestCase {
     $this->diffEntityComparison->expects($this->never())
       ->method('compareRevisions');
 
-    $this->importEntityManager->entityUpdate($node);
+    $this->importEntityManager->entityPresave($node);
+  }
+
+  /**
+   * Tests the entityPresave() method, the entity is dependent.
+   *
+   * @covers ::entityPresave
+   */
+  public function testEntityPresaveEntityIsDependent() {
+    $original_paragraph = $this->getMock('\Drupal\paragraphs\ParagraphInterface');
+    $parent_paragraph = $this->getMock('\Drupal\paragraphs\ParagraphInterface');
+    $paragraph = $this->getMock('\Drupal\paragraphs\ParagraphInterface');
+    $paragraph->original = $original_paragraph;
+    $paragraph->expects($this->once())
+      ->method('getEntityTypeId')
+      ->willReturn('paragraph');
+    $paragraph->expects($this->once())
+      ->method('id')
+      ->willReturn(12);
+    $paragraph->expects($this->once())
+      ->method('getParentEntity')
+      ->willReturn($parent_paragraph);
+    $parent_paragraph->expects($this->once())
+      ->method('getEntityTypeId')
+      ->willReturn('paragraph');
+    $parent_paragraph->expects($this->once())
+      ->method('id')
+      ->willReturn(13);
+    $this->contentHubEntitiesTracking->expects($this->at(0))
+      ->method('loadImportedByDrupalEntity')
+      ->with('paragraph', 12)
+      ->willReturn($this->contentHubEntitiesTracking);
+    $this->contentHubEntitiesTracking->expects($this->at(1))
+      ->method('isDependent')
+      ->willReturn(TRUE);
+    $this->contentHubEntitiesTracking->expects($this->at(2))
+      ->method('loadImportedByDrupalEntity')
+      ->with('paragraph', 13)
+      ->willReturn(NULL);
+
+    $this->diffEntityComparison->expects($this->never())
+      ->method('compareRevisions');
+
+    $this->importEntityManager->entityPresave($paragraph);
   }
 
   /**
@@ -206,13 +264,15 @@ class ImportEntityManagerTest extends UnitTestCase {
    * @covers ::entityPresave
    */
   public function testEntityPresaveNodeIsPendingSync() {
+    $original_node = $this->getMock('\Drupal\node\NodeInterface');
     $node = $this->getMock('\Drupal\node\NodeInterface');
-    $node->expects($this->once())
-      ->method('id')
-      ->willReturn(12);
+    $node->original = $original_node;
     $node->expects($this->once())
       ->method('getEntityTypeId')
       ->willReturn('node');
+    $node->expects($this->once())
+      ->method('id')
+      ->willReturn(12);
     $this->contentHubEntitiesTracking->expects($this->once())
       ->method('loadImportedByDrupalEntity')
       ->with('node', 12)
@@ -233,13 +293,15 @@ class ImportEntityManagerTest extends UnitTestCase {
    * @covers ::entityPresave
    */
   public function testEntityPresaveNodeHasLocalChange() {
+    $original_node = $this->getMock('\Drupal\node\NodeInterface');
     $node = $this->getMock('\Drupal\node\NodeInterface');
-    $node->expects($this->once())
-      ->method('id')
-      ->willReturn(12);
+    $node->original = $original_node;
     $node->expects($this->once())
       ->method('getEntityTypeId')
       ->willReturn('node');
+    $node->expects($this->once())
+      ->method('id')
+      ->willReturn(12);
     $this->contentHubEntitiesTracking->expects($this->once())
       ->method('loadImportedByDrupalEntity')
       ->with('node', 12)
@@ -257,7 +319,6 @@ class ImportEntityManagerTest extends UnitTestCase {
     $this->importEntityManager->entityPresave($node);
   }
 
-
   /**
    * Tests the entityPresave() method, compare, and no setLocalChange.
    *
@@ -274,6 +335,13 @@ class ImportEntityManagerTest extends UnitTestCase {
     $node->expects($this->once())
       ->method('getEntityTypeId')
       ->willReturn('node');
+    // Nodes do not have referenced entities.
+    $node->expects($this->once())
+      ->method('referencedEntities')
+      ->willReturn([]);
+    $node->original->expects($this->once())
+      ->method('referencedEntities')
+      ->willReturn([]);
     $this->contentHubEntitiesTracking->expects($this->once())
       ->method('loadImportedByDrupalEntity')
       ->with('node', 12)

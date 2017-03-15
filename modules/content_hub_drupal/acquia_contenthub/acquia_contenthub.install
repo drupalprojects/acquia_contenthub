@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Install, update and uninstall functions for the acquia_contenthub module.
@@ -18,62 +19,62 @@ use Drupal\Core\Database\Database;
  * @ingroup acquia_contenthub
  */
 function acquia_contenthub_schema() {
-  $schema['acquia_contenthub_entities_tracking'] = array(
-    'fields' => array(
-      'entity_type' => array(
+  $schema['acquia_contenthub_entities_tracking'] = [
+    'fields' => [
+      'entity_type' => [
         'type' => 'varchar',
         'length' => 32,
         'not null' => TRUE,
         'default' => '',
-      ),
-      'entity_id' => array(
+      ],
+      'entity_id' => [
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
-      ),
-      'entity_uuid' => array(
+      ],
+      'entity_uuid' => [
         'type' => 'char',
         'length' => 36,
         'not null' => TRUE,
         'default' => '',
-      ),
-      'status_export' => array(
+      ],
+      'status_export' => [
         'description' => 'The status of an exported entity.',
         'type' => 'varchar',
         'default' => '',
         'not null' => TRUE,
         'length' => 36,
-      ),
-      'status_import' => array(
+      ],
+      'status_import' => [
         'description' => 'The status of an imported entity.',
         'type' => 'varchar',
         'length' => 36,
         'default' => '',
         'not null' => TRUE,
-      ),
-      'modified' => array(
+      ],
+      'modified' => [
         'description' => 'The CDF entity\'s modified field.',
         'type' => 'varchar',
         'default' => '',
         'not null' => TRUE,
         'length' => 36,
-      ),
-      'origin' => array(
+      ],
+      'origin' => [
         'type' => 'char',
         'length' => 36,
         'not null' => TRUE,
         'default' => '',
-      ),
-    ),
-    'indexes' => array(
-      'origin' => array('origin'),
-    ),
-    'unique keys' => array(
-      'entity' => array('entity_type', 'entity_id'),
-      'entity_uuid' => array('entity_uuid'),
-    ),
-  );
+      ],
+    ],
+    'indexes' => [
+      'origin' => ['origin'],
+    ],
+    'unique keys' => [
+      'entity' => ['entity_type', 'entity_id'],
+      'entity_uuid' => ['entity_uuid'],
+    ],
+  ];
   return $schema;
 }
 
@@ -135,44 +136,44 @@ function acquia_contenthub_update_8202() {
   $schema->renameTable('acquia_contenthub_imported_entities', ACQUIA_CONTENTHUB_ENTITY_TRACKING_TABLE);
 
   // Add/Change fields.
-  $spec = array(
+  $spec = [
     'description' => 'The status of an exported entity.',
     'type' => 'varchar',
     'default' => '',
     'not null' => TRUE,
     'length' => 36,
-  );
+  ];
   $schema->addField(ACQUIA_CONTENTHUB_ENTITY_TRACKING_TABLE, 'status_export', $spec);
 
-  $spec = array(
+  $spec = [
     'description' => 'The status of an imported entity.',
     'type' => 'varchar',
     'length' => 36,
     'default' => '',
     'not null' => TRUE,
-  );
+  ];
   $schema->changeField(ACQUIA_CONTENTHUB_ENTITY_TRACKING_TABLE, 'auto_update', 'status_import', $spec);
 
-  $spec = array(
+  $spec = [
     'description' => 'The CDF entity\'s modified field.',
     'type' => 'varchar',
     'default' => '',
     'not null' => TRUE,
     'length' => 36,
-  );
+  ];
   $schema->addField(ACQUIA_CONTENTHUB_ENTITY_TRACKING_TABLE, 'modified', $spec);
 
   // Updating data in the table.
   Database::getConnection()->update(ACQUIA_CONTENTHUB_ENTITY_TRACKING_TABLE)
-    ->fields(array(
+    ->fields([
       'status_import' => 'AUTO_UPDATE_ENABLED',
-    ))
+    ])
     ->condition('status_import', 'ENABLED', '=')
     ->execute();
   Database::getConnection()->update(ACQUIA_CONTENTHUB_ENTITY_TRACKING_TABLE)
-    ->fields(array(
+    ->fields([
       'status_import' => 'AUTO_UPDATE_DISABLED',
-    ))
+    ])
     ->condition('status_import', 'DISABLED', '=')
     ->execute();
 }

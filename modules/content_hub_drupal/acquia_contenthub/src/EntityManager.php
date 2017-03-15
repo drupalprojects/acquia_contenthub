@@ -1,13 +1,7 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\acquia_contenthub\EntityManager.
- */
-
 namespace Drupal\acquia_contenthub;
 
-use Drupal\Component\Render\FormattableMarkup;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\acquia_contenthub\Client\ClientManagerInterface;
 use Drupal\Core\Entity\ContentEntityTypeInterface;
@@ -15,9 +9,12 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\Core\Url;
 use Drupal\Core\Config\ConfigFactory;
+use Drupal\Core\Config\Entity\ConfigEntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Component\Utility\UrlHelper;
+use GuzzleHttp\Exception\RequestException;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 
 /**
  * Provides a service for managing entity actions for Content Hub.
@@ -26,47 +23,63 @@ use Drupal\Component\Utility\UrlHelper;
  */
 class EntityManager {
 
+  use StringTranslationTrait;
+
+  // Possible actions that the Entity Manager can queue entities for.
+  const EXPORT = 'EXPORT';
+  const UNEXPORT = 'UNEXPORT';
+
   /**
    * Base root.
    *
    * @var string
    */
-  protected $baseRoot;
+  private $baseRoot;
 
   /**
    * Logger.
    *
    * @var \Drupal\Core\Logger\LoggerChannelFactory
    */
-  protected $loggerFactory;
+  private $loggerFactory;
 
   /**
    * Content Hub Client Manager.
    *
    * @var \Drupal\acquia_contenthub\Client\ClientManager
    */
-  protected $clientManager;
+  private $clientManager;
 
   /**
    * The Content Hub Entities Tracking Service.
    *
    * @var \Drupal\acquia_contenthub\ContentHubEntitiesTracking
    */
-  protected $contentHubEntitiesTracking;
+  private $contentHubEntitiesTracking;
 
   /**
    * The entity manager.
    *
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
-  protected $entityTypeManager;
+  private $entityTypeManager;
 
   /**
    * The entity manager.
    *
    * @var \Drupal\Core\Entity\EntityTypeBundleInfoInterface
    */
-  protected $entityTypeBundleInfoManager;
+  private $entityTypeBundleInfoManager;
+
+  /**
+   * The list of candidate entities for next bulk export.
+   *
+   * @var array
+   */
+  private $candidateEntities = [
+    SELF::EXPORT => [],
+    SELF::UNEXPORT => [],
+  ];
 
   /**
    * {@inheritdoc}
@@ -83,7 +96,7 @@ class EntityManager {
   }
 
   /**
-   * Constructs an ContentEntityNormalizer object.
+   * Constructs an EntityManager object.
    *
    * @param \Drupal\Core\Logger\LoggerChannelFactory $logger_factory
    *   The logger factory.
@@ -110,21 +123,25 @@ class EntityManager {
   }
 
   /**
-   * Executes an action in the Content Hub on a selected drupal entity.
+   * Get candidate entities.
+   *
+   * @return array
+   *   The list of candidate entities of a specific action.
+   */
+  public function getExportCandidateEntities() {
+    return $this->candidateEntities[SELF::EXPORT];
+  }
+
+  /**
+   * Enqueue an entity with an operation to be performed on Content Hub.
    *
    * @param object $entity
    *   The Drupal Entity object.
-   * @param string $action
-   *   The action to perform on that entity: 'INSERT', 'UPDATE', 'DELETE'.
+   * @param bool $do_export
+   *   TRUE if the entity action is 'EXPORT'; FALSE, if it is 'UNEXPORT'.
    */
-  public function entityAction($entity, $action) {
-    $type = $entity->getEntityTypeId();
-    // Checking if the entity has already been synchronized so not to generate
-    // an endless loop.
-    if (isset($entity->__contenthub_synchronized)) {
-      return;
-    }
-
+  public function enqueueCandidateEntity($entity, $do_export = TRUE) {
+    $action = $do_export ? SELF::EXPORT : SELF::UNEXPORT;
     // Comparing entity's origin with site's origin.
     $origin = $this->config->get('origin');
     if (isset($entity->__content_hub_origin) && $entity->__content_hub_origin !== $origin) {
@@ -132,51 +149,15 @@ class EntityManager {
       return;
     }
 
-    // Entity has not been sync'ed, then proceed with it.
+    // Early return, if entity is not eligible.
     if (!$this->isEligibleEntity($entity)) {
       return;
     }
 
-    // Handle node specifically.
-    if ($type == 'node') {
-      switch ($action) {
-        case 'INSERT':
-          if (!$entity->isPublished()) {
-            // Do not push nodes that are unpublished to the Content Hub.
-            return;
-          }
-          break;
+    $this->candidateEntities[$action][$entity->uuid()] = $entity;
 
-        case 'UPDATE':
-          if (!$entity->isPublished()) {
-            // If a node is unpublished, then delete it from the Content Hub.
-            $action = 'DELETE';
-          }
-          break;
-
-        case 'DELETE':
-          // Do nothing, proceed with deletion.
-          break;
-      }
-    }
-
-    // Handle entity delete specifically.
-    if ($action === 'DELETE') {
-      $this->entityActionSend($entity, $action);
-      return;
-    }
-
-    // Collect all entities and make internal page request.
-    $item = array(
-      'uuid' => $entity->uuid(),
-      'type' => $type,
-      'action' => $action,
-      'entity' => $entity,
-    );
-    $this->collectExportEntities($item);
-
-    // Registering shutdown function to send entities to Acquia Content Hub.
-    $acquia_contenthub_shutdown_function = 'acquia_contenthub_send_entities';
+    // Register shutdown function to send/delete entities to/from Content Hub.
+    $acquia_contenthub_shutdown_function = 'acquia_contenthub_bulk_export';
     $callbacks = drupal_register_shutdown_function();
     $callback_functions = array_column($callbacks, 'callback');
     if (!in_array($acquia_contenthub_shutdown_function, $callback_functions)) {
@@ -185,38 +166,15 @@ class EntityManager {
   }
 
   /**
-   * Gathers all entities that will be exported.
-   *
-   * @param object|null $entity
-   *   The Entity that will be exported.
-   *
-   * @return array
-   *   The array of entities to export.
-   */
-  public function collectExportEntities($entity = NULL) {
-    $entities = &drupal_static(__METHOD__);
-    if (!isset($entities)) {
-      $entities = array();
-    }
-    if (is_array($entity)) {
-      $uuids = array_column($entities, 'uuid');
-      if (!in_array($entity['uuid'], $uuids)) {
-        $entities[$entity['uuid']] = $entity;
-      }
-    }
-    return $entities;
-  }
-
-  /**
    * Tracks the number of entities that fail to bulk upload.
    *
    * @param string $num
    *   Number of failed entities added to the pool.
    *
-   * @return string $total
+   * @return string
    *   The total number of entities that failed to bulk upload.
    */
-  public function entityFailures($num = NULL) {
+  private function entityFailures($num = NULL) {
     $total = &drupal_static(__METHOD__);
     if (!isset($total)) {
       $total = is_int($num) ? $num : 0;
@@ -237,21 +195,53 @@ class EntityManager {
    *   Returns the response.
    */
   public function updateRemoteEntities($resource_url) {
-    if ($response = $this->clientManager->createRequest('updateEntities', array($resource_url))) {
+    if ($response = $this->clientManager->createRequest('updateEntities', [$resource_url])) {
       $response = json_decode($response->getBody(), TRUE);
     }
     return empty($response['success']) ? FALSE : TRUE;
   }
 
   /**
-   * Sends the request to the Content Hub for a single entity.
+   * Bulk-export all the enqueued entities.
+   */
+  public function bulkExport() {
+    $this->unexportCandidateEntities();
+    $this->unexportDisqualifiedExportCandidateEntities();
+  }
+
+  /**
+   * Delete entities from Content Hub that are explicitly un-exported.
+   */
+  private function unexportCandidateEntities() {
+    $candidate_entites = $this->candidateEntities[SELF::UNEXPORT];
+    foreach ($candidate_entites as $uuid => $candidate_entity) {
+      $this->deleteRemoteEntity($candidate_entity);
+      unset($this->candidateEntities[SELF::UNEXPORT][$uuid]);
+    }
+  }
+
+  /**
+   * Delete entities from Content Hub that are disqualified of exporting.
+   */
+  private function unexportDisqualifiedExportCandidateEntities() {
+    $candidate_entites = $this->candidateEntities[SELF::EXPORT];
+    foreach ($candidate_entites as $uuid => $candidate_entity) {
+      $root_ancestor_entity = $this->findRootAncestorEntity($candidate_entity);
+      // If root ancestor is not published, delete the current entity.
+      if (method_exists($root_ancestor_entity, 'isPublished') && !$root_ancestor_entity->isPublished()) {
+        $this->deleteRemoteEntity($candidate_entity);
+        unset($this->candidateEntities[SELF::EXPORT][$uuid]);
+      }
+    }
+  }
+
+  /**
+   * Delete an entity from Content Hub.
    *
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The Content Hub Entity.
-   * @param string $action
-   *   The action to execute for bulk upload: 'INSERT' or 'UPDATE'.
    */
-  public function entityActionSend(EntityInterface $entity, $action) {
+  private function deleteRemoteEntity(EntityInterface $entity) {
     /** @var \Drupal\acquia_contenthub\Client\ClientManagerInterface $client_manager */
     try {
       $client = $this->clientManager->getConnection();
@@ -262,66 +252,34 @@ class EntityManager {
     }
 
     $resource_url = $this->getResourceUrl($entity);
-    if (!$resource_url) {
-      $args = array(
-        '%type' => $entity->getEntityTypeId(),
-        '%uuid' => $entity->uuid(),
-        '%id' => $entity->id(),
-      );
-      $message = new FormattableMarkup('Error trying to form a unique resource Url for %type with uuid %uuid and id %id', $args);
-      $this->loggerFactory->get('acquia_contenthub')->error($message);
-      return;
-    }
-
-    $response = NULL;
-    $args = array(
+    $args = [
       '%type' => $entity->getEntityTypeId(),
       '%uuid' => $entity->uuid(),
       '%id' => $entity->id(),
-    );
-    $message_string = 'Error trying to post the resource url for %type with uuid %uuid and id %id with a response from the API: %error';
-
-    switch ($action) {
-      case 'INSERT':
-        try {
-          $response = $client->createEntities($resource_url);
-        }
-        catch (\GuzzleHttp\Exception\RequestException $e) {
-          $args['%error'] = $e->getMessage();
-          $message = new FormattableMarkup($message_string, $args);
-          $this->loggerFactory->get('acquia_contenthub')->error($message);
-          return;
-        }
-        break;
-
-      case 'UPDATE':
-        try {
-          $response = $client->updateEntity($resource_url, $entity->uuid());
-        }
-        catch (\GuzzleHttp\Exception\RequestException $e) {
-          $args['%error'] = $e->getMessage();
-          $message = new FormattableMarkup($message_string, $args);
-          $this->loggerFactory->get('acquia_contenthub')->error($message);
-          return;
-        }
-        break;
-
-      case 'DELETE':
-        try {
-          $response = $client->deleteEntity($entity->uuid());
-        }
-        catch (\GuzzleHttp\Exception\RequestException $e) {
-          $args['%error'] = $e->getMessage();
-          $message = new FormattableMarkup($message_string, $args);
-          $this->loggerFactory->get('acquia_contenthub')->error($message);
-          return;
-        }
-        break;
+    ];
+    if (!$resource_url) {
+      $this->loggerFactory->get('acquia_contenthub')->error($this->t('Error trying to form a unique resource Url for %type with uuid %uuid and id %id', $args));
+      return;
     }
+
+    try {
+      $uuid = $entity->uuid();
+      $response = $client->deleteEntity($uuid);
+      $exported_entity = $this->contentHubEntitiesTracking->loadExportedByUuid($uuid);
+      if ($exported_entity) {
+        $exported_entity->delete();
+      }
+    }
+    catch (RequestException $e) {
+      $args['%error'] = $e->getMessage();
+      $this->loggerFactory->get('acquia_contenthub')->error($this->t('Error trying to post the resource url for %type with uuid %uuid and id %id with a response from the API: %error', $args));
+      return;
+    }
+
     // Make sure it is within the 2XX range. Expected response is a 202.
-    if ($response->getStatusCode()[0] == '2' && $response->getStatusCode()[1] == '0') {
-      $message = new FormattableMarkup($message_string, $args);
-      $this->loggerFactory->get('acquia_contenthub')->error($message);
+    $status_code = $response->getStatusCode();
+    if (substr($status_code, 0, 2) !== '20') {
+      $this->loggerFactory->get('acquia_contenthub')->error($this->t('Error trying to post the resource url for %type with uuid %uuid and id %id: Response status code was not 20X as expected.', $args));
     }
   }
 
@@ -336,18 +294,18 @@ class EntityManager {
    * @return string|bool
    *   The absolute resource URL, if it can be generated, FALSE otherwise.
    */
-  public function getResourceUrl(EntityInterface $entity, $include_references = 'true') {
+  private function getResourceUrl(EntityInterface $entity, $include_references = 'true') {
     // Check if there are link templates defined for the entity type and
     // use the path from the route instead of the default.
     $entity_type_id = $entity->getEntityTypeId();
 
     $route_name = 'acquia_contenthub.entity.' . $entity_type_id . '.GET.acquia_contenthub_cdf';
-    $url_options = array(
+    $url_options = [
       'entity_type' => $entity_type_id,
       $entity_type_id => $entity->id(),
       '_format' => 'acquia_contenthub_cdf',
       'include_references' => $include_references,
-    );
+    ];
 
     return $this->getResourceUrlByRouteName($route_name, $url_options);
   }
@@ -363,7 +321,7 @@ class EntityManager {
    * @return string
    *   returns URL.
    */
-  protected function getResourceUrlByRouteName($route_name, $url_options = array()) {
+  private function getResourceUrlByRouteName($route_name, array $url_options = []) {
     $url = Url::fromRoute($route_name, $url_options);
     $path = $url->toString();
 
@@ -395,7 +353,7 @@ class EntityManager {
    * @return string
    *   returns URL.
    */
-  public function getBulkResourceUrl($url_options = array()) {
+  public function getBulkResourceUrl(array $url_options = []) {
     $route_name = 'acquia_contenthub.acquia_contenthub_bulk_cdf';
     return $this->getResourceUrlByRouteName($route_name, $url_options);
   }
@@ -410,10 +368,15 @@ class EntityManager {
    *   True if it can be parsed, False if it not a suitable entity for sending
    *   to content hub.
    */
-  public function isEligibleEntity(EntityInterface $entity) {
+  private function isEligibleEntity(EntityInterface $entity) {
+    // Early return, if already sync'ing.
+    if (!empty($entity->__contenthub_entity_syncing)) {
+      return FALSE;
+    }
+
     // Currently Content Hub does not support configuration entities to be
     // exported. Only content entities can be exported to Content Hub.
-    if ($entity instanceof \Drupal\Core\Config\Entity\ConfigEntityInterface) {
+    if ($entity instanceof ConfigEntityInterface) {
       return FALSE;
     }
 
@@ -428,7 +391,8 @@ class EntityManager {
 
     // If the entity has been imported before, then it didn't originate from
     // this site and shouldn't be exported.
-    if ($this->contentHubEntitiesTracking->loadImportedByDrupalEntity($entity->getEntityTypeId(), $entity->id()) !== FALSE) {
+    $entity_id = $entity->id();
+    if ($this->contentHubEntitiesTracking->loadImportedByDrupalEntity($entity_type_id, $entity_id) !== FALSE) {
       // Is this an entity that does not belong to this site? Has it been
       // previously imported from Content Hub?
       $uuid = $entity->uuid();
@@ -436,13 +400,13 @@ class EntityManager {
       // site. Add it to the pool of failed entities.
       if (isset($uuid)) {
         $this->entityFailures(1);
-        $args = array(
-          '%type' => $entity->getEntityTypeId(),
-          '%uuid' => $entity->uuid(),
-        );
 
         // We can use this pool of failed entities to display a message to the
         // user about the entities that failed to export.
+        // $args = [
+        // '%type' => $entity_type_id,
+        // '%uuid' => $uuid,
+        // ];
         // $message = new FormattableMarkup('Cannot export %type entity with
         // UUID = %uuid to Content Hub because it was previously imported
         // (did not originate from this site).', $args);
@@ -516,7 +480,7 @@ class EntityManager {
     $contenthub_entity_config_storage = $this->entityTypeManager->getStorage('acquia_contenthub_entity_config');
 
     /** @var \Drupal\acquia_contenthub\ContentHubEntityTypeConfigInterface[] $contenthub_entity_config_ids */
-    $contenthub_entity_config_ids = $contenthub_entity_config_storage->loadMultiple(array($entity_type_id));
+    $contenthub_entity_config_ids = $contenthub_entity_config_storage->loadMultiple([$entity_type_id]);
     $contenthub_entity_config_id = isset($contenthub_entity_config_ids[$entity_type_id]) ? $contenthub_entity_config_ids[$entity_type_id] : FALSE;
     return $contenthub_entity_config_id;
   }
@@ -552,7 +516,7 @@ class EntityManager {
     ];
 
     $types = $this->entityTypeManager->getDefinitions();
-    $entity_types = array();
+    $entity_types = [];
     foreach ($types as $type => $entity) {
       // We only support content entity types at the moment, since config
       // entities don't implement \Drupal\Core\TypedData\ComplexDataInterface.
@@ -573,6 +537,23 @@ class EntityManager {
     }
     $entity_types = array_diff_key($entity_types, $excluded_types);
     return $entity_types;
+  }
+
+  /**
+   * Returns the entity's root ancestor.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The current (child) entity.
+   *
+   * @return \Drupal\Core\Entity\EntityInterface
+   *   The root ancestor entity.
+   */
+  private function findRootAncestorEntity(EntityInterface $entity) {
+    if (!$entity || !method_exists($entity, 'getParentEntity')) {
+      return $entity;
+    }
+
+    return $this->findRootAncestorEntity($entity->getParentEntity());
   }
 
 }

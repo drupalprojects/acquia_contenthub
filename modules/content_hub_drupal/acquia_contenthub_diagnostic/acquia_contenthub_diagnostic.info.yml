@@ -1,0 +1,6 @@
+name: Acquia Content Hub Diagnostic Tool
+description: Runs diagnostic checks on the Drupal site environment in preparation for the installation of Acquia Content Hub.
+package: Acquia Content Hub
+
+type: module
+core: 8.x

@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\acquia_contenthub\Tests\ContentHubEntityTrait.
- */
-
 namespace Drupal\acquia_contenthub\Tests;
 
 /**
@@ -14,11 +9,15 @@ trait ContentHubEntityTrait {
 
   /**
    * Origin of the entity.
+   *
+   * @var string
    */
   private $origin = '2c8b1237-1ee6-453e-aa11-3edf9e9c5f9d';
 
   /**
    * Timestamp of last modification.
+   *
+   * @var string
    */
   private $modified = '';
 

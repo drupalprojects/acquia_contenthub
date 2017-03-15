@@ -1,11 +1,8 @@
 <?php
-/**
- * @file
- * Manages Content Hub Entity Dependencies.
- */
 
 namespace Drupal\acquia_contenthub;
 
+use Acquia\ContentHubClient\Entity;
 use Drupal\Component\Uuid\Uuid;
 use Acquia\ContentHubClient\Attribute;
 
@@ -47,12 +44,12 @@ class ContentHubEntityDependency {
    *
    * @var array
    */
-  protected $dependencyChain = array();
+  protected $dependencyChain = [];
 
   /**
    * The relationship type between parent and dependent.
    *
-   * @var int.
+   * @var int
    */
   protected $dependencyType;
 
@@ -64,7 +61,7 @@ class ContentHubEntityDependency {
    *
    * @throws \Exception
    */
-  public function __construct(\Acquia\ContentHubClient\Entity $cdf) {
+  public function __construct(Entity $cdf) {
     $this->cdf = $cdf;
     if (in_array($this->cdf->getType(), self::getPostDependencyEntityTypes())) {
       $this->setRelationship(self::RELATIONSHIP_DEPENDENT);
@@ -89,10 +86,11 @@ class ContentHubEntityDependency {
    */
   static public function getPostDependencyEntityTypes() {
     // By default "field collections" and "paragraphs" are post-dependencies.
-    $post_dependencies = array(
+    $post_dependencies = [
       'field_collection_item' => 'field_collection_item',
-      'paragraphs_item' => 'paragraphs_item',
-    );
+      'paragraph' => 'paragraph',
+    ];
+
     return $post_dependencies;
   }
 
@@ -230,7 +228,7 @@ class ContentHubEntityDependency {
    *   An array or UUIDs
    */
   public function getRemoteDependencies() {
-    $dependencies = array();
+    $dependencies = [];
     // Finding assets (files) dependencies.
     foreach ($this->cdf->getAssets() as $asset) {
       preg_match('#\[(.*)\]#', $asset['replace-token'], $match);
@@ -278,12 +276,11 @@ class ContentHubEntityDependency {
    *   The array of attributes to exclude.
    */
   protected function getExcludedAttributesFromDependencies() {
-    return array(
+    return [
       'author',
       'parent',
       'comments',
-      'host_entity',
-    );
+    ];
   }
 
   /**

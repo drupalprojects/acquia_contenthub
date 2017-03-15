@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Contains Drupal\acquia_contenthub\Form\NodeTypePreviewImageForm.
- */
 
 namespace Drupal\acquia_contenthub\Form;
 
@@ -47,7 +43,7 @@ class NodeTypePreviewImageForm {
    *
    * Example: ['000000005e937119000000007b808ade' => TRUE]
    *
-   * @var array $processedFieldHashes
+   * @var array
    */
   private $processedFieldHashes = [];
 
@@ -59,7 +55,7 @@ class NodeTypePreviewImageForm {
    *  'field_media->thumbnail' => Media->Thumbnail,
    * ]
    *
-   * @var array $imageFields
+   * @var array
    */
   private $imageFields = [];
 
@@ -206,7 +202,7 @@ class NodeTypePreviewImageForm {
    * @param array $settings
    *   Settings.
    */
-  public function saveSettings($node_type, $settings) {
+  public function saveSettings($node_type, array $settings) {
     if ($settings['style'] === self::PREVIEW_IMAGE_ADD_DEFAULT_KEY) {
       $this->createDefaultImageStyle();
       $settings['style'] = self::PREVIEW_IMAGE_DEFAULT_KEY;

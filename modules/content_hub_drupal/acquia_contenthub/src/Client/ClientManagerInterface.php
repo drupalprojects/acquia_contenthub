@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\acquia_contenthub\Client\ClientManagerInterface.
- */
-
 namespace Drupal\acquia_contenthub\Client;
 
 use Symfony\Component\HttpFoundation\Request;
@@ -23,7 +18,7 @@ interface ClientManagerInterface {
    * @return \Acquia\ContentHubClient\ContentHub
    *   Returns the Content Hub Client
    */
-  public function getConnection($config);
+  public function getConnection(array $config);
 
   /**
    * Resets the connection to allow to pass connection variables.
@@ -36,7 +31,7 @@ interface ClientManagerInterface {
    * @param array $config
    *   The Configuration options.
    */
-  public function resetConnection(array $variables, $config = array());
+  public function resetConnection(array $variables, array $config = []);
 
   /**
    * Checks whether the current client has a valid connection to Content Hub.
@@ -61,7 +56,7 @@ interface ClientManagerInterface {
    * @return bool|mixed
    *   The return value of the request if succeeds, FALSE otherwise.
    */
-  public function createRequest($request, $args = array(), $exception_messages = array());
+  public function createRequest($request, array $args = [], array $exception_messages = []);
 
   /**
    * Extracts HMAC signature from the request.

@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\acquia_contenthub\Client\ClientManager.
- */
-
 namespace Drupal\acquia_contenthub\Client;
 
 use Acquia\ContentHubClient\ContentHub;
@@ -84,7 +79,7 @@ class ClientManager implements ClientManagerInterface {
    * @throws \Drupal\acquia_contenthub\ContentHubException
    *   Throws exception when cannot connect to Content Hub.
    */
-  protected function setConnection($config = []) {
+  protected function setConnection(array $config = []) {
     $this->client = &drupal_static(__METHOD__);
     if (NULL === $this->client) {
 
@@ -121,7 +116,7 @@ class ClientManager implements ClientManagerInterface {
   /**
    * Function returns the Acquia Content Hub client.
    */
-  public function getConnection($config = []) {
+  public function getConnection(array $config = []) {
     return $this->client;
   }
 
@@ -136,7 +131,7 @@ class ClientManager implements ClientManagerInterface {
    * @param array $config
    *   The Configuration options.
    */
-  public function resetConnection(array $variables, $config = []) {
+  public function resetConnection(array $variables, array $config = []) {
     $hostname = isset($variables['hostname']) ? $variables['hostname'] : '';;
     $api = isset($variables['api']) ? $variables['api'] : '';
 
@@ -183,7 +178,7 @@ class ClientManager implements ClientManagerInterface {
    *   TRUE if available, FALSE otherwise.
    */
   public function isClientNameAvailable($client_name) {
-    if ($site = $this->createRequest('getClientByName', array($client_name))) {
+    if ($site = $this->createRequest('getClientByName', [$client_name])) {
       if (isset($site['uuid']) && Uuid::isValid($site['uuid'])) {
         return FALSE;
       }
@@ -208,24 +203,21 @@ class ClientManager implements ClientManagerInterface {
     $http_verb = $request->getMethod();
 
     // Adding the Request Query string.
-    if (NULL !== $qs = $request->getQueryString()) {
-      $qs = '?' . $qs;
-    }
-    $path = $request->getBasePath() . $request->getPathInfo() . $qs;
+    $path = $request->getRequestUri();
     $body = $request->getContent();
 
     // If the headers are not given, then the request is probably not coming
     // from the Content Hub. Replace them for empty string to fail validation.
     $content_type = isset($headers['content-type']) ? $headers['content-type'] : '';
     $date = isset($headers['date']) ? $headers['date'] : '';
-    $message_array = array(
+    $message_array = [
       $http_verb,
       md5($body),
       $content_type,
       $date,
       '',
       $path,
-    );
+    ];
     $message = implode("\n", $message_array);
     $s = hash_hmac('sha256', $message, $secret_key, TRUE);
     $signature = base64_encode($s);
@@ -247,7 +239,7 @@ class ClientManager implements ClientManagerInterface {
    * @return bool|mixed
    *   The return value of the request if succeeds, FALSE otherwise.
    */
-  public function createRequest($request, $args = array(), $exception_messages = array()) {
+  public function createRequest($request, array $args = [], array $exception_messages = []) {
     try {
       // Check that we have a valid connection.
       if ($this->getConnection() === FALSE) {
@@ -284,10 +276,10 @@ class ClientManager implements ClientManagerInterface {
           // are using the second one to pass the webhook_url.
         case 'searchEntity':
           if (!isset($args[0])) {
-            $error = t('Request %request requires %num argument.', array(
+            $error = t('Request %request requires %num argument.', [
               '%request' => $request,
               '%num' => 1,
-            ));
+            ]);
             throw new Exception($error);
           }
           return $this->client->$request($args[0]);
@@ -295,10 +287,10 @@ class ClientManager implements ClientManagerInterface {
         // Case for all API calls with 2 arguments.
         case 'updateEntity':
           if (!isset($args[0]) || !isset($args[1])) {
-            $error = t('Request %request requires %num arguments.', array(
+            $error = t('Request %request requires %num arguments.', [
               '%request' => $request,
               '%num' => 2,
-            ));
+            ]);
             throw new Exception($error);
           }
           return $this->client->$request($args[0], $args[1]);
@@ -366,7 +358,7 @@ class ClientManager implements ClientManagerInterface {
    * @return null|string
    *   The text to write in the messages.
    */
-  protected function getExceptionMessage($request, $args, $ex, $exception_messages = array(), $response = NULL) {
+  protected function getExceptionMessage($request, array $args, $ex, array $exception_messages = [], $response = NULL) {
     // Obtain the class name.
     $exception = implode('', array_slice(explode('\\', get_class($ex)), -1));
 
@@ -405,11 +397,11 @@ class ClientManager implements ClientManagerInterface {
               case 'register':
                 $client_name = $args[0];
                 $msg = new FormattableMarkup('Error registering client with name="@name" (Error Code = @error_code: @error_message)',
-                  array(
+                  [
                     '@error_code' => $error['code'],
                     '@name' => $client_name,
                     '@error_message' => $error['message'],
-                  ));
+                  ]);
                 break;
 
               case 'getClientByName':
@@ -420,107 +412,107 @@ class ClientManager implements ClientManagerInterface {
                   return FALSE;
                 }
                 else {
-                  $msg = new FormattableMarkup('Error trying to connect to the Content Hub" (Error Code = @error_code: @error_message)', array(
+                  $msg = new FormattableMarkup('Error trying to connect to the Content Hub" (Error Code = @error_code: @error_message)', [
                     '@error_code' => $error['code'],
                     '@error_message' => $error['message'],
-                  ));
+                  ]);
                 }
                 break;
 
               case 'addWebhook':
                 $webhook_url = $args[0];
-                $msg = new FormattableMarkup('There was a problem trying to register Webhook URL = %URL. Please try again. (Error Code = @error_code: @error_message)', array(
+                $msg = new FormattableMarkup('There was a problem trying to register Webhook URL = %URL. Please try again. (Error Code = @error_code: @error_message)', [
                   '%URL' => $webhook_url,
                   '@error_code' => $error['code'],
                   '@error_message' => $error['message'],
-                ));
+                ]);
                 break;
 
               case 'deleteWebhook':
                 // This function only requires one argument (webhook_uuid), but
                 // we are using the second one to pass the webhook_url.
                 $webhook_url = isset($args[1]) ? $args[1] : $args[0];
-                $msg = new FormattableMarkup('There was a problem trying to <b>unregister</b> Webhook URL = %URL. Please try again. (Error Code = @error_code: @error_message)', array(
+                $msg = new FormattableMarkup('There was a problem trying to <b>unregister</b> Webhook URL = %URL. Please try again. (Error Code = @error_code: @error_message)', [
                   '%URL' => $webhook_url,
                   '@error_code' => $error['code'],
                   '@error_message' => $error['message'],
-                ));
+                ]);
                 break;
 
               case 'purge':
-                $msg = new FormattableMarkup('Error purging entities from the Content Hub [Error Code = @error_code: @error_message]', array(
+                $msg = new FormattableMarkup('Error purging entities from the Content Hub [Error Code = @error_code: @error_message]', [
                   '@error_code' => $error['code'],
                   '@error_message' => $error['message'],
-                ));
+                ]);
                 break;
 
               case 'readEntity':
                 $uuid = $args[0];
-                $msg = new FormattableMarkup('Error reading entity with UUID="@uuid" from Content Hub (Error Code = @error_code: @error_message)', array(
+                $msg = new FormattableMarkup('Error reading entity with UUID="@uuid" from Content Hub (Error Code = @error_code: @error_message)', [
                   '@error_code' => $error['code'],
                   '@uuid' => $uuid,
                   '@error_message' => $error['message'],
-                ));
+                ]);
                 break;
 
               case 'createEntity':
-                $msg = new FormattableMarkup('Error trying to create an entity in Content Hub (Error Code = @error_code: @error_message)', array(
+                $msg = new FormattableMarkup('Error trying to create an entity in Content Hub (Error Code = @error_code: @error_message)', [
                   '@error_code' => $error['code'],
                   '@error_message' => $error['message'],
-                ));
+                ]);
                 break;
 
               case 'createEntities':
-                $msg = new FormattableMarkup('Error trying to create entities in Content Hub (Error Code = @error_code: @error_message)', array(
+                $msg = new FormattableMarkup('Error trying to create entities in Content Hub (Error Code = @error_code: @error_message)', [
                   '@error_code' => $error['code'],
                   '@error_message' => $error['message'],
-                ));
+                ]);
                 break;
 
               case 'updateEntity':
                 $uuid = $args[1];
-                $msg = new FormattableMarkup('Error trying to update an entity with UUID="@uuid" in Content Hub (Error Code = @error_code: @error_message)', array(
+                $msg = new FormattableMarkup('Error trying to update an entity with UUID="@uuid" in Content Hub (Error Code = @error_code: @error_message)', [
                   '@uuid' => $uuid,
                   '@error_code' => $error['code'],
                   '@error_message' => $error['message'],
-                ));
+                ]);
                 break;
 
               case 'updateEntities':
-                $msg = new FormattableMarkup('Error trying to update some entities in Content Hub (Error Code = @error_code: @error_message)', array(
+                $msg = new FormattableMarkup('Error trying to update some entities in Content Hub (Error Code = @error_code: @error_message)', [
                   '@error_code' => $error['code'],
                   '@error_message' => $error['message'],
-                ));
+                ]);
                 break;
 
               case 'deleteEntity':
                 $uuid = $args[0];
-                $msg = new FormattableMarkup('Error trying to delete entity with UUID="@uuid" in Content Hub (Error Code = @error_code: @error_message)', array(
+                $msg = new FormattableMarkup('Error trying to delete entity with UUID="@uuid" in Content Hub (Error Code = @error_code: @error_message)', [
                   '@uuid' => $uuid,
                   '@error_code' => $error['code'],
                   '@error_message' => $error['message'],
-                ));
+                ]);
                 break;
 
               case 'searchEntity':
-                $msg = new FormattableMarkup('Error trying to make a search query to Content Hub. Are your credentials inserted correctly? (Error Code = @error_code: @error_message)', array(
+                $msg = new FormattableMarkup('Error trying to make a search query to Content Hub. Are your credentials inserted correctly? (Error Code = @error_code: @error_message)', [
                   '@error_code' => $error['code'],
                   '@error_message' => $error['message'],
-                ));
+                ]);
                 break;
 
               default:
-                $msg = new FormattableMarkup('Error trying to connect to the Content Hub" (Error Code = @error_code: @error_message)', array(
+                $msg = new FormattableMarkup('Error trying to connect to the Content Hub" (Error Code = @error_code: @error_message)', [
                   '@error_code' => $error['code'],
                   '@error_message' => $error['message'],
-                ));
+                ]);
             }
 
           }
           else {
-            $msg = new FormattableMarkup('Error trying to connect to the Content Hub (Error Message = @error_message)', array(
+            $msg = new FormattableMarkup('Error trying to connect to the Content Hub (Error Message = @error_message)', [
               '@error_message' => $ex->getMessage(),
-            ));
+            ]);
           }
         }
         break;
@@ -534,56 +526,56 @@ class ClientManager implements ClientManagerInterface {
             // Customize the error message per request here.
             case 'register':
               $client_name = $args[0];
-              $msg = new FormattableMarkup('Could not get authorization from Content Hub to register client @name. Are your credentials inserted correctly? (Error message = @error_message)', array(
+              $msg = new FormattableMarkup('Could not get authorization from Content Hub to register client @name. Are your credentials inserted correctly? (Error message = @error_message)', [
                 '@name' => $client_name,
                 '@error_message' => $ex->getMessage(),
-              ));
+              ]);
               break;
 
             case 'createEntity':
-              $msg = new FormattableMarkup('Error trying to create an entity in Content Hub (Error Message: @error_message)', array(
+              $msg = new FormattableMarkup('Error trying to create an entity in Content Hub (Error Message: @error_message)', [
                 '@error_message' => $ex->getMessage(),
-              ));
+              ]);
               break;
 
             case 'createEntities':
-              $msg = new FormattableMarkup('Error trying to create entities in Content Hub (Error Message = @error_message)', array(
+              $msg = new FormattableMarkup('Error trying to create entities in Content Hub (Error Message = @error_message)', [
                 '@error_message' => $ex->getMessage(),
-              ));
+              ]);
               break;
 
             case 'updateEntity':
               $uuid = $args[1];
-              $msg = new FormattableMarkup('Error trying to update entity with UUID="@uuid" in Content Hub (Error Message = @error_message)', array(
+              $msg = new FormattableMarkup('Error trying to update entity with UUID="@uuid" in Content Hub (Error Message = @error_message)', [
                 '@uuid' => $uuid,
                 '@error_message' => $ex->getMessage(),
-              ));
+              ]);
               break;
 
             case 'updateEntities':
-              $msg = new FormattableMarkup('Error trying to update some entities in Content Hub (Error Message = @error_message)', array(
+              $msg = new FormattableMarkup('Error trying to update some entities in Content Hub (Error Message = @error_message)', [
                 '@error_message' => $ex->getMessage(),
-              ));
+              ]);
               break;
 
             case 'deleteEntity':
               $uuid = $args[0];
-              $msg = new FormattableMarkup('Error trying to delete entity with UUID="@uuid" in Content Hub (Error Message = @error_message)', array(
+              $msg = new FormattableMarkup('Error trying to delete entity with UUID="@uuid" in Content Hub (Error Message = @error_message)', [
                 '@uuid' => $uuid,
                 '@error_message' => $ex->getMessage(),
-              ));
+              ]);
               break;
 
             case 'searchEntity':
-              $msg = new FormattableMarkup('Error trying to make a search query to Content Hub. Are your credentials inserted correctly? (Error Message = @error_message)', array(
+              $msg = new FormattableMarkup('Error trying to make a search query to Content Hub. Are your credentials inserted correctly? (Error Message = @error_message)', [
                 '@error_message' => $ex->getMessage(),
-              ));
+              ]);
               break;
 
             default:
-              $msg = new FormattableMarkup('Error trying to connect to the Content Hub. Are your credentials inserted correctly? (Error Message = @error_message)', array(
+              $msg = new FormattableMarkup('Error trying to connect to the Content Hub. Are your credentials inserted correctly? (Error Message = @error_message)', [
                 '@error_message' => $ex->getMessage(),
-              ));
+              ]);
           }
         }
         break;
@@ -593,9 +585,9 @@ class ClientManager implements ClientManagerInterface {
           $msg = $exception_messages['Exception'];
         }
         else {
-          $msg = new FormattableMarkup('Error trying to connect to the Content Hub (Error Message = @error_message)', array(
+          $msg = new FormattableMarkup('Error trying to connect to the Content Hub (Error Message = @error_message)', [
             '@error_message' => $ex->getMessage(),
-          ));
+          ]);
         }
         break;
 

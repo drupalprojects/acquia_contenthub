@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\acquia_contenthub\ImportEntityManager.
- */
-
 namespace Drupal\acquia_contenthub;
 
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -72,7 +67,7 @@ class ImportEntityManager {
   /**
    * Diff module's entity comparison service.
    *
-   * @var Drupal\diff\DiffEntityComparison
+   * @var \Drupal\diff\DiffEntityComparison
    */
   private $diffEntityComparison;
 
@@ -120,35 +115,83 @@ class ImportEntityManager {
   }
 
   /**
+   * Compare entities by checking if the entities referenced by it has changed.
+   *
+   * Note: It needs to be a changed entity (has $entity->original).
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity to check for differences.
+   *
+   * @return bool
+   *   TRUE if it finds differences, FALSE otherwise.
+   */
+  private function compareReferencedEntities(EntityInterface $entity) {
+    $new_references = $entity->referencedEntities();
+    $old_references = $entity->original->referencedEntities();
+    $new_uuids = array_map(function (EntityInterface $e) {
+      return $e->uuid();
+    }, $new_references);
+    $old_uuids = array_map(function (EntityInterface $e) {
+      return $e->uuid();
+    }, $old_references);
+    $changes = array_diff($new_uuids, $old_uuids);
+    if (!empty($changes)) {
+      return TRUE;
+    }
+    return FALSE;
+  }
+
+  /**
+   * Compare entities by checking if the fields information has changed.
+   *
+   * Note: It needs to be a changed entity (has $entity->original).
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity to check for differences.
+   *
+   * @return bool
+   *   TRUE if it finds differences, FALSE otherwise.
+   */
+  private function compareRevisions(EntityInterface $entity) {
+    // Check if the entity has introduced any local changes.
+    $field_comparisons = $this->diffEntityComparison->compareRevisions($entity->original, $entity);
+    foreach ($field_comparisons as $field_comparison) {
+      if ($field_comparison['#data']['#left'] !== $field_comparison['#data']['#right']) {
+        return TRUE;
+      }
+    }
+    return FALSE;
+  }
+
+  /**
    * Act on the entity's presave action.
    *
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The entity that is being saved.
    */
   public function entityPresave(EntityInterface $entity) {
-    // If the entity is "pending sync" or already "has local change", skip.
-    $imported_entity = $this->contentHubEntitiesTracking->loadImportedByDrupalEntity($entity->getEntityTypeId(), $entity->id());
+    // Early return, if the entity doesn't have an older version or if it is
+    // already sync'ing.
+    if (!isset($entity->original) || !empty($entity->__contenthub_entity_syncing)) {
+      return;
+    }
+
+    // Find the top-level host entity's import entity.
+    $imported_entity = $this->findRootAncestorImportEntity($entity);
+    // Early return, if the entity is not an imported entity, or it is not
+    // "pending sync" or "has local change".
     if (!$imported_entity || $imported_entity->isPendingSync() || $imported_entity->hasLocalChange()) {
       return;
     }
 
-    // Otherwise check if the entity has introduced any local changes.
-    $field_comparisons = $this->diffEntityComparison->compareRevisions($entity->original, $entity);
+    $has_local_change = $this->compareRevisions($entity) || $this->compareReferencedEntities($entity);
 
-    $has_local_change = FALSE;
-    foreach ($field_comparisons as $field_comparison) {
-      if ($field_comparison['#data']['#left'] !== $field_comparison['#data']['#right']) {
-        $has_local_change = TRUE;
-        break;
-      }
-    }
-
-    // Don't do anything if there is no local change.
+    // Don't do anything else if there is no local change.
     if (!$has_local_change) {
       return;
     }
 
-    // Otherwise, set and store the imported entity as having local changes.
+    // Set and store the imported entity as having local changes.
     $imported_entity->setLocalChange();
     $imported_entity->save();
   }
@@ -162,7 +205,7 @@ class ImportEntityManager {
    * @return \Drupal\acquia_contenthub\ContentHubEntityDependency|bool
    *   The Content Hub Entity Dependency if found, FALSE otherwise.
    */
-  public function loadRemoteEntity($uuid) {
+  private function loadRemoteEntity($uuid) {
     $entity = $this->clientManager->createRequest('readEntity', [$uuid]);
     if (!$entity) {
       return FALSE;
@@ -180,13 +223,13 @@ class ImportEntityManager {
    *   The Content Hub Entity.
    * @param array $dependencies
    *   An array of \Drupal\acquia_contenthub\ContentHubEntityDependency.
-   * @param bool|TRUE $use_chain
+   * @param bool|true $use_chain
    *   If the dependencies should be unique to the dependency chain or not.
    *
    * @return array
    *   An array of \Drupal\acquia_contenthub\ContentHubEntityDependency.
    */
-  private function getAllRemoteDependencies(ContentHubEntityDependency $content_hub_entity, &$dependencies, $use_chain = TRUE) {
+  private function getAllRemoteDependencies(ContentHubEntityDependency $content_hub_entity, array &$dependencies, $use_chain = TRUE) {
     // Obtaining dependencies of this entity.
     $dep_dependencies = $this->getRemoteDependencies($content_hub_entity, $use_chain);
 
@@ -196,14 +239,13 @@ class ImportEntityManager {
         continue;
       }
 
-      // Also check if this dependency has been previously imported and has the
-      // same modified timestamp. If the 'modified' timestamp matches then we
-      // know we are trying to import an entity that has no change at all, then
-      // it does not need to be imported again.
-      if ($imported_entity = $this->contentHubEntitiesTracking->loadImportedByUuid($uuid)) {
-        if ($imported_entity->getModified() === $content_hub_dependency->getRawEntity()->getModified()) {
-          continue;
-        }
+      // Also check if this dependency has been 1) previously imported, 2) is an
+      // independent entity, and 3) has the same modified timestamp. If the
+      // 'modified' timestamp matches, then we know we are trying to import an
+      // entity that has no change, then it does not need to be imported again.
+      $imported_entity = $this->contentHubEntitiesTracking->loadImportedByUuid($uuid);
+      if ($imported_entity && !$imported_entity->isDependent() && $imported_entity->getModified() === $content_hub_dependency->getRawEntity()->getModified()) {
+        continue;
       }
 
       $dependencies[$uuid] = $content_hub_dependency;
@@ -217,7 +259,7 @@ class ImportEntityManager {
    *
    * @param \Drupal\acquia_contenthub\ContentHubEntityDependency $content_hub_entity
    *   The Content Hub Entity.
-   * @param bool|TRUE $use_chain
+   * @param bool|true $use_chain
    *   If the dependencies should be unique to the dependency chain or not.
    *
    * @return array
@@ -342,7 +384,7 @@ class ImportEntityManager {
    * @return bool|null
    *   The Drupal entity being created.
    */
-  private function importRemoteEntityDependencies(ContentHubEntityDependency $contenthub_entity, &$dependencies) {
+  private function importRemoteEntityDependencies(ContentHubEntityDependency $contenthub_entity, array &$dependencies) {
     // Un-managed assets are also pre-dependencies for an entity and they would
     // need to be saved before we can create the current entity.
     $this->saveUnManagedAssets($contenthub_entity);
@@ -358,15 +400,14 @@ class ImportEntityManager {
 
     // Now that we have created all its pre-dependencies, create the current
     // Drupal entity.
-    $host_entity = $contenthub_entity->isEntityDependent() ? $this->getHostEntity($contenthub_entity, $dependencies) : FALSE;
-    $entity = $this->importRemoteEntityNoDependencies($contenthub_entity, $host_entity);
+    $entity = $this->importRemoteEntityNoDependencies($contenthub_entity);
 
     // Create post-dependencies.
     foreach ($contenthub_entity->getDependencyChain() as $uuid) {
       $content_hub_entity_dependency = isset($dependencies[$uuid]) ? $dependencies[$uuid] : FALSE;
       if ($content_hub_entity_dependency && !isset($content_hub_entity_dependency->__processed) && $content_hub_entity_dependency->getRelationship() == ContentHubEntityDependency::RELATIONSHIP_DEPENDENT) {
         $dependencies[$uuid]->__processed = TRUE;
-        $content_hub_entity_dependency->importRemoteEntityDependencies($content_hub_entity_dependency, $dependencies);
+        $this->importRemoteEntityDependencies($content_hub_entity_dependency, $dependencies);
       }
     }
     return $entity;
@@ -380,20 +421,10 @@ class ImportEntityManager {
   }
 
   /**
-   * Obtains the host entity for a post-dependency.
-   */
-  private function getHostEntity($contenthub_entity, $dependencies) {
-    // @TODO: Implement obtaining the Host Entity.
-    return FALSE;
-  }
-
-  /**
-   * Saves an Entity without taking care of dependencies. Not to be used alone.
+   * Saves an Entity without taking care of dependencies.
    *
    * @param \Drupal\acquia_contenthub\ContentHubEntityDependency $contenthub_entity
    *   The Content Hub Entity.
-   * @param object $host_entity
-   *   The Host Entity.
    *
    * @return \Symfony\Component\HttpFoundation\JsonResponse
    *   The Response.
@@ -401,7 +432,7 @@ class ImportEntityManager {
    * @throws \Exception
    *   Throws exception in certain cases.
    */
-  private function importRemoteEntityNoDependencies(ContentHubEntityDependency $contenthub_entity, $host_entity) {
+  private function importRemoteEntityNoDependencies(ContentHubEntityDependency $contenthub_entity) {
     // Import the entity.
     $entity_type = $contenthub_entity->getRawEntity()->getType();
     $class = \Drupal::entityTypeManager()->getDefinition($entity_type)->getClass();
@@ -431,15 +462,23 @@ class ImportEntityManager {
     $transaction = $this->database->startTransaction();
     try {
       // Add synchronization flag.
-      $entity->__contenthub_synchronized = TRUE;
+      $entity->__contenthub_entity_syncing = TRUE;
       // Save the entity.
+      $is_new_entity = $entity->isNew();
       $entity->save();
       // Remove synchronization flag.
-      unset($entity->__contenthub_synchronized);
+      unset($entity->__contenthub_entity_syncing);
 
       // Save this entity in the tracking for importing entities.
-      $cdf = (array) $contenthub_entity->getRawEntity();
-      $this->trackImportedEntity($cdf);
+      $this->trackImportedEntity($contenthub_entity);
+
+      // If this is a post-dependency (paragraphs or field collections), then
+      // we will need to update the host entity ONLY if we are creating this
+      // entity for the first time.
+      // If we are updating a paragraph, the reference is already set.
+      if ($is_new_entity && $contenthub_entity->isEntityDependent()) {
+        $this->updateHostEntity($entity);
+      }
 
     }
     catch (\Exception $e) {
@@ -450,6 +489,33 @@ class ImportEntityManager {
 
     $serialized_entity = $this->serializer->normalize($entity, 'json');
     return new JsonResponse($serialized_entity);
+  }
+
+  /**
+   * Updates the reference in the host entity to point to the dependent entity.
+   *
+   * In cases of dependent entities (paragraphs and field collections), we need
+   * to update the reference in the host entity to point to the dependent entity
+   * after the dependent entity has been saved.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   A Drupal entity interface.
+   */
+  private function updateHostEntity(EntityInterface $entity) {
+    switch ($entity->getEntityTypeId()) {
+      case 'paragraph':
+        $host_entity = $entity->getParentEntity();
+        // Assuming single parenthood.
+        $field_paragraph = $entity->get('parent_field_name')->getString();
+        $host_entity->{$field_paragraph}->appendItem($entity);
+        // Add synchronization flag.
+        $host_entity->__contenthub_entity_syncing = TRUE;
+        // Save the host entity.
+        $host_entity->save();
+        // Remove synchronization flag.
+        unset($host_entity->__contenthub_entity_syncing);
+        break;
+    }
   }
 
   /**
@@ -477,33 +543,60 @@ class ImportEntityManager {
   /**
    * Save this entity in the Tracking table.
    *
-   * @param array $cdf
-   *   The entity that has to be tracked as imported entity.
+   * @param \Drupal\acquia_contenthub\ContentHubEntityDependency $contenthub_entity
+   *   The Content Hub Entity.
    */
-  private function trackImportedEntity($cdf) {
-    if ($imported_entity = $this->contentHubEntitiesTracking->loadImportedByUuid($cdf['uuid'])) {
-      $imported_entity->setAutoUpdate();
+  private function trackImportedEntity(ContentHubEntityDependency $contenthub_entity) {
+    $cdf = (array) $contenthub_entity->getRawEntity();
+    $imported_entity = $this->contentHubEntitiesTracking->loadImportedByUuid($cdf['uuid']);
+    // If already exist, update some fields and exit.
+    if ($imported_entity) {
+      // Set status to "auto-update" only when the entity is independent.
+      if (!$imported_entity->isDependent()) {
+        $imported_entity->setAutoUpdate();
+      }
       $imported_entity->setModified($cdf['modified']);
+      $this->saveImportedEntity();
+      return;
+    }
+    // If the entity is new, create a new imported entity.
+    $entity = $this->entityRepository->loadEntityByUuid($cdf['type'], $cdf['uuid']);
+    $this->contentHubEntitiesTracking->setImportedEntity(
+      $cdf['type'],
+      $entity->id(),
+      $cdf['uuid'],
+      $cdf['modified'],
+      $cdf['origin']
+    );
+    if ($contenthub_entity->isEntityDependent()) {
+      $this->contentHubEntitiesTracking->setDependent();
+    }
+    $this->saveImportedEntity();
+  }
+
+  /**
+   * Save the imported entity.
+   */
+  private function saveImportedEntity() {
+    // Now save the entity.
+    $success = $this->contentHubEntitiesTracking->save();
+
+    // Log event.
+    if (!$success) {
+      $args = array(
+        '%type' => $this->contentHubEntitiesTracking->getEntityType(),
+        '%uuid' => $this->contentHubEntitiesTracking->getUuid(),
+      );
+      $message = new FormattableMarkup('Imported entity type = %type with uuid=%uuid could not be saved in the tracking table.', $args);
     }
     else {
-      $entity = $this->entityRepository->loadEntityByUuid($cdf['type'], $cdf['uuid']);
-      $this->contentHubEntitiesTracking->setImportedEntity(
-        $cdf['type'],
-        $entity->id(),
-        $cdf['uuid'],
-        $cdf['modified'],
-        $cdf['origin']
-      );
-    }
-    // Now save the entity.
-    if ($this->contentHubEntitiesTracking->save()) {
       $args = array(
-        '%type' => $cdf['type'],
-        '%uuid' => $cdf['uuid'],
+        '%type' => $this->contentHubEntitiesTracking->getEntityType(),
+        '%uuid' => $this->contentHubEntitiesTracking->getUuid(),
       );
       $message = new FormattableMarkup('Saving %type entity with uuid=%uuid. Tracking imported entity with auto updates.', $args);
-      $this->loggerFactory->get('acquia_contenthub')->debug($message);
     }
+    $this->loggerFactory->get('acquia_contenthub')->debug($message);
   }
 
   /**
@@ -513,16 +606,50 @@ class ImportEntityManager {
    *   The entity that is being updated.
    */
   public function entityUpdate(EntityInterface $entity) {
+    // Early return, if already sync'ing.
+    if (!empty($entity->__contenthub_entity_syncing)) {
+      return;
+    }
     $imported_entity = $this->contentHubEntitiesTracking->loadImportedByDrupalEntity($entity->getEntityTypeId(), $entity->id());
-    // Do nothing, if:
-    // 1) Not an imported entity.
-    // 2) Is not during sync or pending sync.
-    if (!$imported_entity || isset($entity->__contenthub_synchronized) || !$imported_entity->isPendingSync()) {
+    // Early return, if not an imported entity or not pending sync.
+    if (!$imported_entity || !$imported_entity->isPendingSync()) {
       return;
     }
 
     // Otherwise, re-import the entity.
     $this->importRemoteEntity($imported_entity->getUuid(), $entity);
+  }
+
+  /**
+   * Returns the entity's root ancestor's imported entity.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The current (child) entity.
+   *
+   * @return \Drupal\acquia_contenthub\ContentHubEntitiesTracking|bool
+   *   The root ancestor's ContentHubEntitiesTracking object.
+   */
+  private function findRootAncestorImportEntity(EntityInterface $entity) {
+    $imported_entity = $this->contentHubEntitiesTracking->loadImportedByDrupalEntity($entity->getEntityTypeId(), $entity->id());
+    if (!$imported_entity || !$imported_entity->isDependent()) {
+      return $imported_entity;
+    }
+
+    return $this->findRootAncestorImportEntity($entity->getParentEntity());
+  }
+
+  /**
+   * Act on the entity's delete action.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity that is being deleted.
+   */
+  public function entityDelete(EntityInterface $entity) {
+    $imported_entity = $this->contentHubEntitiesTracking->loadImportedByDrupalEntity($entity->getEntityTypeId(), $entity->id());
+    if (!$imported_entity) {
+      return;
+    }
+    $imported_entity->delete();
   }
 
 }

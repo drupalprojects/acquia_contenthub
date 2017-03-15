@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\acquia_contenthub\Tests\WebTestBase.
- */
-
 namespace Drupal\acquia_contenthub\Tests;
 
 use Drupal\Core\StringTranslation\StringTranslationTrait;
@@ -22,7 +17,7 @@ abstract class WebTestBase extends SimpletestWebTestBase {
    *
    * @var string[]
    */
-  public static $modules = array('node', 'acquia_contenthub');
+  public static $modules = ['node', 'acquia_contenthub'];
 
   /**
    * An admin user used for this test.
@@ -30,17 +25,18 @@ abstract class WebTestBase extends SimpletestWebTestBase {
    * @var \Drupal\Core\Session\AccountInterface
    */
   protected $adminUser;
+
   /**
    * The permissions of the admin user.
    *
    * @var string[]
    */
-  protected $adminUserPermissions = array(
+  protected $adminUserPermissions = [
     'bypass node access',
     'administer acquia content hub',
     'administer content types',
     'access administration pages',
-  );
+  ];
 
   /**
    * A user without Acquia Content Hub admin permission.
@@ -71,23 +67,23 @@ abstract class WebTestBase extends SimpletestWebTestBase {
 
     // Create the users used for the tests.
     $this->adminUser = $this->drupalCreateUser($this->adminUserPermissions);
-    $this->unauthorizedUser = $this->drupalCreateUser(array('access administration pages'));
+    $this->unauthorizedUser = $this->drupalCreateUser(['access administration pages']);
     $this->anonymousUser = $this->drupalCreateUser();
 
     // Get the URL generator.
     $this->urlGenerator = $this->container->get('url_generator');
 
     // Create a node article type.
-    $this->drupalCreateContentType(array(
+    $this->drupalCreateContentType([
       'type' => 'article',
       'name' => 'Article',
-    ));
+    ]);
 
     // Create a node page type.
-    $this->drupalCreateContentType(array(
+    $this->drupalCreateContentType([
       'type' => 'page',
       'name' => 'Page',
-    ));
+    ]);
   }
 
   /**

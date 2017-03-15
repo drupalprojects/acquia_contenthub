@@ -1,17 +1,11 @@
 <?php
 
-/**
- * @file
- * Subscriber for REST-style routes.
- */
-
 namespace Drupal\acquia_contenthub\Routing;
 
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\acquia_contenthub\EntityManager;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
-
 
 /**
  * Defines Acquia Content Hub Dynamic REST routes.

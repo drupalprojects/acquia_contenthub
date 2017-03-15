@@ -1,0 +1,16 @@
+name: 'CH Node With Paragraphs'
+description: 'Provides CH Node With Paragraphs content type and related configuration. A Content Type definition that uses Paragraphs'
+type: module
+core: 8.x
+dependencies:
+  - ch_feature_article
+  - entity_reference_revisions
+  - field
+  - menu_ui
+  - node
+  - options
+  - paragraphs
+  - path
+  - taxonomy
+  - text
+  - user

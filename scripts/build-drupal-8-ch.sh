@@ -66,6 +66,8 @@ fi
 composer require drupal/devel:1.0.0-alpha1 --profile
 composer require drupal/features:^3.0 --profile
 composer require drupal/view_mode_selector:dev-1.x --profile
+composer require drupal/entity_reference_revisions:1.0 --profile
+composer require drupal/paragraphs:1.0 --profile
 
 # TODO DISCUSS:
 # find . -name .git

@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * ContentHubFilter Class.
- */
 
 namespace Drupal\acquia_contenthub_subscriber\Entity;
 
@@ -109,11 +105,11 @@ class ContentHubFilter extends ConfigEntityBase implements ContentHubFilterInter
    *   The human-readable publish_setting.
    */
   public function getPublishSetting() {
-    $setting = array(
+    $setting = [
       'none' => t('None'),
       'import' => t('Always Import'),
       'publish' => t('Always Publish'),
-    );
+    ];
     return $setting[$this->publish_setting];
   }
 
@@ -126,11 +122,11 @@ class ContentHubFilter extends ConfigEntityBase implements ContentHubFilterInter
    *   0 if Unpublished status, 1 for Publish status, FALSE otherwise.
    */
   public function getPublishStatus() {
-    $status = array(
+    $status = [
       'none' => FALSE,
       'import' => 0,
       'publish' => 1,
-    );
+    ];
     return $status[$this->publish_setting];
   }
 
@@ -149,7 +145,7 @@ class ContentHubFilter extends ConfigEntityBase implements ContentHubFilterInter
    * Gets the Conditions to match in a webhook.
    */
   public function getConditions() {
-    $tags = array();
+    $tags = [];
 
     // Search Term.
     if (!empty($this->search_term)) {

@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Contains \Drupal\Tests\acquia_contenthub\Unit\ContentHubEntitiesTrackingTest.
- */
 
 namespace Drupal\Tests\acquia_contenthub\Unit;
 
@@ -105,7 +101,6 @@ class ContentHubEntitiesTrackingTest extends UnitTestCase {
 
     return new ContentHubEntitiesTracking($database, $config_factory);
   }
-
 
   /**
    * Test for Exported Entities.
@@ -232,6 +227,76 @@ class ContentHubEntitiesTrackingTest extends UnitTestCase {
     $this->assertEquals($database_entity['modified'], $this->contentHubEntitiesTracking->getModified());
     $this->assertEquals($database_entity['origin'], $this->contentHubEntitiesTracking->getOrigin());
     $this->assertFalse($this->contentHubEntitiesTracking->isAutoUpdate());
+    $this->assertFalse($this->contentHubEntitiesTracking->hasLocalChange());
+    $this->assertFalse($this->contentHubEntitiesTracking->isPendingSync());
+  }
+
+  /**
+   * Test for Imported Dependent Entity.
+   *
+   * @covers ::setDependent
+   * @covers ::isDependent
+   *
+   * @expectedException \Exception
+   *
+   * @expectedExceptionCode 0
+   *
+   * @expectedExceptionMessage The "IS_DEPENDENT" status is immutable, and cannot be set again.
+   */
+  public function testImportedDependentEntity() {
+    $entity = (object) [
+      'entity_type' => 'node',
+      'entity_id' => 1,
+      'entity_uuid' => '00000000-0000-0000-0000-000000000000',
+      'modified' => '2016-12-09T20:51:45+00:00',
+      'origin' => '11111111-1111-1111-1111-111111111111',
+    ];
+
+    $this->contentHubEntitiesTracking = $this->getContentHubEntitiesTrackingService();
+    $this->contentHubEntitiesTracking->setImportedEntity($entity->entity_type, $entity->entity_id, $entity->entity_uuid, $entity->modified, $entity->origin);
+
+    $this->contentHubEntitiesTracking->setDependent();
+    $this->assertFalse($this->contentHubEntitiesTracking->isAutoUpdate());
+    $this->assertFalse($this->contentHubEntitiesTracking->hasLocalChange());
+    $this->assertFalse($this->contentHubEntitiesTracking->isPendingSync());
+    $this->assertTrue($this->contentHubEntitiesTracking->isDependent());
+
+    // Set to another status should produce an Exception.
+    $this->contentHubEntitiesTracking->setLocalChange();
+  }
+
+  /**
+   * Test for service-level caching.
+   *
+   * @covers ::setImportedEntity
+   */
+  public function testServiceLevelCaching() {
+    $entity1 = (object) [
+      'entity_type' => 'node',
+      'entity_id' => 1,
+      'entity_uuid' => '00000000-0000-0000-0000-000000000000',
+      'modified' => '2016-12-09T20:51:45+00:00',
+      'origin' => '22222222-2222-2222-2222-222222222222',
+    ];
+    $entity2 = (object) [
+      'entity_type' => 'node',
+      'entity_id' => 2,
+      'entity_uuid' => '11111111-1111-1111-1111-111111111111',
+      'modified' => '2016-12-10T20:51:45+00:00',
+      'origin' => '22222222-2222-2222-2222-222222222222',
+    ];
+
+    $this->contentHubEntitiesTracking = $this->getContentHubEntitiesTrackingService();
+    $this->contentHubEntitiesTracking->setImportedEntity($entity1->entity_type, $entity1->entity_id, $entity1->entity_uuid, $entity1->modified, $entity1->origin);
+    $this->contentHubEntitiesTracking->setImportedEntity($entity2->entity_type, $entity2->entity_id, $entity2->entity_uuid, $entity2->modified, $entity2->origin);
+
+    $this->contentHubEntitiesTracking->loadExportedByDrupalEntity($entity1->entity_type, $entity1->entity_id);
+    $this->assertEquals($entity1->entity_type, $this->contentHubEntitiesTracking->getEntityType());
+    $this->assertEquals($entity1->entity_id, $this->contentHubEntitiesTracking->getEntityId());
+    $this->assertEquals($entity1->entity_uuid, $this->contentHubEntitiesTracking->getUuid());
+    $this->assertEquals($entity1->modified, $this->contentHubEntitiesTracking->getModified());
+    $this->assertEquals($entity1->origin, $this->contentHubEntitiesTracking->getOrigin());
+    $this->assertTrue($this->contentHubEntitiesTracking->isAutoUpdate());
     $this->assertFalse($this->contentHubEntitiesTracking->hasLocalChange());
     $this->assertFalse($this->contentHubEntitiesTracking->isPendingSync());
   }

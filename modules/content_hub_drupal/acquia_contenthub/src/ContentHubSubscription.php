@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\acquia_contenthub/ContentHubSubscription.
- */
-
 namespace Drupal\acquia_contenthub;
 
 use Drupal\Component\Render\FormattableMarkup;
@@ -223,7 +218,7 @@ class ContentHubSubscription {
    *   TRUE if succeeds, FALSE otherwise.
    */
   public function registerClient($client_name) {
-    if ($site = $this->clientManager->createRequest('register', array($client_name))) {
+    if ($site = $this->clientManager->createRequest('register', [$client_name])) {
       // Resetting the origin now that we have one.
       $origin = $site['uuid'];
 
@@ -232,14 +227,14 @@ class ContentHubSubscription {
       $this->config->set('client_name', $client_name);
       $this->config->save();
 
-      drupal_set_message(t('Successful Client registration with name "@name" (UUID = @uuid)', array(
+      drupal_set_message(t('Successful Client registration with name "@name" (UUID = @uuid)', [
         '@name' => $client_name,
         '@uuid' => $origin,
-      )), 'status');
-      $message = new FormattableMarkup('Successful Client registration with name "@name" (UUID = @uuid)', array(
+      ]), 'status');
+      $message = new FormattableMarkup('Successful Client registration with name "@name" (UUID = @uuid)', [
         '@name' => $client_name,
         '@uuid' => $origin,
-      ));
+      ]);
       $this->loggerFactory->get('acquia_contenthub')->debug($message);
 
       return TRUE;
@@ -281,15 +276,15 @@ class ContentHubSubscription {
    */
   public function registerWebhook($webhook_url) {
     $success = FALSE;
-    if ($webhook = $this->clientManager->createRequest('addWebhook', array($webhook_url))) {
+    if ($webhook = $this->clientManager->createRequest('addWebhook', [$webhook_url])) {
       $this->config->set('webhook_uuid', $webhook['uuid']);
       $this->config->set('webhook_url', $webhook['url']);
       $this->config->save();
       drupal_set_message(t('Webhooks have been enabled. This site will now receive updates from Content Hub.'), 'status');
       $success = TRUE;
-      $message = new FormattableMarkup('Successful registration of Webhook URL = @URL', array(
+      $message = new FormattableMarkup('Successful registration of Webhook URL = @URL', [
         '@URL' => $webhook['url'],
-      ));
+      ]);
       $this->loggerFactory->get('acquia_contenthub')->debug($message);
     }
     return $success;
@@ -307,12 +302,12 @@ class ContentHubSubscription {
   public function unregisterWebhook($webhook_url) {
     if ($settings = $this->clientManager->createRequest('getSettings')) {
       if ($webhook = $settings->getWebhook($webhook_url)) {
-        if ($response = $this->clientManager->createRequest('deleteWebhook', array($webhook['uuid'], $webhook['url']))) {
+        if ($response = $this->clientManager->createRequest('deleteWebhook', [$webhook['uuid'], $webhook['url']])) {
           $success = json_decode($response->getBody(), TRUE);
           if (isset($success['success']) && $success['success'] == TRUE) {
-            drupal_set_message(t('Webhooks have been <b>disabled</b>. This site will no longer receive updates from Content Hub.', array(
+            drupal_set_message(t('Webhooks have been <b>disabled</b>. This site will no longer receive updates from Content Hub.', [
               '@URL' => $webhook['url'],
-            )), 'warning');
+            ]), 'warning');
             $this->config->clear('webhook_uuid')->clear('webhook_url')->save();
             return TRUE;
           }
@@ -377,7 +372,7 @@ class ContentHubSubscription {
    *   The result array or FALSE otherwise.
    */
   public function listEntities(array $options) {
-    if ($entities = $this->clientManager->createRequest('listEntities', array($options))) {
+    if ($entities = $this->clientManager->createRequest('listEntities', [$options])) {
       return $entities;
     }
     return FALSE;
@@ -407,7 +402,7 @@ class ContentHubSubscription {
    *
    * @param \Symfony\Component\HttpFoundation\Request $request
    *   The Request to wrap using HMAC authentication.
-   * @param bool|TRUE $use_shared_secret
+   * @param bool|true $use_shared_secret
    *   Whether to use shared_secret or secret_key.
    *
    * @return \Symfony\Component\HttpFoundation\Request

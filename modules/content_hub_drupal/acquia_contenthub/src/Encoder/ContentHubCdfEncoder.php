@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\acquia_contenthub\Encoder\ContentHubCdfEncoder.
- */
-
 namespace Drupal\acquia_contenthub\Encoder;
 
 use Symfony\Component\Serializer\Encoder\JsonEncoder as SymfonyJsonEncoder;

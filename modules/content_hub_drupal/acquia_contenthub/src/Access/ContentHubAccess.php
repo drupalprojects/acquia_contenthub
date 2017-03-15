@@ -1,10 +1,4 @@
 <?php
-/**
- * @file
- * Implements a Content Hub Access Check based on Http HMAC Spec V1.
- *
- * Https://github.com/acquia/http-hmac-spec/tree/1.0
- */
 
 namespace Drupal\acquia_contenthub\Access;
 

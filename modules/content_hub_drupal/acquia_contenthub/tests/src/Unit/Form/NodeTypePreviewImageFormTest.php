@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Tests\acquia_contenthub\Unit\Form\NodeTypePreviewImageFormTest.
- */
-
 namespace Drupal\Tests\acquia_contenthub\Unit\Form;
 
 use Drupal\Tests\UnitTestCase;

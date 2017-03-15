@@ -69,7 +69,6 @@ function hook_acquia_contenthub_field_type_mapping_alter(array &$mapping) {
   $mapping['my_custom_field'] = 'array<string>';
 }
 
-
 /**
  * Alter the excluded field types and names that get converted into a CDF.
  *

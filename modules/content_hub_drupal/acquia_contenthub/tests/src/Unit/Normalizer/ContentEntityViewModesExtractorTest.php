@@ -1,12 +1,8 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Tests\acquia_contenthub\Unit\Normalizer\ContentEntityViewModesExtractorTest.
- */
-
 namespace Drupal\Tests\acquia_contenthub\Unit\Normalizer;
 
+use Drupal\Core\Session\AccountInterface;
 use Drupal\Tests\UnitTestCase;
 use Drupal\acquia_contenthub\Normalizer\ContentEntityViewModesExtractor;
 
@@ -92,6 +88,20 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
   protected $contentHubSubscription;
 
   /**
+   * Config Factory.
+   *
+   * @var \Drupal\Core\Config\ConfigFactory|\PHPUnit_Framework_MockObject_MockObject
+   */
+  private $configFactory;
+
+  /**
+   * Settings.
+   *
+   * @var \Drupal\Core\Config\Config|\PHPUnit_Framework_MockObject_MockObject
+   */
+  private $settings;
+
+  /**
    * {@inheritdoc}
    */
   public function setUp() {
@@ -109,6 +119,7 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
     $this->contentHubSubscription = $this->getMockBuilder('\Drupal\acquia_contenthub\ContentHubSubscription')
       ->disableOriginalConstructor()
       ->getMock();
+    $this->configFactory = $this->getMock('Drupal\Core\Config\ConfigFactoryInterface');
   }
 
   /**
@@ -133,7 +144,20 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
       ->with(['entity_type_1'])
       ->willReturn([]);
 
-    $content_entity_view_modes_extractor = new ContentEntityViewModesExtractor($this->currentUser, $this->entityDisplayRepository, $this->entityTypeManager, $this->renderer, $this->kernel, $this->accountSwitcher, $this->contentHubSubscription);
+    $config = $this->getMockBuilder('Drupal\Core\Config\Config')
+      ->disableOriginalConstructor()
+      ->getMock();
+    $config->expects($this->once())
+      ->method('get')
+      ->with('user_role')
+      ->willReturn(AccountInterface::ANONYMOUS_ROLE);
+
+    $this->configFactory->expects($this->once())
+      ->method('get')
+      ->with('acquia_contenthub.entity_config')
+      ->willReturn($config);
+
+    $content_entity_view_modes_extractor = new ContentEntityViewModesExtractor($this->currentUser, $this->entityDisplayRepository, $this->entityTypeManager, $this->renderer, $this->kernel, $this->accountSwitcher, $this->contentHubSubscription, $this->configFactory);
     $rendered_view_modes = $content_entity_view_modes_extractor->getRenderedViewModes($this->contentEntity);
 
     $this->assertNull($rendered_view_modes);
@@ -173,11 +197,11 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
       ->with('bundle_1')
       ->willReturn(['view_mode_2']);
     $this->entityDisplayRepository->expects($this->once())
-      ->method('getViewModes')
-      ->with('entity_type_1')
+      ->method('getViewModeOptionsByBundle')
+      ->with('entity_type_1', 'bundle_1')
       ->willReturn([
-        'view_mode_1' => ['label' => 'view_mode_1 label'],
-        'view_mode_2' => ['label' => 'view_mode_2 label'],
+        'view_mode_1' => 'view_mode_1 label',
+        'view_mode_2' => 'view_mode_2 label',
       ]);
 
     $this->entityTypeConfig->expects($this->once())
@@ -266,7 +290,20 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
       ->method('handle')
       ->willReturn($response);
 
-    $content_entity_view_modes_extractor = new ContentEntityViewModesExtractor($this->currentUser, $this->entityDisplayRepository, $this->entityTypeManager, $this->renderer, $this->kernel, $this->accountSwitcher, $this->contentHubSubscription);
+    $config = $this->getMockBuilder('Drupal\Core\Config\Config')
+      ->disableOriginalConstructor()
+      ->getMock();
+    $config->expects($this->once())
+      ->method('get')
+      ->with('user_role')
+      ->willReturn(AccountInterface::ANONYMOUS_ROLE);
+
+    $this->configFactory->expects($this->once())
+      ->method('get')
+      ->with('acquia_contenthub.entity_config')
+      ->willReturn($config);
+
+    $content_entity_view_modes_extractor = new ContentEntityViewModesExtractor($this->currentUser, $this->entityDisplayRepository, $this->entityTypeManager, $this->renderer, $this->kernel, $this->accountSwitcher, $this->contentHubSubscription, $this->configFactory);
     $rendered_view_modes = $content_entity_view_modes_extractor->getRenderedViewModes($this->contentEntity);
 
     $expected_rendered_view_modes = [
