@@ -108,7 +108,7 @@ class ClientManager implements ClientManagerInterface {
         return FALSE;
       }
 
-      $this->client = new ContentHub($api, $secret, $origin, $config);
+      $this->client = new ContentHub($api, $secret, $origin, $config, 'Drupal8');
     }
     return $this;
   }
@@ -149,7 +149,7 @@ class ClientManager implements ClientManagerInterface {
       'client-user-agent' => $client_user_agent,
     ], $config);
 
-    $this->client = new ContentHub($api, $secret, $origin, $config);
+    $this->client = new ContentHub($api, $secret, $origin, $config, 'Drupal8');
   }
 
   /**
