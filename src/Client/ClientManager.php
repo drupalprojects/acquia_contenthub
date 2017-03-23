@@ -94,6 +94,9 @@ class ClientManager implements ClientManagerInterface {
       $config = array_merge([
         'base_url' => $hostname,
         'client-user-agent' => $client_user_agent,
+        'adapterConfig' => [
+          'schemaId' => 'Drupal8',
+        ],
       ], $config);
 
       // Get API information.
@@ -108,7 +111,7 @@ class ClientManager implements ClientManagerInterface {
         return FALSE;
       }
 
-      $this->client = new ContentHub($api, $secret, $origin, $config, 'Drupal8');
+      $this->client = new ContentHub($api, $secret, $origin, $config);
     }
     return $this;
   }
@@ -147,9 +150,12 @@ class ClientManager implements ClientManagerInterface {
     $config = array_merge([
       'base_url' => $hostname,
       'client-user-agent' => $client_user_agent,
+      'adapterConfig' => [
+        'schemaId' => 'Drupal8',
+      ],
     ], $config);
 
-    $this->client = new ContentHub($api, $secret, $origin, $config, 'Drupal8');
+    $this->client = new ContentHub($api, $secret, $origin, $config);
   }
 
   /**
