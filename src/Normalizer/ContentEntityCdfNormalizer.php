@@ -1022,7 +1022,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       if (in_array($language, $langcodes)) {
         if ($entity->hasTranslation($language)) {
           $localized_entity = $entity->getTranslation($language);
-          $entity = $this->addFieldsToDrupalEntity($entity, $contenthub_entity, $language, $context);
+          $entity = $this->addFieldsToDrupalEntity($localized_entity, $contenthub_entity, $language, $context);
         }
         else {
           if ($language == LanguageInterface::LANGCODE_NOT_SPECIFIED || $language == LanguageInterface::LANGCODE_NOT_APPLICABLE) {
