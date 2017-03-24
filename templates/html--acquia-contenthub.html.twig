@@ -33,6 +33,8 @@
   </head>
   <body{{ attributes }}>
     {{ page }}
-    <js-bottom-placeholder token="{{ placeholder_token }}">
+    <div data-content-barrier-exclude="true">
+      <js-bottom-placeholder token="{{ placeholder_token }}">
+    </div>
   </body>
 </html>

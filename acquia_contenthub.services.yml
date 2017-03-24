@@ -63,6 +63,12 @@ services:
     tags:
       - { name: event_subscriber }
 
+  acquia_contenthub.page_display_variant_subscriber:
+    class: Drupal\acquia_contenthub\EventSubscriber\ContentHubPageDisplayVariantSubscriber
+    arguments: ['@current_route_match']
+    tags:
+      - { name: event_subscriber }
+
   cache.acquia_contenthub:
     class: Drupal\Core\Cache\CacheBackendInterface
     tags:

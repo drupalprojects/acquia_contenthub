@@ -213,5 +213,19 @@ function acquia_contenthub_theme($existing, $type, $theme, $path) {
       'render element' => 'page',
       'preprocess functions' => ['template_preprocess_page'],
     ],
+    'region__content__acquia_contenthub' => [
+      'template' => 'region--content--acquia-contenthub',
+      'render element' => 'elements',
+      'preprocess functions' => ['template_preprocess_region'],
+    ],
   ];
+}
+
+/**
+ * Implements hook_theme_suggestions_HOOK().
+ */
+function acquia_contenthub_theme_suggestions_region(array $variables) {
+  if ($variables['elements']['#region'] == 'content' && \Drupal::routeMatch()->getRouteName() == 'acquia_contenthub.content_entity_display.entity') {
+    return ['region__content__acquia_contenthub'];
+  }
 }

@@ -102,6 +102,13 @@ class IntegrationTest extends WebTestBase {
     $this->field->save();
 
     // Create a display for the full view mode.
+    entity_get_display('node', 'article', 'full')
+      ->setComponent('test_field_01', array(
+        'type' => 'boolean',
+      ))
+      ->save();
+
+    // Create a display for the teaser view mode.
     entity_get_display('node', 'article', 'teaser')
       ->setComponent('test_field_01', array(
         'type' => 'boolean',
@@ -177,6 +184,7 @@ class IntegrationTest extends WebTestBase {
     // Check if the test field rendered properly.
     $this->setRoleFor(AccountInterface::ANONYMOUS_ROLE);
     $this->checkFieldAccessViewMode($this->article, 'teaser');
+    $this->checkCdfMarkup($this->article);
     $this->setRoleFor(AccountInterface::ANONYMOUS_ROLE);
     $this->checkFieldAccessViewMode($this->article, 'teaser', FALSE, FALSE);
     $this->setRoleFor($this->adminRole);
@@ -214,6 +222,40 @@ class IntegrationTest extends WebTestBase {
     else {
       $this->assertFalse(isset($output['entities']['0']), 'CDF is not present');
     }
+  }
+
+  /**
+   * Ensures the rendered view mode have no extra markup.
+   *
+   * @param \Drupal\node\NodeInterface $entity
+   *   The entity to be used.
+   */
+  public function checkCdfMarkup(NodeInterface $entity) {
+    $this->enableViewModeFor('node', 'article', ['default', 'full', 'teaser']);
+    $output = $this->drupalGetJSON($entity->getEntityTypeId() . '/' . $entity->id(), ['query' => ['_format' => 'acquia_contenthub_cdf']]);
+
+    $this->setRawContent($output['entities'][0]['metadata']['view_modes']['default']['html']);
+    $this->removeWhiteSpace();
+    $expected = '</head><body><article role="article" class="node node--type-article node--promoted node--view-mode-default"><h2><a href="/node/1" rel="bookmark"><span class="field field--name-title field--type-string field--label-hidden">';
+    $this->assertRaw($expected, 'Default view mode have no extra markup.');
+    $expected = '</article><div data-content-barrier-exclude="true"></div></body></html>';
+    $this->assertRaw($expected, 'Default view mode footer JS is wrapped into div with data-content-barrier-exclude attribute.');
+
+    $this->setRawContent($output['entities'][0]['metadata']['view_modes']['full']['html']);
+    $this->removeWhiteSpace();
+    $expected = '</head><body><article role="article" class="node node--type-article node--promoted node--view-mode-full"><h2><a href="/node/1" rel="bookmark"><span class="field field--name-title field--type-string field--label-hidden">';
+    $this->assertRaw($expected, 'Full view mode have no extra markup.');
+    $expected = '</article><div data-content-barrier-exclude="true"></div></body></html>';
+    $this->assertRaw($expected, 'Full view mode footer JS is wrapped into div with data-content-barrier-exclude attribute.');
+
+    $this->setRawContent($output['entities'][0]['metadata']['view_modes']['teaser']['html']);
+    $this->removeWhiteSpace();
+    $expected = '</head><body><article role="article" class="node node--type-article node--promoted node--view-mode-teaser"><h2><a href="/node/1" rel="bookmark"><span class="field field--name-title field--type-string field--label-hidden">';
+    $this->assertRaw($expected, 'Teaser view mode have no extra markup.');
+    $expected = '</article><div data-content-barrier-exclude="true"></div></body></html>';
+    $this->assertRaw($expected, 'Teaser view mode footer JS is wrapped into div with data-content-barrier-exclude attribute.');
+
+    $this->enableViewModeFor('node', 'article', 'teaser');
   }
 
   /**
@@ -277,8 +319,8 @@ class IntegrationTest extends WebTestBase {
    *   The entity type.
    * @param string $bundle
    *   The bundle.
-   * @param string $view_mode
-   *   The view mode to enable.
+   * @param string|array $view_mode
+   *   The view mode(s) to enable.
    */
   public function enableViewModeFor($entity_type, $bundle, $view_mode) {
     $this->drupalGet('admin/config/services/acquia-contenthub/configuration');
@@ -286,8 +328,16 @@ class IntegrationTest extends WebTestBase {
 
     $edit = [
       'entities[' . $entity_type . '][' . $bundle . '][enable_viewmodes]' => TRUE,
-      'entities[' . $entity_type . '][' . $bundle . '][rendering][]' => [$view_mode],
     ];
+    if (is_array($view_mode)) {
+      foreach ($view_mode as $value) {
+        $edit['entities[' . $entity_type . '][' . $bundle . '][rendering][]'][$value] = $value;
+      }
+    }
+    else {
+      $edit['entities[' . $entity_type . '][' . $bundle . '][rendering][]'] = [$view_mode];
+    }
+
     $this->drupalPostForm(NULL, $edit, $this->t('Save configuration'));
     $this->assertResponse(200);
 
