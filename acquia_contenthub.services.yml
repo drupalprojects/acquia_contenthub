@@ -29,7 +29,7 @@ services:
 
   acquia_contenthub.client_manager:
     class: Drupal\acquia_contenthub\Client\ClientManager
-    arguments: ['@logger.factory', '@config.factory']
+    arguments: ['@logger.factory', '@config.factory', '@language_manager']
 
   acquia_contenthub.normalizer.entity.acquia_contenthub_cdf:
     class: Drupal\acquia_contenthub\Normalizer\ContentEntityCdfNormalizer

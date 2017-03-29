@@ -11,6 +11,7 @@ use \GuzzleHttp\Exception\ClientException as ClientException;
 use \GuzzleHttp\Exception\BadResponseException as BadResponseException;
 use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\Core\Config\ConfigFactory;
+use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Component\Render\FormattableMarkup;
 use Symfony\Component\HttpFoundation\Request as Request;
 use Drupal\Component\Uuid\Uuid;
@@ -42,6 +43,11 @@ class ClientManager implements ClientManagerInterface {
   protected $client;
 
   /**
+   * The language manager.
+   */
+  protected $languageManager;
+
+  /**
    * The Drupal Configuration.
    *
    * @var \Drupal\Core\Config\Config
@@ -55,10 +61,13 @@ class ClientManager implements ClientManagerInterface {
    *   The logger factory.
    * @param \Drupal\Core\Config\ConfigFactory $config_factory
    *   The config factory.
+   * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
+   *   The language manager.
    */
-  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory) {
+  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, LanguageManagerInterface $language_manager) {
     $this->loggerFactory = $logger_factory;
     $this->configFactory = $config_factory;
+    $this->languageManager = $language_manager;
 
     // Get the content hub config settings.
     $this->config = $this->configFactory->get('acquia_contenthub.admin_settings');
@@ -96,6 +105,7 @@ class ClientManager implements ClientManagerInterface {
         'client-user-agent' => $client_user_agent,
         'adapterConfig' => [
           'schemaId' => 'Drupal8',
+          'defaultLanguageId' => $this->languageManager->getDefaultLanguage()->getId(),
         ],
       ], $config);
 
@@ -152,6 +162,7 @@ class ClientManager implements ClientManagerInterface {
       'client-user-agent' => $client_user_agent,
       'adapterConfig' => [
         'schemaId' => 'Drupal8',
+        'defaultLanguageId' => $this->languageManager->getDefaultLanguage()->getId(),
       ],
     ], $config);
 
