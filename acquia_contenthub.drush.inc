@@ -129,17 +129,17 @@ function acquia_contenthub_drush_command() {
     'aliases' => ['ach-upsec'],
   ];
 
-  $items['acquia-contenthub-connect-site'] = array(
+  $items['acquia-contenthub-connect-site'] = [
     'description' => "Connects a site with contenthub.",
     'aliases' => ['ach-connect'],
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
-  );
-  $items['acquia-contenthub-disconnect-site'] = array(
+  ];
+  $items['acquia-contenthub-disconnect-site'] = [
     'description' => 'Disconnects a site with contenthub.',
     'aliases' => ['ach-disconnect'],
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
-  );
-  $items['acquia-contenthub-webhooks'] = array(
+  ];
+  $items['acquia-contenthub-webhooks'] = [
     'description' => dt("Perform a webhook management operation."),
     'aliases' => ['ach-wh'],
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
@@ -150,7 +150,7 @@ function acquia_contenthub_drush_command() {
     'options' => [
       'webhook_url' => dt('The webhook URL to register or unregister.'),
     ],
-  );
+  ];
   return $items;
 }
 

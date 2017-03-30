@@ -110,15 +110,15 @@ class EntityManager {
    * @param \Drupal\Core\Logger\LoggerChannelFactory $logger_factory
    *   The logger factory.
    * @param \Drupal\Core\Config\ConfigFactory $config_factory
-   *    The config factory.
+   *   The config factory.
    * @param \Drupal\acquia_contenthub\Client\ClientManagerInterface $client_manager
-   *    The client manager.
+   *   The client manager.
    * @param \Drupal\acquia_contenthub\ContentHubEntitiesTracking $acquia_contenthub_entities_tracking
-   *    The Content Hub Entities Tracking.
+   *   The Content Hub Entities Tracking.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
-   *    The Entity Type Manager.
+   *   The Entity Type Manager.
    * @param \Drupal\Core\Entity\EntityTypeBundleInfoInterface $entity_type_bundle_info_manager
-   *    The Entity Type Bundle Info Manager.
+   *   The Entity Type Bundle Info Manager.
    */
   public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager, ContentHubEntitiesTracking $acquia_contenthub_entities_tracking, EntityTypeManagerInterface $entity_type_manager, EntityTypeBundleInfoInterface $entity_type_bundle_info_manager) {
     $this->baseRoot = isset($GLOBALS['base_root']) ? $GLOBALS['base_root'] : '';

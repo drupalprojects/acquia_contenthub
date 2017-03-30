@@ -82,37 +82,37 @@ class IntegrationTest extends WebTestBase {
     $this->limitedRole = $this->createRole(['access content']);
 
     // Create a field to test access.
-    $this->fieldStorage = FieldStorageConfig::create(array(
+    $this->fieldStorage = FieldStorageConfig::create([
       'field_name' => 'test_field_01',
       'entity_type' => 'node',
       'type' => 'boolean',
-    ));
+    ]);
     $this->fieldStorage->save();
-    $this->field = FieldConfig::create(array(
+    $this->field = FieldConfig::create([
       'field_name' => 'test_field_01',
       'entity_type' => 'node',
       'bundle' => 'article',
       'label' => 'Test',
       'required' => TRUE,
-      'settings' => array(
+      'settings' => [
         'on_label' => 'field_test_01_on',
         'off_label' => 'field_test_01_off',
-      ),
-    ));
+      ],
+    ]);
     $this->field->save();
 
     // Create a display for the full view mode.
     entity_get_display('node', 'article', 'full')
-      ->setComponent('test_field_01', array(
+      ->setComponent('test_field_01', [
         'type' => 'boolean',
-      ))
+      ])
       ->save();
 
     // Create a display for the teaser view mode.
     entity_get_display('node', 'article', 'teaser')
-      ->setComponent('test_field_01', array(
+      ->setComponent('test_field_01', [
         'type' => 'boolean',
-      ))
+      ])
       ->save();
   }
 
