@@ -883,6 +883,12 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         'promote',
       ],
 
+      // Excluded fields for media.
+      'media' => [
+        'mid',
+        'vid',
+      ],
+
       // Excluded fields for paragraphs.
       'paragraph' => [
         'revision_id',
