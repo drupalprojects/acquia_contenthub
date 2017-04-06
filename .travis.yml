@@ -59,6 +59,7 @@ install:
   - composer config --unset repositories.0
   - composer config repositories.drupal composer https://packages.drupal.org/8
   - composer require drupal/core:$DRUPAL --no-update
+  - composer require drupal/search_api:1.0.0-beta4 --no-update
   - composer require drupal/acquia_contenthub:*
   - cat composer.json
     # Adding paragraphs contrib module.
@@ -68,7 +69,7 @@ install:
   - composer install
   - phpenv rehash
   - cd docroot
-  - drush site-install lightning --db-url=mysql://root:@127.0.0.1/drupal --yes
+  - drush site-install lightning --db-url=mysql://root:@127.0.0.1/drupal --yes "install_configure_form.update_status_module='array(FALSE,FALSE)'"
   - cd ../..
 
 before_script:
