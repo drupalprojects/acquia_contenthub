@@ -210,8 +210,9 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
         'entity_type' => $object->getEntityTypeId(),
         'entity_id' => $object->id(),
         'view_mode_name' => $view_mode_id,
-      ])->toString();
+      ])->getInternalPath();
 
+      $url = '/' . $url;
       $request = Request::create($url);
       $request = $this->contentHubSubscription->setHmacAuthorization($request);
 

@@ -243,7 +243,7 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
       ->disableOriginalConstructor()
       ->getMock();
     $url_generator->expects($this->once())
-      ->method('generateFromRoute')
+      ->method('getPathFromRoute')
       ->willReturn('a_generated_url');
 
     \Drupal::setContainer($container);
@@ -311,7 +311,7 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
         'id' => 'view_mode_2',
         'preview_image' => 'file_create_url:a_style_decorated_file_uri',
         'label' => 'view_mode_2 label',
-        'url' => 'a_generated_url',
+        'url' => '/a_generated_url',
         'html' => 'a_html_response_content',
       ],
     ];
