@@ -44,6 +44,8 @@ class ClientManager implements ClientManagerInterface {
 
   /**
    * The language manager.
+   *
+   * @var \Drupal\Core\Language\LanguageManagerInterface
    */
   protected $languageManager;
 
