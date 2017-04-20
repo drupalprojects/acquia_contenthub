@@ -24,13 +24,6 @@ class ImportEntityManagerTest extends UnitTestCase {
   private $contentHubEntitiesTracking;
 
   /**
-   * The Content Hub Import Controller.
-   *
-   * @var \Drupal\acquia_contenthub\Controller\ContentHubEntityImportController|\PHPUnit_Framework_MockObject_MockObject
-   */
-  private $contentHubImportController;
-
-  /**
    * Diff module's entity comparison service.
    *
    * @var Drupal\diff\DiffEntityComparison|\PHPUnit_Framework_MockObject_MockObject
@@ -43,6 +36,13 @@ class ImportEntityManagerTest extends UnitTestCase {
    * @var \Drupal\acquia_contenthub\ImportEntityManager
    */
   private $importEntityManager;
+
+  /**
+   * The Content Hub Entity Manager.
+   *
+   * @var \Drupal\acquia_contenthub\EntityManager
+   */
+  private $entityManager;
 
   /**
    * {@inheritdoc}
@@ -65,7 +65,24 @@ class ImportEntityManagerTest extends UnitTestCase {
     $this->diffEntityComparison = $this->getMockBuilder('Drupal\diff\DiffEntityComparison')
       ->disableOriginalConstructor()
       ->getMock();
-    $this->importEntityManager = new ImportEntityManager($this->database, $this->loggerFactory, $this->serializer, $this->entityRepository, $this->clientManager, $this->contentHubEntitiesTracking, $this->diffEntityComparison);
+    $this->entityManager = $this->getMockBuilder('Drupal\acquia_contenthub\EntityManager')
+      ->disableOriginalConstructor()
+      ->getMock();
+    $this->translation_manager = $this->getMockBuilder('Drupal\Core\StringTranslation\TranslationInterface')
+      ->disableOriginalConstructor()
+      ->getMock();
+
+    $this->importEntityManager = new ImportEntityManager(
+      $this->database,
+      $this->loggerFactory,
+      $this->serializer,
+      $this->entityRepository,
+      $this->clientManager,
+      $this->contentHubEntitiesTracking,
+      $this->diffEntityComparison,
+      $this->entityManager,
+      $this->translation_manager
+    );
   }
 
   /**
@@ -157,6 +174,7 @@ class ImportEntityManagerTest extends UnitTestCase {
     $this->clientManager->expects($this->once())
       ->method('createRequest')
       ->with('readEntity', [$uuid]);
+
     $this->importEntityManager->entityUpdate($node);
   }
 
@@ -438,6 +456,66 @@ class ImportEntityManagerTest extends UnitTestCase {
       ->method('save');
 
     $this->importEntityManager->entityPresave($node);
+  }
+
+  /**
+   * Tests the importRemoteEntity() method.
+   *
+   * @covers ::entityPresave
+   */
+  public function testImportRemoteEntityMissingEntityWithRequiredBundle() {
+    $uuid = '11111111-1111-1111-1111-111111111111';
+    $site_origin = '11111111-2222-1111-1111-111111111111';
+
+    $entity = $this->getMock('Acquia\ContentHubClient\Entity');
+    $original_node = $this->getMock('\Drupal\node\NodeInterface');
+    $entity->original = $original_node;
+
+    $entity->expects($this->any())
+      ->method('id')
+      ->willReturn(12);
+    $entity->expects($this->any())
+      ->method('getEntityTypeId')
+      ->willReturn('node');
+    $entity->expects($this->any())
+      ->method('getUuid')
+      ->willReturn($uuid);
+    $entity->expects($this->any())
+      ->method('getType')
+      ->willReturn('node');
+    $entity->expects($this->any())
+      ->method('getOrigin')
+      ->willReturn($uuid);
+    $entity->expects($this->any())
+      ->method('getAttribute')
+      ->with('type')
+      ->willReturn(['value' => ['test_1']]);
+
+    $this->contentHubEntitiesTracking->expects($this->any())
+      ->method('getSiteOrigin')
+      ->willReturn($site_origin);
+
+    $this->clientManager->expects($this->any())
+      ->method('createRequest')
+      ->with('readEntity', [$uuid])
+      ->willReturn($entity);
+
+    $this->entityManager->expects($this->any())
+      ->method('getAllowedEntityTypes')
+      ->willReturn(['node' => ['test' => 'Test content type']]);
+
+    $loggerChannelInterface = $this->getMock('\Drupal\Core\Logger\LoggerChannelInterface');
+    $this->loggerFactory->expects($this->once())
+      ->method('get')
+      ->with('acquia_contenthub')
+      ->willReturn($loggerChannelInterface);
+
+    $this->loggerFactory->expects($this->any())
+      ->method('warning');
+
+    $result = $this->importEntityManager->importRemoteEntity($uuid, FALSE);
+    $status_code = json_decode($result->getStatusCode());
+    $this->assertEquals($status_code, 403);
   }
 
 }

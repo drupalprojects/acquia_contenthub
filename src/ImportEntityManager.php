@@ -7,11 +7,12 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Component\Uuid\Uuid;
-use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\Core\StringTranslation\TranslationInterface;
 use Drupal\diff\DiffEntityComparison;
 use Drupal\acquia_contenthub\Client\ClientManagerInterface;
 
@@ -19,6 +20,8 @@ use Drupal\acquia_contenthub\Client\ClientManagerInterface;
  * Provides a service for managing imported entities' actions.
  */
 class ImportEntityManager {
+
+  use StringTranslationTrait;
 
   private $format = 'acquia_contenthub_cdf';
 
@@ -72,6 +75,13 @@ class ImportEntityManager {
   private $diffEntityComparison;
 
   /**
+   * The content hub entity manager.
+   *
+   * @var \Drupal\acquia_contenthub\EntityManager
+   */
+  private $entityManager;
+
+  /**
    * Implements the static interface create method.
    */
   public static function create(ContainerInterface $container) {
@@ -82,7 +92,9 @@ class ImportEntityManager {
       $container->get('entity.repository'),
       $container->get('acquia_contenthub.client_manager'),
       $container->get('acquia_contenthub.acquia_contenthub_entities_tracking'),
-      $container->get('diff.entity_comparison')
+      $container->get('diff.entity_comparison'),
+      $container->get('acquia_contenthub.entity_manager'),
+      $container->get('string_translation')
     );
   }
 
@@ -103,8 +115,12 @@ class ImportEntityManager {
    *   The Content Hub Entities Tracking Service.
    * @param \Drupal\diff\DiffEntityComparison $entity_comparison
    *   The Diff module's Entity Comparison service.
+   * @param \Drupal\acquia_contenthub\EntityManager $entity_manager
+   *   The entity manager for Content Hub.
+   * @param \Drupal\Core\StringTranslation\TranslationInterface $string_translation
+   *   The string translation service.
    */
-  public function __construct(Connection $database, LoggerChannelFactory $logger_factory, SerializerInterface $serializer, EntityRepositoryInterface $entity_repository, ClientManagerInterface $client_manager, ContentHubEntitiesTracking $entities_tracking, DiffEntityComparison $entity_comparison) {
+  public function __construct(Connection $database, LoggerChannelFactory $logger_factory, SerializerInterface $serializer, EntityRepositoryInterface $entity_repository, ClientManagerInterface $client_manager, ContentHubEntitiesTracking $entities_tracking, DiffEntityComparison $entity_comparison, EntityManager $entity_manager, TranslationInterface $string_translation) {
     $this->database = $database;
     $this->loggerFactory = $logger_factory;
     $this->serializer = $serializer;
@@ -112,6 +128,8 @@ class ImportEntityManager {
     $this->clientManager = $client_manager;
     $this->contentHubEntitiesTracking = $entities_tracking;
     $this->diffEntityComparison = $entity_comparison;
+    $this->entityManager = $entity_manager;
+    $this->stringTranslation = $string_translation;
   }
 
   /**
@@ -210,6 +228,7 @@ class ImportEntityManager {
     if (!$entity) {
       return FALSE;
     }
+
     return new ContentHubEntityDependency($entity);
   }
 
@@ -321,7 +340,7 @@ class ImportEntityManager {
     // If the Entity is not found in Content Hub then return a 404 Not Found.
     $contenthub_entity = $this->loadRemoteEntity($uuid);
     if (!$contenthub_entity) {
-      $message = t('Entity with UUID = @uuid not found.', array(
+      $message = $this->t('Entity with UUID = @uuid not found.', array(
         '@uuid' => $uuid,
       ));
       return $this->jsonErrorResponseMessage($message, FALSE, 404);
@@ -337,8 +356,25 @@ class ImportEntityManager {
         '@uuid' => $contenthub_entity->getRawEntity()->getUuid(),
         '@origin' => $origin,
       );
-      $message = new FormattableMarkup('Cannot save "@type" entity with uuid="@uuid". It has the same origin as this site: "@origin"', $args);
-      $this->loggerFactory->get('acquia_contenthub')->debug($message);
+      $message = $this->t('Cannot save "@type" entity with uuid="@uuid". It has the same origin as this site: "@origin"', $args);
+      $this->loggerFactory->get('acquia_contenthub')->warning($message);
+      $result = FALSE;
+      return $this->jsonErrorResponseMessage($message, $result, 403);
+    }
+
+    // Checking if bundle exists.
+    $allowed_entity_types = $this->entityManager->getAllowedEntityTypes();
+    $contenthub_entity_attribute = $contenthub_entity->getRawEntity()->getAttribute('type')['value'];
+    $contenthub_entity_bundle = $contenthub_entity_attribute ? reset($contenthub_entity_attribute) : NULL;
+
+    if ($contenthub_entity_bundle && !array_key_exists($contenthub_entity_bundle, $allowed_entity_types[$contenthub_entity->getRawEntity()->getType()])) {
+      $args = array(
+        '@type' => $contenthub_entity->getRawEntity()->getType(),
+        '@uuid' => $contenthub_entity->getRawEntity()->getUuid(),
+        '@bundle' => $contenthub_entity_bundle,
+      );
+      $message = $this->t('Cannot save "@type" entity with uuid="@uuid". Missing "@type" entity with bundle "@bundle"', $args);
+      $this->loggerFactory->get('acquia_contenthub')->warning($message);
       $result = FALSE;
       return $this->jsonErrorResponseMessage($message, $result, 403);
     }
@@ -445,7 +481,7 @@ class ImportEntityManager {
         '@uuid' => $contenthub_entity->getRawEntity()->getUuid(),
         '@origin' => $contenthub_entity->getRawEntity()->getOrigin(),
       );
-      $message = new FormattableMarkup('Cannot save "@type" entity with uuid="@uuid". It has the same origin as this site: "@origin"', $args);
+      $message = $this->t('Cannot save "@type" entity with uuid="@uuid". It has the same origin as this site: "@origin"', $args);
       $this->loggerFactory->get('acquia_contenthub')->debug($message);
       return $this->jsonErrorResponseMessage($message, FALSE, 400);
     }
@@ -587,14 +623,14 @@ class ImportEntityManager {
         '%type' => $this->contentHubEntitiesTracking->getEntityType(),
         '%uuid' => $this->contentHubEntitiesTracking->getUuid(),
       );
-      $message = new FormattableMarkup('Imported entity type = %type with uuid=%uuid could not be saved in the tracking table.', $args);
+      $message = $this->t('Imported entity type = %type with uuid=%uuid could not be saved in the tracking table.', $args);
     }
     else {
       $args = array(
         '%type' => $this->contentHubEntitiesTracking->getEntityType(),
         '%uuid' => $this->contentHubEntitiesTracking->getUuid(),
       );
-      $message = new FormattableMarkup('Saving %type entity with uuid=%uuid. Tracking imported entity with auto updates.', $args);
+      $message = $this->t('Saving %type entity with uuid=%uuid. Tracking imported entity with auto updates.', $args);
     }
     $this->loggerFactory->get('acquia_contenthub')->debug($message);
   }
