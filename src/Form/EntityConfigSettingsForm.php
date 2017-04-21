@@ -386,7 +386,7 @@ class EntityConfigSettingsForm extends ConfigFormBase {
       }
       else {
         // Update Configuration entity.
-        $contenthub_entity_config_ids[$entity_type]->setBundles($bundles);
+        $contenthub_entity_config_ids[$entity_type]->setBundles(array_replace_recursive($contenthub_entity_config_ids[$entity_type]->getBundles(), $bundles));
         $contenthub_entity_config_ids[$entity_type]->save();
       }
     }
