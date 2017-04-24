@@ -135,6 +135,8 @@ class IntegrationTest extends WebTestBase {
     $this->setRoleFor(AccountInterface::ANONYMOUS_ROLE);
     $this->checkCdfAccess($this->article);
 
+    $this->checkCdfFormat($this->article);
+
     $this->setRoleFor($this->limitedRole);
     $this->checkCdfAccess($this->article);
 
@@ -213,7 +215,7 @@ class IntegrationTest extends WebTestBase {
    *   Expected result.
    */
   public function checkCdfAccess(NodeInterface $entity, $access = TRUE) {
-    $output = $this->drupalGetJSON($entity->getEntityTypeId() . '/' . $entity->id(), ['query' => ['_format' => 'acquia_contenthub_cdf']]);
+    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), ['query' => ['_format' => 'acquia_contenthub_cdf']]);
     $this->assertResponse(200);
 
     if ($access) {
@@ -225,6 +227,29 @@ class IntegrationTest extends WebTestBase {
   }
 
   /**
+   * Ensures the CDF output is present for expected formats.
+   *
+   * @param \Drupal\node\NodeInterface $entity
+   *   The entity to be used.
+   */
+  public function checkCdfFormat(NodeInterface $entity) {
+    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), ['query' => ['_format' => 'acquia_contenthub_cdf']]);
+    $this->assertResponse(200, 'Accept acquia_contenthub_cdf format.');
+    $this->assertEqual($output['entities']['0']['uuid'], $entity->uuid(), 'CDF is present for acquia_contenthub_cdf format.');
+    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), ['query' => ['_format' => 'html']]);
+    $this->assertResponse(200, 'Accept html format (browser default).');
+    $this->assertEqual($output['entities']['0']['uuid'], $entity->uuid(), 'CDF is present for html format.');
+    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), ['query' => ['_format' => 'json']]);
+    $this->assertResponse(200, 'Accept json format.');
+    $this->assertEqual($output['entities']['0']['uuid'], $entity->uuid(), 'CDF is present for json format.');
+    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id());
+    $this->assertResponse(200, 'Accept default format (json is default for tests).');
+    $this->assertEqual($output['entities']['0']['uuid'], $entity->uuid(), 'CDF is present for default format.');
+    $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), ['query' => ['_format' => 'xml']]);
+    $this->assertResponse(406, 'A 406 response was returned when XML was requested.');
+  }
+
+  /**
    * Ensures the rendered view mode have no extra markup.
    *
    * @param \Drupal\node\NodeInterface $entity
@@ -232,7 +257,7 @@ class IntegrationTest extends WebTestBase {
    */
   public function checkCdfMarkup(NodeInterface $entity) {
     $this->enableViewModeFor('node', 'article', ['default', 'full', 'teaser']);
-    $output = $this->drupalGetJSON($entity->getEntityTypeId() . '/' . $entity->id(), ['query' => ['_format' => 'acquia_contenthub_cdf']]);
+    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), ['query' => ['_format' => 'acquia_contenthub_cdf']]);
 
     $this->setRawContent($output['entities'][0]['metadata']['view_modes']['default']['html']);
     $this->removeWhiteSpace();
@@ -271,7 +296,7 @@ class IntegrationTest extends WebTestBase {
   public function checkCdfFieldAccess(NodeInterface $entity, $access = TRUE, $field_access = TRUE) {
     // Tell the test module to disable access to the field.
     \Drupal::state()->set('field.test_boolean_field_access_field', $field_access ? '' : 'test_field_01');
-    $output = $this->drupalGetJSON($entity->getEntityTypeId() . '/' . $entity->id(), ['query' => ['_format' => 'acquia_contenthub_cdf']]);
+    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), ['query' => ['_format' => 'acquia_contenthub_cdf']]);
     $this->assertResponse(200);
 
     if ($access) {
@@ -301,7 +326,7 @@ class IntegrationTest extends WebTestBase {
    *   The view mode to check in the CDF.
    */
   public function checkCdfOutput(NodeInterface $entity, $view_mode = NULL) {
-    $output = $this->drupalGetJSON($entity->getEntityTypeId() . '/' . $entity->id(), ['query' => ['_format' => 'acquia_contenthub_cdf']]);
+    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), ['query' => ['_format' => 'acquia_contenthub_cdf']]);
     $this->assertResponse(200);
     if (!empty($view_mode)) {
       $this->assertTrue(isset($output['entities']['0']['metadata']), 'Metadata is present');

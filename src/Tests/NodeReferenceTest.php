@@ -70,7 +70,7 @@ class NodeReferenceTest extends WebTestBase {
 
     // The CDF Output for entity 5 should not show entity 1 due to the
     // maximum default dependency depth of 3.
-    $output = $this->drupalGetJSON($entity5->getEntityTypeId() . '/' . $entity5->id(), array(
+    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity5->getEntityTypeId() . '/' . $entity5->id(), array(
       'query' => array(
         '_format' => 'acquia_contenthub_cdf',
         'include_references' => 'true',
@@ -84,7 +84,7 @@ class NodeReferenceTest extends WebTestBase {
 
     // The CDF Output for entity 4 should show entity 1 because it includes that
     // entity by using maximum dependency depth of 3.
-    $output = $this->drupalGetJSON($entity4->getEntityTypeId() . '/' . $entity4->id(), array(
+    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity4->getEntityTypeId() . '/' . $entity4->id(), array(
       'query' => array(
         '_format' => 'acquia_contenthub_cdf',
         'include_references' => 'true',
@@ -103,7 +103,7 @@ class NodeReferenceTest extends WebTestBase {
 
     // The CDF Output for entity 5 should now show entity 1 too due to the
     // maximum dependency depth of 4.
-    $output = $this->drupalGetJSON($entity5->getEntityTypeId() . '/' . $entity5->id(), array(
+    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity5->getEntityTypeId() . '/' . $entity5->id(), array(
       'query' => array(
         '_format' => 'acquia_contenthub_cdf',
         'include_references' => 'true',
@@ -122,7 +122,7 @@ class NodeReferenceTest extends WebTestBase {
 
     // The CDF Output for entity 5 should not show entity 1 nor entity 2 due
     // to the maximum dependency depth of 2.
-    $output = $this->drupalGetJSON($entity5->getEntityTypeId() . '/' . $entity5->id(), array(
+    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity5->getEntityTypeId() . '/' . $entity5->id(), array(
       'query' => array(
         '_format' => 'acquia_contenthub_cdf',
         'include_references' => 'true',

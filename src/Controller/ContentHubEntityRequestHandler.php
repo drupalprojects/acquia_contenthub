@@ -79,6 +79,10 @@ class ContentHubEntityRequestHandler extends RequestHandler {
     // defaults).
     $method = 'GET';
     $format = 'acquia_contenthub_cdf';
+    // Force the acquia_contenthub_cdf format.
+    if ($request->getRequestFormat() !== $format) {
+      $request->setRequestFormat($format);
+    }
     $resource = $this->resourcePluginManager->createInstance($route_match->getRouteObject()->getDefault('_acquia_content_hub_rest_resource_plugin_id'));
 
     // EVERYTHING BELOW THIS IS MERE DUPLICATION OF THE DECORATED CLASS IN THE

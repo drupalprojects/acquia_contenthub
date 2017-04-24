@@ -108,7 +108,7 @@ class ParagraphsTest extends SimpletestWebTestBase {
    * Ensures the CDF output is what we expect it to be.
    */
   public function checkCdfOutput() {
-    $output = $this->drupalGetJSON($this->node->getEntityTypeId() . '/' . $this->node->id(), [
+    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $this->node->getEntityTypeId() . '/' . $this->node->id(), [
       'query' => [
         '_format' => 'acquia_contenthub_cdf',
       ],
@@ -126,7 +126,7 @@ class ParagraphsTest extends SimpletestWebTestBase {
     $this->assertEqual($output['entities']['0']['attributes']['field_client_data']['type'], 'array<reference>');
     $this->assertTrue(Uuid::isValid($paragraphs_uuid_0));
 
-    $output = $this->drupalGetJSON('/entity/paragraph/' . $paragraphs_id_0, [
+    $output = $this->drupalGetJSON('acquia-contenthub-cdf/entity/paragraph/' . $paragraphs_id_0, [
       'query' => [
         'entity_type' => 'paragraph',
         'entity_id' => $paragraphs_id_0,
@@ -158,7 +158,7 @@ class ParagraphsTest extends SimpletestWebTestBase {
     $this->assertTrue(Uuid::isValid($paragraphs_uuid_1));
     $this->assertTrue(Uuid::isValid($paragraphs_uuid_2));
 
-    $output = $this->drupalGetJSON('/entity/paragraph/' . $paragraphs_id_1, [
+    $output = $this->drupalGetJSON('acquia-contenthub-cdf/entity/paragraph/' . $paragraphs_id_1, [
       'query' => [
         'entity_type' => 'paragraph',
         'entity_id' => $paragraphs_id_1,
@@ -179,7 +179,7 @@ class ParagraphsTest extends SimpletestWebTestBase {
     $this->assertEqual($output['entities']['0']['attributes']['field_address']['value']['en']['0'], 'Test Address');
     $this->assertEqual($output['entities']['0']['attributes']['field_address_type']['value']['en']['0'], 'Work Address');
 
-    $output = $this->drupalGetJSON('/entity/paragraph/' . $paragraphs_id_2, [
+    $output = $this->drupalGetJSON('acquia-contenthub-cdf/entity/paragraph/' . $paragraphs_id_2, [
       'query' => [
         'entity_type' => 'paragraph',
         'entity_id' => $paragraphs_id_2,
