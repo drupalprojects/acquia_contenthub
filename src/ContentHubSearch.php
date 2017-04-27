@@ -30,7 +30,7 @@ class ContentHubSearch {
    * Constructs an ContentEntityNormalizer object.
    *
    * @param \Drupal\acquia_contenthub\Client\ClientManagerInterface $client_manager
-   *    The client manager.
+   *   The client manager.
    */
   public function __construct(ClientManagerInterface $client_manager) {
     $this->clientManager = $client_manager;

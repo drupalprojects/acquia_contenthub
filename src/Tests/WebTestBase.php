@@ -98,7 +98,7 @@ abstract class WebTestBase extends SimpletestWebTestBase {
     $this->drupalGet('admin/config/services/acquia-contenthub/configuration');
     $this->assertResponse(200);
 
-    $edit = array();
+    $edit = [];
     foreach ($bundles as $bundle) {
       $edit['entities[' . $entity_type . '][' . $bundle . '][enable_index]'] = 1;
     }

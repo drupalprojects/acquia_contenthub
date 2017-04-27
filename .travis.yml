@@ -31,8 +31,7 @@ before_install:
   - composer self-update
 
   # items for phpcs
-  - composer require --dev squizlabs/php_codesniffer:2.8.0
-  - composer require drupal/coder:8.2.10
+  - composer require --dev drupal/coder ^8.2@stable
   - composer install
   - vendor/bin/phpcs --config-set installed_paths vendor/drupal/coder/coder_sniffer
 
@@ -74,7 +73,7 @@ before_script:
   - echo "always_populate_raw_post_data=-1" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
 
 script:
-  - vendor/bin/phpcs -v --standard=Drupal,DrupalPractice --extensions=php,module,inc,install,test,profile,theme,js,css,info,txt --ignore=ember/assets ./build
+  - vendor/bin/phpcs --standard=Drupal --warning-severity=2 --extensions=php,module,inc,install,test,profile,theme,js,css,info,txt,md --ignore=ember/assets ./build
   - cd drupal/docroot
   - mkdir themes
   - cd core

@@ -43,9 +43,9 @@ class ContentHubAccess implements AccessInterface {
    * @param \Drupal\Core\Logger\LoggerChannelFactory $logger_factory
    *   The logger factory.
    * @param \Drupal\acquia_contenthub\Client\ClientManagerInterface $client_manager
-   *    The client manager.
+   *   The client manager.
    * @param \Drupal\acquia_contenthub\ContentHubSubscription $contenthub_subscription
-   *    The Content Hub Subscription.
+   *   The Content Hub Subscription.
    */
   public function __construct(LoggerChannelFactory $logger_factory, ClientManagerInterface $client_manager, ContentHubSubscription $contenthub_subscription) {
     $this->loggerFactory = $logger_factory;
@@ -59,6 +59,10 @@ class ContentHubAccess implements AccessInterface {
    * Only grants access to logged in users with 'Administer Acquia Content Hub'
    * permission or if the request verifies its HMAC signature.
    *
+   * @param \Symfony\Component\Routing\Route $route
+   *   The route object to process.
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The HTTP request object.
    * @param \Drupal\Core\Session\AccountInterface $account
    *   Run access checks for this account.
    *

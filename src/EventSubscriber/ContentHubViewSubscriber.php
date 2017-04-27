@@ -73,7 +73,7 @@ class ContentHubViewSubscriber implements EventSubscriberInterface {
   /**
    * Switch to the render Content Hub user.
    *
-   * @param FilterControllerEvent $event
+   * @param \Symfony\Component\HttpKernel\Event\FilterControllerEvent $event
    *   The filter controller event.
    */
   public function onKernelController(FilterControllerEvent $event) {

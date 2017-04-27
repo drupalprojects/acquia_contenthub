@@ -3,13 +3,12 @@ description: 'Provides Article content type and related configuration. Use <em>a
 type: module
 core: 8.x
 dependencies:
-  - field
-  - file
-  - image
-  - menu_ui
-  - node
-  - path
-  - taxonomy
-  - text
-  - user
-version: 8.x-1.0
+  - drupal:field
+  - drupal:file
+  - drupal:image
+  - drupal:menu_ui
+  - drupal:node
+  - drupal:path
+  - drupal:taxonomy
+  - drupal:text
+  - drupal:user

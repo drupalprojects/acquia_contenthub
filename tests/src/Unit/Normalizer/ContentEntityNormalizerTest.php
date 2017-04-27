@@ -911,13 +911,21 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   /**
    * Creates a mock field list item.
    *
+   * @param string $name
+   *   Name of the mock field.
+   * @param string $type
+   *   Type of the mock field.
    * @param bool $access
-   *   Defines wether anyone has access to this field or not.
+   *   Defines whether anyone has access to this field or not.
+   * @param bool $user_context
+   *   The user context used to view the field.
+   * @param array $return_value
+   *   Expected return value.
    *
    * @return \Drupal\Core\Field\FieldItemListInterface|\PHPUnit_Framework_MockObject_MockObject
    *   The mocked field items.
    */
-  protected function createMockFieldListItem($name, $type = 'string', $access = TRUE, $user_context = NULL, $return_value = []) {
+  protected function createMockFieldListItem($name, $type = 'string', $access = TRUE, $user_context = NULL, array $return_value = []) {
     $mock = $this->getMock('Drupal\Core\Field\FieldItemListInterface');
     $mock->method('access')
       ->with('view', $user_context)
@@ -937,8 +945,12 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   /**
    * Creates a mock field entity reference field item list.
    *
+   * @param string $name
+   *   Name of the mock field.
    * @param bool $access
-   *   Defines wether anyone has access to this field or not.
+   *   Defines whether anyone has access to this field or not.
+   * @param bool $user_context
+   *   The user context used to view the field.
    *
    * @return \Drupal\Core\Field\FieldItemListInterface|\PHPUnit_Framework_MockObject_MockObject
    *   The mocked field items.

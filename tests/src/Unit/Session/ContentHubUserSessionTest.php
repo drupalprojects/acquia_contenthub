@@ -47,7 +47,7 @@ class ContentHubUserSessionTest extends UnitTestCase {
         if ($argument == 'acquia_contenthub.entity_config') {
           $contenthub_entity_config = $this->getMockBuilder('Drupal\Core\Config\ImmutableConfig')
             ->disableOriginalConstructor()
-            ->setMethods(array('get'))
+            ->setMethods(['get'])
             ->getMockForAbstractClass();
           $contenthub_entity_config
             ->method('get')

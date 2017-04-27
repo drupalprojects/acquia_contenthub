@@ -78,13 +78,13 @@ class ContentHubWebhookController extends ControllerBase {
    * @param \Symfony\Component\HttpFoundation\Request $current_request
    *   The current request.
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
-   *    The config factory.
+   *   The config factory.
    * @param \Drupal\acquia_contenthub\Client\ClientManagerInterface $client_manager
-   *    The client manager.
+   *   The client manager.
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
-   *    The Drupal Module Handler.
+   *   The Drupal Module Handler.
    * @param \Drupal\acquia_contenthub\ContentHubSubscription $contenthub_subscription
-   *    The Content Hub Subscription.
+   *   The Content Hub Subscription.
    */
   public function __construct(LoggerChannelFactoryInterface $logger_factory, Request $current_request, ConfigFactoryInterface $config_factory, ClientManagerInterface $client_manager, ModuleHandlerInterface $module_handler, ContentHubSubscription $contenthub_subscription) {
     $this->loggerFactory = $logger_factory;
@@ -101,17 +101,17 @@ class ContentHubWebhookController extends ControllerBase {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    /** @var LoggerChannelFactoryInterface $logger_factory */
+    /** @var \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_factory */
     $logger_factory = $container->get('logger.factory');
-    /** @var Request $current_request */
+    /** @var \Symfony\Component\HttpFoundation\Request $current_request */
     $current_request = $container->get('request_stack')->getCurrentRequest();
-    /** @var ConfigFactoryInterface $config_factory */
+    /** @var \Drupal\Core\Config\ConfigFactoryInterface $config_factory */
     $config_factory = $container->get('config.factory');
-    /** @var ClientManagerInterface $client_manager */
+    /** @var \Drupal\acquia_contenthub\Client\ClientManagerInterface $client_manager */
     $client_manager = $container->get('acquia_contenthub.client_manager');
-    /** @var ModuleHandlerInterface $module_handler */
+    /** @var \Drupal\Core\Extension\ModuleHandlerInterface $module_handler */
     $module_handler = $container->get('module_handler');
-    /** @var ContentHubSubscription $contenthub_subscription */
+    /** @var \Drupal\acquia_contenthub\ContentHubSubscription $contenthub_subscription */
     $contenthub_subscription = $container->get('acquia_contenthub.acquia_contenthub_subscription');
 
     return new static(

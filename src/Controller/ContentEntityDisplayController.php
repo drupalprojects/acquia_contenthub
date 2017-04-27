@@ -41,6 +41,8 @@ class ContentEntityDisplayController extends ControllerBase {
    *
    * @param \Drupal\acquia_contenthub\Normalizer\ContentEntityViewModesExtractor $content_entity_view_modes_extractor
    *   The view modes extractor.
+   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
+   *   The entity manager.
    */
   public function __construct(ContentEntityViewModesExtractor $content_entity_view_modes_extractor, EntityManagerInterface $entity_manager) {
     $this->contentEntityViewModesExtractor = $content_entity_view_modes_extractor;

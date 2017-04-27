@@ -29,13 +29,6 @@ class ContentHubEntitiesTrackingTest extends UnitTestCase {
   protected $siteOrigin = '22222222-2222-2222-2222-222222222222';
 
   /**
-   * {@inheritdoc}
-   */
-  protected function setUp() {
-    parent::setUp();
-  }
-
-  /**
    * Loads a ContentHubEntitiesTracking object.
    *
    * @param array|null $database_entity

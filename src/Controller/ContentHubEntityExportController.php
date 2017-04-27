@@ -65,6 +65,8 @@ class ContentHubEntityExportController extends ControllerBase {
    *   The client manager.
    * @param \Drupal\acquia_contenthub\ContentHubSubscription $contenthub_subscription
    *   The Content Hub Subscription.
+   * @param \Drupal\acquia_contenthub\ContentHubEntitiesTracking $contenthub_entities_tracking
+   *   The table where all entities are tracked.
    * @param \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository
    *   Entity Repository.
    */

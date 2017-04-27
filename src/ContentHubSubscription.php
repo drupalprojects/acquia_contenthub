@@ -66,9 +66,9 @@ class ContentHubSubscription {
    * @param \Drupal\Core\Logger\LoggerChannelFactory $logger_factory
    *   The logger factory.
    * @param \Drupal\Core\Config\ConfigFactory $config_factory
-   *    The config factory.
+   *   The config factory.
    * @param \Drupal\acquia_contenthub\Client\ClientManagerInterface $client_manager
-   *    The client manager.
+   *   The client manager.
    */
   public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, ClientManagerInterface $client_manager) {
     $this->loggerFactory = $logger_factory;

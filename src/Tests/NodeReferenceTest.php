@@ -14,22 +14,22 @@ class NodeReferenceTest extends WebTestBase {
    *
    * @var string[]
    */
-  public static $modules = array(
+  public static $modules = [
     'node',
     'acquia_contenthub',
     'node_with_references',
-  );
+  ];
 
   /**
    * Configure content hub node form.
    */
   public function testNodeReferences() {
     $this->drupalLogin($this->adminUser);
-    $entity1 = $this->drupalCreateNode(array(
+    $entity1 = $this->drupalCreateNode([
       'type' => 'node_with_references',
       'title' => 'Title 1',
-    ));
-    $entity2 = $this->drupalCreateNode(array(
+    ]);
+    $entity2 = $this->drupalCreateNode([
       'type' => 'node_with_references',
       'title' => 'Title 2',
       'field_reference' => [
@@ -37,8 +37,8 @@ class NodeReferenceTest extends WebTestBase {
           'target_id' => $entity1->id(),
         ],
       ],
-    ));
-    $entity3 = $this->drupalCreateNode(array(
+    ]);
+    $entity3 = $this->drupalCreateNode([
       'type' => 'node_with_references',
       'title' => 'Title 3',
       'field_reference' => [
@@ -46,8 +46,8 @@ class NodeReferenceTest extends WebTestBase {
           'target_id' => $entity2->id(),
         ],
       ],
-    ));
-    $entity4 = $this->drupalCreateNode(array(
+    ]);
+    $entity4 = $this->drupalCreateNode([
       'type' => 'node_with_references',
       'title' => 'Title 4',
       'field_reference' => [
@@ -55,8 +55,8 @@ class NodeReferenceTest extends WebTestBase {
           'target_id' => $entity3->id(),
         ],
       ],
-    ));
-    $entity5 = $this->drupalCreateNode(array(
+    ]);
+    $entity5 = $this->drupalCreateNode([
       'type' => 'node_with_references',
       'title' => 'Title 5',
       'field_reference' => [
@@ -64,18 +64,18 @@ class NodeReferenceTest extends WebTestBase {
           'target_id' => $entity4->id(),
         ],
       ],
-    ));
+    ]);
 
-    $this->configureContentHubContentTypes('node', array('node_with_references'));
+    $this->configureContentHubContentTypes('node', ['node_with_references']);
 
     // The CDF Output for entity 5 should not show entity 1 due to the
     // maximum default dependency depth of 3.
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity5->getEntityTypeId() . '/' . $entity5->id(), array(
-      'query' => array(
+    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity5->getEntityTypeId() . '/' . $entity5->id(), [
+      'query' => [
         '_format' => 'acquia_contenthub_cdf',
         'include_references' => 'true',
-      ),
-    ));
+      ],
+    ]);
     $this->assertResponse(200);
     $this->assertEqual($output['entities']['1']['uuid'], $entity4->uuid());
     $this->assertEqual($output['entities']['2']['uuid'], $entity3->uuid());
@@ -84,12 +84,12 @@ class NodeReferenceTest extends WebTestBase {
 
     // The CDF Output for entity 4 should show entity 1 because it includes that
     // entity by using maximum dependency depth of 3.
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity4->getEntityTypeId() . '/' . $entity4->id(), array(
-      'query' => array(
+    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity4->getEntityTypeId() . '/' . $entity4->id(), [
+      'query' => [
         '_format' => 'acquia_contenthub_cdf',
         'include_references' => 'true',
-      ),
-    ));
+      ],
+    ]);
     $this->assertResponse(200);
     $this->assertEqual($output['entities']['1']['uuid'], $entity3->uuid());
     $this->assertEqual($output['entities']['2']['uuid'], $entity2->uuid());
@@ -103,12 +103,12 @@ class NodeReferenceTest extends WebTestBase {
 
     // The CDF Output for entity 5 should now show entity 1 too due to the
     // maximum dependency depth of 4.
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity5->getEntityTypeId() . '/' . $entity5->id(), array(
-      'query' => array(
+    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity5->getEntityTypeId() . '/' . $entity5->id(), [
+      'query' => [
         '_format' => 'acquia_contenthub_cdf',
         'include_references' => 'true',
-      ),
-    ));
+      ],
+    ]);
     $this->assertResponse(200);
     $this->assertEqual($output['entities']['1']['uuid'], $entity4->uuid());
     $this->assertEqual($output['entities']['2']['uuid'], $entity3->uuid());
@@ -122,12 +122,12 @@ class NodeReferenceTest extends WebTestBase {
 
     // The CDF Output for entity 5 should not show entity 1 nor entity 2 due
     // to the maximum dependency depth of 2.
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity5->getEntityTypeId() . '/' . $entity5->id(), array(
-      'query' => array(
+    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity5->getEntityTypeId() . '/' . $entity5->id(), [
+      'query' => [
         '_format' => 'acquia_contenthub_cdf',
         'include_references' => 'true',
-      ),
-    ));
+      ],
+    ]);
     $this->assertResponse(200);
     $this->assertEqual($output['entities']['1']['uuid'], $entity4->uuid());
     $this->assertEqual($output['entities']['2']['uuid'], $entity3->uuid());

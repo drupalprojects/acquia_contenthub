@@ -5,8 +5,8 @@
  * Handles Content Hub Content Subscriptions and Updates.
  */
 
-use \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface;
-use \Drupal\acquia_contenthub\ImportEntityManager;
+use Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface;
+use Drupal\acquia_contenthub\ImportEntityManager;
 use Drupal\user\Entity\User;
 
 /**

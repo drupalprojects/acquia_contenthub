@@ -32,7 +32,7 @@ class ContentHubEntitiesTracking {
 
   // 1) initiated -> exported.
   const INITIATED = 'INITIATED';
-  const EXPORTED  = 'EXPORTED';
+  const EXPORTED = 'EXPORTED';
 
   /**
    * The Database Connection.

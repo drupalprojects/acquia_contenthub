@@ -57,11 +57,11 @@ class ContentHubSubscriberController extends ControllerBase {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    /** @var ConfigFactoryInterface $config_factory */
+    /** @var \Drupal\Core\Config\ConfigFactoryInterface $config_factory */
     $config_factory = $container->get('config.factory');
-    /** @var LanguageManagerInterface $language_manager */
+    /** @var \Drupal\Core\Language\LanguageManagerInterface $language_manager */
     $language_manager = $container->get('language_manager');
-    /** @var CsrfTokenGenerator $csrf_token_generator */
+    /** @var \Drupal\Core\Access\CsrfTokenGenerator $csrf_token_generator */
     $csrf_token_generator = $container->get('csrf_token');
 
     return new static(

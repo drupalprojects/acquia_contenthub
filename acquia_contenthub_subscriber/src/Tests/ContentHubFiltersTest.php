@@ -12,13 +12,6 @@ use Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface;
 class ContentHubFiltersTest extends WebTestBase {
 
   /**
-   * {@inheritdoc}
-   */
-  public function setUp() {
-    parent::setUp();
-  }
-
-  /**
    * Tests Operations on Filters as Admin User.
    */
   public function testFiltersAdminUser() {
