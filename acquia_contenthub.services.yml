@@ -39,7 +39,7 @@ services:
 
   acquia_contenthub.normalizer.content_entity_view_modes_extractor:
     class: Drupal\acquia_contenthub\Normalizer\ContentEntityViewModesExtractor
-    arguments: ['@current_user', '@entity_display.repository', '@entity_type.manager', '@renderer', '@http_kernel.basic', '@account_switcher', '@acquia_contenthub.acquia_contenthub_subscription', '@config.factory']
+    arguments: ['@current_user', '@entity_display.repository', '@entity_type.manager', '@renderer', '@http_kernel.basic', '@account_switcher', '@acquia_contenthub.acquia_contenthub_subscription', '@config.factory', '@plugin.manager.block']
 
   acquia_contenthub.encoder.acquia_contenthub_cdf:
     class: Drupal\acquia_contenthub\Encoder\ContentHubCdfEncoder

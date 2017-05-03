@@ -38,7 +38,7 @@ class ContentHubPageDisplayVariantSubscriber implements EventSubscriberInterface
    *   The event to process.
    */
   public function onSelectPageDisplayVariant(PageDisplayVariantSelectionEvent $event) {
-    if ($this->routeMatch->getRouteName() == 'acquia_contenthub.content_entity_display.entity') {
+    if ($this->routeMatch->getRouteName() === 'acquia_contenthub.content_entity_display.entity') {
       $event->setPluginId('contenthub_page');
     }
   }

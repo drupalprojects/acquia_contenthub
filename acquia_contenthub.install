@@ -181,3 +181,17 @@ function acquia_contenthub_update_8202() {
 /**
  * @} End of "defgroup updates-8.2.x-update-entities-tracking-table".
  */
+
+/**
+ * Set default values for empty keys in acquia_contenthub.entity_config.
+ */
+function acquia_contenthub_update_8203() {
+  $config = \Drupal::configFactory()->getEditable('acquia_contenthub.entity_config');
+  if (!$config->get('use_block_content_view_builder')) {
+    $config->set('use_block_content_view_builder', FALSE);
+  }
+  if (!$config->get('user_role')) {
+    $config->set('user_role', 'anonymous');
+  }
+  $config->save();
+}

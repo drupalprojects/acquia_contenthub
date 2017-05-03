@@ -202,6 +202,9 @@ function acquia_contenthub_form_node_type_form_submit(array $form, FormStateInte
  * Implements hook_theme().
  */
 function acquia_contenthub_theme($existing, $type, $theme, $path) {
+  // Normally theme suggestion templates are only picked up when they are in
+  // themes. We explicitly define theme suggestions here so that the templates
+  // in the templates folder are picked up.
   return [
     'html__acquia_contenthub' => [
       'template' => 'html--acquia-contenthub',
@@ -218,6 +221,10 @@ function acquia_contenthub_theme($existing, $type, $theme, $path) {
       'render element' => 'elements',
       'preprocess functions' => ['template_preprocess_region'],
     ],
+    'block__block_content__acquia_contenthub' => [
+      'render element' => 'elements',
+      'base hook' => 'block',
+    ],
   ];
 }
 
@@ -225,7 +232,30 @@ function acquia_contenthub_theme($existing, $type, $theme, $path) {
  * Implements hook_theme_suggestions_HOOK().
  */
 function acquia_contenthub_theme_suggestions_region(array $variables) {
-  if ($variables['elements']['#region'] == 'content' && \Drupal::routeMatch()->getRouteName() == 'acquia_contenthub.content_entity_display.entity') {
+  if ($variables['elements']['#region'] === 'content' && \Drupal::routeMatch()->getRouteName() === 'acquia_contenthub.content_entity_display.entity') {
     return ['region__content__acquia_contenthub'];
+  }
+}
+
+/**
+ * Implements hook_theme_suggestions_HOOK_alter().
+ *
+ * Provides block_content templates:
+ *  - block__block_content__acquia_contenthub
+ *  - block__block_content__BLOCK_UUID__acquia_contenthub.
+ *
+ * @see block_theme_suggestions_block()
+ */
+function acquia_contenthub_theme_suggestions_block_alter(array &$suggestions, array $variables) {
+  if ($variables['elements']['#configuration']['provider'] === 'block_content' && \Drupal::routeMatch()->getRouteName() === 'acquia_contenthub.content_entity_display.entity') {
+    // We can safely explode on : because we know the Block plugin type manager
+    // enforces that delimiter for all derivatives.
+    // Example value: block_content:12345678-9abc-0123-4567-000000000000.
+    $parts = explode(':', $variables['elements']['#plugin_id']);
+    $suggestion = 'block';
+    foreach ($parts as $part) {
+      $suggestion .= '__' . strtr($part, '-', '_');
+      $suggestions[] = $suggestion . '__acquia_contenthub';
+    }
   }
 }

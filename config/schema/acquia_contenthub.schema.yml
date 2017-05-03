@@ -32,6 +32,9 @@ acquia_contenthub.entity_config:
     dependency_depth:
       type: integer
       label: "The maximum level of dependencies to collect for exporting entities"
+    use_block_content_view_builder:
+      type: boolean
+      label: "If true, uses block_content view builder instead of block plugin render."
 
 acquia_contenthub.entity.*:
   type: config_entity
