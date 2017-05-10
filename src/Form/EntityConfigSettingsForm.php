@@ -369,10 +369,26 @@ class EntityConfigSettingsForm extends ConfigFormBase {
 
     $values = $form_state->getValues();
     foreach ($values['entities'] as $entity_type => $bundles) {
+
+      $contenthub_entity_config_ids_bundles = [];
+      if (isset($contenthub_entity_config_ids[$entity_type])) {
+        $contenthub_entity_config_ids_bundles = $contenthub_entity_config_ids[$entity_type]->getBundles();
+      }
       // Checkboxes come with integer values. Convert them to boolean.
       foreach ($bundles as $name => $fields) {
         $bundles[$name]['enable_index'] = (bool) $bundles[$name]['enable_index'];
         $bundles[$name]['enable_viewmodes'] = $bundles[$name]['enable_index'] ? (bool) $bundles[$name]['enable_viewmodes'] : FALSE;
+
+        if (!empty($contenthub_entity_config_ids_bundles)) {
+          if (isset($contenthub_entity_config_ids_bundles[$name]['preview_image_field'])) {
+            $bundles[$name]['preview_image_field'] = $contenthub_entity_config_ids_bundles[$name]['preview_image_field'];
+          }
+
+          if (isset($contenthub_entity_config_ids_bundles[$name]['preview_image_style'])) {
+            $bundles[$name]['preview_image_style'] = $contenthub_entity_config_ids_bundles[$name]['preview_image_style'];
+          }
+        }
+
       }
 
       if (!isset($contenthub_entity_config_ids[$entity_type])) {
@@ -386,7 +402,7 @@ class EntityConfigSettingsForm extends ConfigFormBase {
       }
       else {
         // Update Configuration entity.
-        $contenthub_entity_config_ids[$entity_type]->setBundles(array_replace_recursive($contenthub_entity_config_ids[$entity_type]->getBundles(), $bundles));
+        $contenthub_entity_config_ids[$entity_type]->setBundles($bundles);
         $contenthub_entity_config_ids[$entity_type]->save();
       }
     }
