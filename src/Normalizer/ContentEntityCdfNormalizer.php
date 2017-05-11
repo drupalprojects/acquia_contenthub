@@ -430,10 +430,15 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
             'file',
             'video',
           ];
+          $type_names = [
+            'type',
+            'bundle',
+          ];
 
           // Special case for type as we do not want the reference for the
-          // bundle.
-          if ($name === 'type') {
+          // bundle. In additional to the type field a media entity has a
+          // bundle field which stores a media bundle configuration entity UUID.
+          if (in_array($name, $type_names, TRUE)) {
             $values[$langcode][] = $referenced_entity->id();
           }
           elseif (in_array($field_type, $file_types)) {
@@ -963,6 +968,24 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
             // If it doesn't have a status attribute, set it as 0 (unpublished).
             $status = $contenthub_entity->getAttribute('status') ? $contenthub_entity->getAttribute('status')['value'][$language] : 0;
             $values['status'] = $status ? $status : 0;
+          }
+          break;
+
+        case 'media':
+          $attribute = $contenthub_entity->getAttribute('bundle');
+          foreach ($langcodes as $lang) {
+            if (isset($attribute['value'][$lang])) {
+              $value = reset($attribute['value'][$lang]);
+              // Media entity didn't import by previous version of the module.
+              if (!Uuid::isValid($value)) {
+                $values['bundle'] = $value;
+              }
+            }
+          }
+          // Remove an attribute to avoid the 'Error reading entity with
+          // UUID="image" from Content Hub' error.
+          if (!empty($values['bundle'])) {
+            $contenthub_entity->removeAttribute('bundle');
           }
           break;
 
