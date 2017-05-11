@@ -73,11 +73,11 @@ class ContentHubViewSubscriber implements EventSubscriberInterface {
   /**
    * Switch to the render Content Hub user.
    *
-   * @param FilterControllerEvent $event
+   * @param \Symfony\Component\HttpKernel\Event\FilterControllerEvent $event
    *   The filter controller event.
    */
   public function onKernelController(FilterControllerEvent $event) {
-    if ($this->routeMatch->getRouteName() == 'acquia_contenthub.content_entity_display.entity') {
+    if ($this->routeMatch->getRouteName() === 'acquia_contenthub.content_entity_display.entity') {
       $this->accountSwitcher->switchTo($this->renderAccount);
     }
   }
@@ -89,7 +89,7 @@ class ContentHubViewSubscriber implements EventSubscriberInterface {
    *   The finish request event.
    */
   public function onKernelFinishRequest(FinishRequestEvent $event) {
-    if ($this->routeMatch->getRouteName() == 'acquia_contenthub.content_entity_display.entity') {
+    if ($this->routeMatch->getRouteName() === 'acquia_contenthub.content_entity_display.entity') {
       $this->accountSwitcher->switchBack();
     }
   }

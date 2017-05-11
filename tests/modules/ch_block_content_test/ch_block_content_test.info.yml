@@ -1,0 +1,8 @@
+name: "Content Hub Custom Block module tests"
+type: module
+description: "Support module for custom block related testing."
+package: Testing
+core: 8.x
+dependencies:
+  - block_content
+  - acquia_contenthub

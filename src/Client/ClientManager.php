@@ -3,12 +3,12 @@
 namespace Drupal\acquia_contenthub\Client;
 
 use Acquia\ContentHubClient\ContentHub;
-use \Exception;
-use \GuzzleHttp\Exception\ConnectException as ConnectException;
-use \GuzzleHttp\Exception\RequestException as RequestException;
-use \GuzzleHttp\Exception\ServerException as ServerException;
-use \GuzzleHttp\Exception\ClientException as ClientException;
-use \GuzzleHttp\Exception\BadResponseException as BadResponseException;
+use Exception;
+use GuzzleHttp\Exception\ConnectException as ConnectException;
+use GuzzleHttp\Exception\RequestException as RequestException;
+use GuzzleHttp\Exception\ServerException as ServerException;
+use GuzzleHttp\Exception\ClientException as ClientException;
+use GuzzleHttp\Exception\BadResponseException as BadResponseException;
 use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Language\LanguageManagerInterface;

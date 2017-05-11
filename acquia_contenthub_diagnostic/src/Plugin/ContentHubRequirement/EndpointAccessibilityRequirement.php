@@ -149,14 +149,14 @@ class EndpointAccessibilityRequirement extends ContentHubRequirementBase {
    * Parse the status code and return the error, if applicable.
    *
    * @param int $status_code
-   *    Status code of response.
+   *   Status code of response.
    * @param string $endpoint_name
-   *    Human readable name of endpoint.
+   *   Human readable name of endpoint.
    * @param string $endpoint_url
-   *    Url of endpoint.
+   *   Url of endpoint.
    *
    * @return string
-   *    Error to be added to the description.
+   *   Error to be added to the description.
    */
   protected function parseStatusCode($status_code, $endpoint_name, $endpoint_url) {
     // 200 response is the only successful response.
@@ -199,12 +199,12 @@ class EndpointAccessibilityRequirement extends ContentHubRequirementBase {
    * Gets the authorization header for a given endpoint and method.
    *
    * @param string $endpoint
-   *    Url of endpoint.
+   *   Url of endpoint.
    * @param string $method
-   *    Method of the request. (e.g GET or POST).
+   *   Method of the request. (e.g GET or POST).
    *
    * @return string
-   *    The authorization header.
+   *   The authorization header.
    */
   protected function getAuthorizationHeader($endpoint, $method = 'GET') {
     $request = Request::create($endpoint, $method);

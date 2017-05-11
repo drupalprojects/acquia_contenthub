@@ -60,7 +60,7 @@ class ContentHubSettingsForm extends ConfigFormBase {
    * @param \Drupal\acquia_contenthub\ContentHubSubscription $contenthub_subscription
    *   The content hub subscription.
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
-   *    The config factory.
+   *   The config factory.
    */
   public function __construct(ClientManagerInterface $client_manager, ContentHubSubscription $contenthub_subscription, ConfigFactoryInterface $config_factory) {
     $this->clientManager = $client_manager;
@@ -72,11 +72,11 @@ class ContentHubSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    /** @var ClientManagerInterface $client_manager */
+    /** @var \Drupal\acquia_contenthub\Client\ClientManagerInterface $client_manager */
     $client_manager = $container->get('acquia_contenthub.client_manager');
-    /** @var ContentHubSubscription $contenthub_subscription */
+    /** @var \Drupal\acquia_contenthub\ContentHubSubscription $contenthub_subscription */
     $contenthub_subscription = $container->get('acquia_contenthub.acquia_contenthub_subscription');
-    /** @var ConfigFactoryInterface $config_factory */
+    /** @var \Drupal\Core\Config\ConfigFactoryInterface $config_factory */
     $config_factory = $container->get('config.factory');
 
     return new static(

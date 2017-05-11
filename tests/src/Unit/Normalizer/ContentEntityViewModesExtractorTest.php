@@ -95,11 +95,25 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
   private $configFactory;
 
   /**
+   * The Block Manager.
+   *
+   * @var \Drupal\Core\Block\BlockManagerInterface|\PHPUnit_Framework_MockObject_MockObject
+   */
+  private $blockManager;
+
+  /**
    * Settings.
    *
    * @var \Drupal\Core\Config\Config|\PHPUnit_Framework_MockObject_MockObject
    */
   private $settings;
+
+  /**
+   * Content Entity View Modes Extractor.
+   *
+   * @var \Drupal\acquia_contenthub\Normalizer\ContentEntityViewModesExtractor
+   */
+  private $contentEntityViewModesExtractor;
 
   /**
    * {@inheritdoc}
@@ -120,6 +134,23 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
       ->disableOriginalConstructor()
       ->getMock();
     $this->configFactory = $this->getMock('Drupal\Core\Config\ConfigFactoryInterface');
+    $this->blockManager = $this->getMock('Drupal\Core\Block\BlockManagerInterface');
+
+    $config = $this->getMockBuilder('Drupal\Core\Config\Config')
+      ->disableOriginalConstructor()
+      ->getMock();
+    $config->expects($this->once())
+      ->method('get')
+      ->with('user_role')
+      ->willReturn(AccountInterface::ANONYMOUS_ROLE);
+
+    $this->configFactory->expects($this->once())
+      ->method('get')
+      ->with('acquia_contenthub.entity_config')
+      ->willReturn($config);
+
+    $this->contentEntityViewModesExtractor = new ContentEntityViewModesExtractor($this->currentUser, $this->entityDisplayRepository, $this->entityTypeManager, $this->renderer, $this->kernel, $this->accountSwitcher, $this->contentHubSubscription, $this->configFactory, $this->blockManager);
+
   }
 
   /**
@@ -144,21 +175,7 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
       ->with(['entity_type_1'])
       ->willReturn([]);
 
-    $config = $this->getMockBuilder('Drupal\Core\Config\Config')
-      ->disableOriginalConstructor()
-      ->getMock();
-    $config->expects($this->once())
-      ->method('get')
-      ->with('user_role')
-      ->willReturn(AccountInterface::ANONYMOUS_ROLE);
-
-    $this->configFactory->expects($this->once())
-      ->method('get')
-      ->with('acquia_contenthub.entity_config')
-      ->willReturn($config);
-
-    $content_entity_view_modes_extractor = new ContentEntityViewModesExtractor($this->currentUser, $this->entityDisplayRepository, $this->entityTypeManager, $this->renderer, $this->kernel, $this->accountSwitcher, $this->contentHubSubscription, $this->configFactory);
-    $rendered_view_modes = $content_entity_view_modes_extractor->getRenderedViewModes($this->contentEntity);
+    $rendered_view_modes = $this->contentEntityViewModesExtractor->getRenderedViewModes($this->contentEntity);
 
     $this->assertNull($rendered_view_modes);
   }
@@ -290,21 +307,7 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
       ->method('handle')
       ->willReturn($response);
 
-    $config = $this->getMockBuilder('Drupal\Core\Config\Config')
-      ->disableOriginalConstructor()
-      ->getMock();
-    $config->expects($this->once())
-      ->method('get')
-      ->with('user_role')
-      ->willReturn(AccountInterface::ANONYMOUS_ROLE);
-
-    $this->configFactory->expects($this->once())
-      ->method('get')
-      ->with('acquia_contenthub.entity_config')
-      ->willReturn($config);
-
-    $content_entity_view_modes_extractor = new ContentEntityViewModesExtractor($this->currentUser, $this->entityDisplayRepository, $this->entityTypeManager, $this->renderer, $this->kernel, $this->accountSwitcher, $this->contentHubSubscription, $this->configFactory);
-    $rendered_view_modes = $content_entity_view_modes_extractor->getRenderedViewModes($this->contentEntity);
+    $rendered_view_modes = $this->contentEntityViewModesExtractor->getRenderedViewModes($this->contentEntity);
 
     $expected_rendered_view_modes = [
       'view_mode_2' => [

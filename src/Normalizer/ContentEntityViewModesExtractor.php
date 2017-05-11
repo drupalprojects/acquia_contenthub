@@ -2,10 +2,12 @@
 
 namespace Drupal\acquia_contenthub\Normalizer;
 
+use Drupal\Core\Block\BlockManagerInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Render\Element;
 use Drupal\Core\Render\RendererInterface;
 use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\Core\Session\AccountSwitcherInterface;
@@ -91,6 +93,13 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
   protected $config;
 
   /**
+   * The Block Manager.
+   *
+   * @var \Drupal\Core\Block\BlockManagerInterface
+   */
+  protected $blockManager;
+
+  /**
    * Constructs a ContentEntityViewModesExtractor object.
    *
    * @param \Drupal\Core\Session\AccountProxyInterface $current_user
@@ -109,8 +118,10 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
    *   The Content Hub Subscription.
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The config factory.
+   * @param \Drupal\Core\Block\BlockManagerInterface $block_manager
+   *   The Block Manager Interface.
    */
-  public function __construct(AccountProxyInterface $current_user, EntityDisplayRepositoryInterface $entity_display_repository, EntityTypeManagerInterface $entity_type_manager, RendererInterface $renderer, HttpKernelInterface $kernel, AccountSwitcherInterface $account_switcher, ContentHubSubscription $contenthub_subscription, ConfigFactoryInterface $config_factory) {
+  public function __construct(AccountProxyInterface $current_user, EntityDisplayRepositoryInterface $entity_display_repository, EntityTypeManagerInterface $entity_type_manager, RendererInterface $renderer, HttpKernelInterface $kernel, AccountSwitcherInterface $account_switcher, ContentHubSubscription $contenthub_subscription, ConfigFactoryInterface $config_factory, BlockManagerInterface $block_manager) {
     $this->currentUser = $current_user;
     $this->entityDisplayRepository = $entity_display_repository;
     $this->entityTypeManager = $entity_type_manager;
@@ -120,6 +131,7 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
     $this->contentHubSubscription = $contenthub_subscription;
     $this->config = $config_factory;
     $this->renderUser = new ContentHubUserSession($this->config->get('acquia_contenthub.entity_config')->get('user_role'));
+    $this->blockManager = $block_manager;
   }
 
   /**
@@ -312,8 +324,14 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
 
     // Render View Mode.
     $entity_type_id = $object->getEntityTypeId();
-    $build = $this->entityTypeManager->getViewBuilder($entity_type_id)
-      ->view($object, $view_mode);
+    $use_block_content_view_builder = $this->config->get('acquia_contenthub.entity_config')->get('use_block_content_view_builder');
+    if ($entity_type_id === 'block_content' && !$use_block_content_view_builder) {
+      $build = $this->getBlockMinimalBuildArray($object, $view_mode);
+    }
+    else {
+      $build = $this->entityTypeManager->getViewBuilder($entity_type_id)
+        ->view($object, $view_mode);
+    }
 
     // Add our cacheable dependency. If this config changes, clear the render
     // cache.
@@ -327,6 +345,58 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
 
     // Restore user account.
     $this->accountSwitcher->switchBack();
+
+    return $build;
+  }
+
+  /**
+   * Renders block using BlockViewBuilder.
+   *
+   * @param \Drupal\Core\Entity\ContentEntityInterface $object
+   *   The Content Entity Object.
+   * @param string $view_mode
+   *   The request view mode identifier.
+   *
+   * @return array
+   *   Render array for the block.
+   */
+  private function getBlockMinimalBuildArray(ContentEntityInterface $object, $view_mode) {
+    /** @var \Drupal\entity_block\Plugin\Block\EntityBlock $block */
+    $block = $this->blockManager->createInstance('block_content:' . $object->uuid());
+
+    $build = [
+      '#theme' => 'block',
+      '#attributes' => [],
+      '#contextual_links' => [],
+      '#weight' => 0,
+      '#configuration' => $block->getConfiguration(),
+      '#plugin_id' => $block->getPluginId(),
+      '#base_plugin_id' => $block->getBaseId(),
+      '#derivative_plugin_id' => $block->getDerivativeId(),
+    ];
+
+    // Label controlled by the block__block_content__acquia_contenthub template
+    // (hidden by default). Override the template in your theme to render a
+    // block label.
+    if ($build['#configuration']['label'] === '') {
+      $build['#configuration']['label'] = $block->label();
+    }
+    // Block entity itself doesn't have configuration.
+    $block->setConfigurationValue('view_mode', $view_mode);
+    $build['#configuration']['view_mode'] = $view_mode;
+
+    // See \Drupal\block\BlockViewBuilder::preRender() for reference.
+    $content = $block->build();
+    if ($content !== NULL && !Element::isEmpty($content)) {
+      foreach (['#attributes', '#contextual_links'] as $property) {
+        if (isset($content[$property])) {
+          $build[$property] += $content[$property];
+          unset($content[$property]);
+        }
+      }
+    }
+
+    $build['content'] = $content;
 
     return $build;
   }

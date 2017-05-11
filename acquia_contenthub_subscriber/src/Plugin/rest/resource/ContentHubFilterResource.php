@@ -69,6 +69,10 @@ class ContentHubFilterResource extends ResourceBase {
    *   The available serialization formats.
    * @param \Psr\Log\LoggerInterface $logger
    *   A logger instance.
+   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
+   *   The entity manager.
+   * @param \Drupal\Core\Session\AccountProxyInterface $current_user
+   *   The current user account.
    */
   public function __construct(array $configuration, $plugin_id, $plugin_definition, array $serializer_formats, LoggerInterface $logger, EntityManagerInterface $entity_manager, AccountProxyInterface $current_user) {
     parent::__construct($configuration, $plugin_id, $plugin_definition, $serializer_formats, $logger);
@@ -253,6 +257,8 @@ class ContentHubFilterResource extends ResourceBase {
    *   The URL parameter.
    * @param \Drupal\acquia_contenthub_subscriber\ContentHubFilterInterface $contenthub_filter
    *   The Content Hub Filter entity submitted by REST.
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The HTTP request object.
    *
    * @return \Drupal\rest\ResourceResponse
    *   The Content Hub Filter after it has been saved.

@@ -46,9 +46,9 @@ class WebhooksSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    /** @var ConfigFactoryInterface $config_factory */
+    /** @var \Drupal\Core\Config\ConfigFactoryInterface $config_factory */
     $config_factory = $container->get('config.factory');
-    /** @var ContentHubSubscription $contenthub_subscription */
+    /** @var \Drupal\acquia_contenthub\ContentHubSubscription $contenthub_subscription */
     $contenthub_subscription = $container->get('acquia_contenthub.acquia_contenthub_subscription');
 
     return new static(

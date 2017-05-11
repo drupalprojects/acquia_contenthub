@@ -19,6 +19,7 @@ acquia_contenthub.webhook:
   defaults:
     _controller: 'Drupal\acquia_contenthub\Controller\ContentHubWebhookController::receiveWebhook'
   requirements:
+    # HMAC signature verification is performed in the controller, see validateWebhookSignature().
     _access: 'TRUE'
 
 acquia_contenthub.entity_config:

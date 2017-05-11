@@ -84,7 +84,7 @@ class ContentHubEntityDependency {
   /**
    * Gets the list of "Entity-dependent" entity types.
    */
-  static public function getPostDependencyEntityTypes() {
+  public static function getPostDependencyEntityTypes() {
     // By default "field collections" and "paragraphs" are post-dependencies.
     $post_dependencies = [
       'field_collection_item' => 'field_collection_item',
