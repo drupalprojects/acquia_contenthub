@@ -53,7 +53,7 @@ class ImportEntityManagerTest extends UnitTestCase {
     $this->database = $this->getMockBuilder('Drupal\Core\Database\Connection')
       ->disableOriginalConstructor()
       ->getMock();
-    $this->loggerFactory = $this->getMockBuilder('Drupal\Core\Logger\LoggerChannelFactory')
+    $this->loggerFactory = $this->getMockBuilder('Drupal\Core\Logger\LoggerChannelFactoryInterface')
       ->disableOriginalConstructor()
       ->getMock();
     $this->serializer = $this->getMock('\Symfony\Component\Serializer\SerializerInterface');

@@ -67,7 +67,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   /**
    * The mock config factory.
    *
-   * @var \Drupal\Core\Config\ConfigFactory
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
    */
   protected $configFactory;
 

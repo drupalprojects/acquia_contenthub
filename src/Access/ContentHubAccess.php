@@ -7,7 +7,7 @@ use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Session\AccountInterface;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\HttpFoundation\Request;
-use Drupal\Core\Logger\LoggerChannelFactory;
+use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\acquia_contenthub\Client\ClientManagerInterface;
 use Drupal\acquia_contenthub\ContentHubSubscription;
 
@@ -19,7 +19,7 @@ class ContentHubAccess implements AccessInterface {
   /**
    * Logger.
    *
-   * @var \Drupal\Core\Logger\LoggerChannelFactory
+   * @var \Drupal\Core\Logger\LoggerChannelFactoryInterface
    */
   protected $loggerFactory;
 
@@ -40,14 +40,14 @@ class ContentHubAccess implements AccessInterface {
   /**
    * Constructs an ContentEntityNormalizer object.
    *
-   * @param \Drupal\Core\Logger\LoggerChannelFactory $logger_factory
+   * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_factory
    *   The logger factory.
    * @param \Drupal\acquia_contenthub\Client\ClientManagerInterface $client_manager
    *   The client manager.
    * @param \Drupal\acquia_contenthub\ContentHubSubscription $contenthub_subscription
    *   The Content Hub Subscription.
    */
-  public function __construct(LoggerChannelFactory $logger_factory, ClientManagerInterface $client_manager, ContentHubSubscription $contenthub_subscription) {
+  public function __construct(LoggerChannelFactoryInterface $logger_factory, ClientManagerInterface $client_manager, ContentHubSubscription $contenthub_subscription) {
     $this->loggerFactory = $logger_factory;
     $this->clientManager = $client_manager;
     $this->contentHubSubscription = $contenthub_subscription;

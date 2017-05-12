@@ -18,14 +18,14 @@ class EntityManagerTest extends UnitTestCase {
   /**
    * Logger.
    *
-   * @var \Drupal\Core\Logger\LoggerChannelFactory|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Logger\LoggerChannelFactoryInterface|\PHPUnit_Framework_MockObject_MockObject
    */
   private $loggerFactory;
 
   /**
    * Config Factory.
    *
-   * @var \Drupal\Core\Config\ConfigFactory|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Config\ConfigFactoryInterface|\PHPUnit_Framework_MockObject_MockObject
    */
   private $configFactory;
 
@@ -90,10 +90,10 @@ class EntityManagerTest extends UnitTestCase {
    */
   protected function setUp() {
     parent::setUp();
-    $this->loggerFactory = $this->getMockBuilder('Drupal\Core\Logger\LoggerChannelFactory')
+    $this->loggerFactory = $this->getMockBuilder('Drupal\Core\Logger\LoggerChannelFactoryInterface')
       ->disableOriginalConstructor()
       ->getMock();
-    $this->configFactory = $this->getMockBuilder('Drupal\Core\Config\ConfigFactory')
+    $this->configFactory = $this->getMockBuilder('Drupal\Core\Config\ConfigFactoryInterface')
       ->disableOriginalConstructor()
       ->getMock();
     $this->clientManager = $this->getMock('Drupal\acquia_contenthub\Client\ClientManagerInterface');

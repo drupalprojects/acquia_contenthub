@@ -9,8 +9,8 @@ use GuzzleHttp\Exception\RequestException as RequestException;
 use GuzzleHttp\Exception\ServerException as ServerException;
 use GuzzleHttp\Exception\ClientException as ClientException;
 use GuzzleHttp\Exception\BadResponseException as BadResponseException;
-use Drupal\Core\Logger\LoggerChannelFactory;
-use Drupal\Core\Config\ConfigFactory;
+use Drupal\Core\Logger\LoggerChannelFactoryInterface;
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Component\Render\FormattableMarkup;
 use Symfony\Component\HttpFoundation\Request as Request;
@@ -24,14 +24,14 @@ class ClientManager implements ClientManagerInterface {
   /**
    * Logger Factory.
    *
-   * @var \Drupal\Core\Logger\LoggerChannelFactory
+   * @var \Drupal\Core\Logger\LoggerChannelFactoryInterface
    */
   protected $loggerFactory;
 
   /**
    * Config Factory.
    *
-   * @var \Drupal\Core\Config\ConfigFactory
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
    */
   protected $configFactory;
 
@@ -59,14 +59,14 @@ class ClientManager implements ClientManagerInterface {
   /**
    * ClientManager constructor.
    *
-   * @param \Drupal\Core\Logger\LoggerChannelFactory $logger_factory
+   * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_factory
    *   The logger factory.
-   * @param \Drupal\Core\Config\ConfigFactory $config_factory
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The config factory.
    * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
    *   The language manager.
    */
-  public function __construct(LoggerChannelFactory $logger_factory, ConfigFactory $config_factory, LanguageManagerInterface $language_manager) {
+  public function __construct(LoggerChannelFactoryInterface $logger_factory, ConfigFactoryInterface $config_factory, LanguageManagerInterface $language_manager) {
     $this->loggerFactory = $logger_factory;
     $this->configFactory = $config_factory;
     $this->languageManager = $language_manager;

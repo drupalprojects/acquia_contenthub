@@ -84,7 +84,7 @@ class ContentHubEntitiesTrackingTest extends UnitTestCase {
       ->with('origin')
       ->willReturn($site_origin);
 
-    $config_factory = $this->getMockBuilder('Drupal\Core\Config\ConfigFactory')
+    $config_factory = $this->getMockBuilder('Drupal\Core\Config\ConfigFactoryInterface')
       ->disableOriginalConstructor()
       ->getMock();
     $config_factory
