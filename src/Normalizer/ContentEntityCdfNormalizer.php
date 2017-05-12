@@ -248,6 +248,10 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     $entity_uuid = $entity->uuid();
     $origin = $this->config->get('acquia_contenthub.admin_settings')->get('origin');
 
+    // Allow other modules to intercept and do changes to the drupal entity
+    // before it is converted to CDF format.
+    $this->moduleHandler->alter('acquia_contenthub_drupal_to_cdf', $entity_type_id, $entity);
+
     // Required Created field.
     if ($entity->hasField('created') && $entity->get('created')) {
       $created = date('c', $entity->get('created')->getValue()[0]['value']);
@@ -291,6 +295,10 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       $localized_entity = $entity->getTranslation($langcode);
       $contenthub_entity = $this->addFieldsToContentHubEntity($contenthub_entity, $localized_entity, $langcode, $context);
     }
+
+    // Allow other modules to intercept and modify the CDF entity after it has
+    // been normalized and before it is sent to Content Hub.
+    $this->moduleHandler->alter('acquia_contenthub_cdf_from_drupal', $contenthub_entity);
 
     // Create the array of normalized fields, starting with the URI.
     $normalized = [
@@ -342,7 +350,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    * @param array $context
    *   Additional Context such as the account.
    *
-   * @return \Acquia\ContentHubClient\Entity\ContentHubEntity
+   * @return \Acquia\ContentHubClient\Entity
    *   The Content Hub Entity with all the data in it.
    *
    * @throws \Drupal\acquia_contenthub\ContentHubException
@@ -939,6 +947,11 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     }
 
     $contenthub_entity = new ContentHubEntity($data);
+
+    // Allow other modules to intercept and do changes to the Content Hub CDF
+    // before it is denormalized to a Drupal Entity.
+    $this->moduleHandler->alter('acquia_contenthub_cdf_from_hub', $contenthub_entity);
+
     $entity_type = $contenthub_entity->getType();
     $bundle = $contenthub_entity->getAttribute('type') ? reset($contenthub_entity->getAttribute('type')['value']) : NULL;
     $langcodes = $contenthub_entity->getAttribute('langcode')['value'];
@@ -1065,6 +1078,11 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         }
       }
     }
+
+    // Allow other modules to intercept and do changes to the Drupal entity
+    // after it has been denormalized from a Content Hub CDF.
+    $this->moduleHandler->alter('acquia_contenthub_drupal_from_cdf', $entity_type, $entity);
+
     return $entity;
   }
 

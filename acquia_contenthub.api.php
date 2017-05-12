@@ -14,7 +14,164 @@ use Acquia\ContentHubClient\Entity as ContentHubEntity;
  */
 
 /**
+ * Allows modules to modify the drupal entity before its normalization to CDF.
+ *
+ * Common Data Format (CDF): https://docs.acquia.com/content-hub/cdf.
+ *
+ * This is very useful to add additional ad-hoc fields into the drupal entity
+ * before it is converted to CDF during the export process.
+ * Note that the changes will be reflected in the entity published in Content
+ * Hub, but the local Drupal entity will not be affected.
+ *
+ * @param string $entity_type_id
+ *   The Drupal Entity type ID.
+ * @param object $entity
+ *   The Drupal entity.
+ */
+function hook_acquia_contenthub_drupal_to_cdf_alter($entity_type_id, $entity) {
+
+  // The following example modifies the title of the node for all nodes
+  // exported to Content Hub and adds the string ' - By My Cool Site'.
+  // It does it by changing the drupal entity title before it is converted
+  // to Common Data Format (CDF).
+  if ($entity_type_id === 'node') {
+    // Site String.
+    $site_string = ' - By My Cool Site';
+
+    // Obtain the title from the node entity.
+    $title = $entity->get('title')->getValue();
+
+    // Always check that the changes have already been applied, because the
+    // normalizer could be called more than once during the export process.
+    if (strpos($title[0]['value'], $site_string) === FALSE) {
+
+      // Add the site string to the title.
+      $title[0]['value'] .= $site_string;
+      $entity->get('title')->setValue($title);
+    }
+  }
+}
+
+/**
+ * Allows modules to modify the CDF before it is sent to the Content Hub.
+ *
+ * Common Data Format (CDF): https://docs.acquia.com/content-hub/cdf.
+ *
+ * This is very useful to modify the CDF (usually its attributes) before
+ * it is sent to the Content Hub during the normalization process.
+ * Note that the changes will be reflected in the entity published in Content
+ * Hub, but the local Drupal entity will not be affected.
+ *
+ * @param \Acquia\ContentHubClient\Entity $contenthub_entity
+ *   The Content Hub CDF.
+ */
+function hook_acquia_contenthub_cdf_from_drupal_alter(ContentHubEntity $contenthub_entity) {
+
+  // The following example modifies the title of the node for all nodes
+  // exported to Content Hub and adds the string ' - By My Cool Site'.
+  // It does it by modifying the title after producing the CDF that is fetched
+  // by Content Hub.
+  if ($contenthub_entity->getType() == 'node') {
+    // Site String.
+    $site_string = ' - By My Cool Site';
+
+    $title = $contenthub_entity->getAttribute('title')->getValues();
+    $language = reset(array_keys($title));
+
+    // Always check that the changes have already been applied, because the
+    // normalizer could be called more than once during the export process.
+    if (strpos($title[$language], $site_string) === FALSE) {
+      $contenthub_entity->getAttribute('title')->setValue($title[$language] . $site_string, $language);
+
+      // Remember, in the code above you are just adding text to the CDF that
+      // comes from an existent drupal entity without saving changes to the
+      // entity itself, then in order for these changes to be obtained from
+      // Content Hub, you would need to invalidate the cache tag for this
+      // particular node so the changes take effect.
+    }
+  }
+}
+
+/**
+ * Allows modules to modify the CDF before converting to Drupal Entity.
+ *
+ * Common Data Format (CDF): https://docs.acquia.com/content-hub/cdf.
+ *
+ * This is useful to modify the CDF that has been fetched from the Content
+ * Hub before it has been converted to Drupal Entity during the denormalization
+ * process.
+ * Note that we these changes affect the local entity imported from Content Hub
+ * but do not affect the entity in Content Hub itself.
+ *
+ * @param \Acquia\ContentHubClient\Entity $contenthub_entity
+ *   The Content Hub CDF.
+ */
+function hook_acquia_contenthub_cdf_from_hub_alter(ContentHubEntity $contenthub_entity) {
+  // The following example modifies the title of the node for all nodes
+  // imported from Content Hub and adds the string ' - From My Cool Site'.
+  // It does it by changing the CDF before denormalizing to a drupal entity.
+  if ($contenthub_entity->getType() == 'node') {
+    // Site String.
+    $site_string = ' - From My Cool Site';
+
+    $title = $contenthub_entity->getAttribute('title');
+    $language = array_keys($title['value']);
+    $language = reset($language);
+
+    // Always check that the changes have already been applied, because the
+    // denormalizer could be called more than once during the import process.
+    if (strpos($title['value'][$language], $site_string) === FALSE) {
+
+      // Add site string to the title.
+      $title['value'][$language] = $title['value'][$language] . $site_string;
+      $contenthub_entity['attributes']['title'] = $title;
+    }
+  }
+}
+
+/**
+ * Allow modules to modify the Drupal Entity after conversion from CDF.
+ *
+ * Common Data Format (CDF): https://docs.acquia.com/content-hub/cdf.
+ *
+ * This is useful to modify the Drupal Entity that came out as a result of its
+ * conversion from CDF fetched from Content Hub during the denormalization
+ * process.
+ * Note that we these changes affect the local entity imported from Content Hub
+ * but do not affect the entity in Content Hub itself.
+ *
+ * @param string $entity_type_id
+ *   The Drupal Entity type ID.
+ * @param object $entity
+ *   The Drupal entity.
+ */
+function hook_acquia_contenthub_drupal_from_cdf_alter($entity_type_id, $entity) {
+  // The following example modifies the title of the node for all nodes
+  // imported from Content Hub and adds the string ' - From My Cool Site'.
+  // It does it by changing the drupal entity after it has been denormalized
+  // from the Content Hub CDF.
+  if ($entity_type_id === 'node') {
+    // Site String.
+    $site_string = ' - From My Cool Site';
+
+    // Obtain the title from the node entity.
+    $title = $entity->get('title')->getValue();
+
+    // Always check that the changes have already been applied, because the
+    // denormalizer could be called more than once during the import process.
+    if (strpos($title[0]['value'], $site_string) === FALSE) {
+
+      // Add the site string to the title.
+      $title[0]['value'] .= $site_string;
+      $entity->get('title')->setValue($title);
+    }
+  }
+}
+
+/**
  * Alter the excluded field types and names that get converted into a CDF.
+ *
+ * Common Data Format (CDF): https://docs.acquia.com/content-hub/cdf.
  *
  * Modules may implement this hook to alter the fields that
  * get excluded from being converted into a Content Hub CDF object. For example
