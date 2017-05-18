@@ -146,17 +146,32 @@ class ImportEntityManager {
   private function compareReferencedEntities(EntityInterface $entity) {
     $new_references = $entity->referencedEntities();
     $old_references = $entity->original->referencedEntities();
-    $new_uuids = array_map(function (EntityInterface $e) {
-      return $e->uuid();
-    }, $new_references);
-    $old_uuids = array_map(function (EntityInterface $e) {
-      return $e->uuid();
-    }, $old_references);
+    $new_uuids = array_map([$this, 'excludeCompareReferencedEntities'], $new_references);
+    $old_uuids = array_map([$this, 'excludeCompareReferencedEntities'], $old_references);
     $changes = array_diff($new_uuids, $old_uuids);
     if (!empty($changes)) {
       return TRUE;
     }
     return FALSE;
+  }
+
+  /**
+   * Excludes entity from comparison.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity to check for differences.
+   *
+   * @return null|string
+   *   Entity uuid if entity is not excluded from comparison, NULL otherwise.
+   */
+  private function excludeCompareReferencedEntities(EntityInterface $entity) {
+
+    // Currently Content Hub does not support configuration entities.
+    if ($entity->getEntityType()->isSubclassOf('\Drupal\Core\Config\Entity\ConfigEntityInterface')) {
+      return FALSE;
+    }
+
+    return $entity->uuid();
   }
 
   /**
@@ -173,11 +188,45 @@ class ImportEntityManager {
   private function compareRevisions(EntityInterface $entity) {
     // Check if the entity has introduced any local changes.
     $field_comparisons = $this->diffEntityComparison->compareRevisions($entity->original, $entity);
-    foreach ($field_comparisons as $field_comparison) {
-      if ($field_comparison['#data']['#left'] !== $field_comparison['#data']['#right']) {
+    foreach ($field_comparisons as $field_comparison => $field_comparison_value) {
+      list (, $field_comparison_name) = explode($entity->id() . ':' . $entity->getEntityTypeId() . '.', $field_comparison);
+
+      if ($this->isFieldReferencedToSubclassOf($entity, $field_comparison_name)) {
+        continue;
+      }
+
+      if ($field_comparison_value['#data']['#left'] !== $field_comparison_value['#data']['#right']) {
         return TRUE;
       }
     }
+    return FALSE;
+  }
+
+  /**
+   * Determine if field have link to ConfigEntityInterface entity.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity to check for differences.
+   * @param string $field_name
+   *   The machine name of the field.
+   * @param string $subclass
+   *   The class or interface to check.
+   *
+   * @return bool
+   *   TRUE if field have link to ConfigEntityInterface entity, FALSE otherwise.
+   */
+  private function isFieldReferencedToSubclassOf(EntityInterface $entity, $field_name, $subclass = '\Drupal\Core\Config\Entity\ConfigEntityInterface') {
+    $field_type = $entity->getFieldDefinition($field_name)->getType();
+
+    if ($field_type == 'entity_reference') {
+      $field_references = $entity->get($field_name)->referencedEntities();
+      foreach ($field_references as $field_reference) {
+        if ($field_reference->getEntityType()->isSubclassOf($subclass)) {
+          return TRUE;
+        }
+      }
+    }
+
     return FALSE;
   }
 

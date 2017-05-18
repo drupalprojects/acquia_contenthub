@@ -347,10 +347,10 @@ class ImportEntityManagerTest extends UnitTestCase {
     $original_node = $this->getMock('\Drupal\node\NodeInterface');
     $node->original = $original_node;
 
-    $node->expects($this->once())
+    $node->expects($this->any())
       ->method('id')
       ->willReturn(12);
-    $node->expects($this->once())
+    $node->expects($this->any())
       ->method('getEntityTypeId')
       ->willReturn('node');
     // Nodes do not have referenced entities.
@@ -371,14 +371,23 @@ class ImportEntityManagerTest extends UnitTestCase {
       ->method('hasLocalChange')
       ->willReturn(FALSE);
 
+    $fieldDefinition = $this->getMock('\Drupal\Core\Field\FieldDefinitionInterface');
+    $fieldDefinition->expects($this->any())
+      ->method('getType')
+      ->willReturn('text');
+
+    $node->expects($this->any())
+      ->method('getFieldDefinition')
+      ->willReturn($fieldDefinition);
+
     $field_comparisons = [
-      'same_field_1' => [
+      '12:node.same_field_1' => [
         '#data' => [
           '#left' => 'same_value_1',
           '#right' => 'same_value_1',
         ],
       ],
-      'same_field_2' => [
+      '12:node.same_field_2' => [
         '#data' => [
           '#left' => 'same_value_2',
           '#right' => 'same_value_2',
@@ -408,10 +417,10 @@ class ImportEntityManagerTest extends UnitTestCase {
     $original_node = $this->getMock('\Drupal\node\NodeInterface');
     $node->original = $original_node;
 
-    $node->expects($this->once())
+    $node->expects($this->any())
       ->method('id')
       ->willReturn(12);
-    $node->expects($this->once())
+    $node->expects($this->any())
       ->method('getEntityTypeId')
       ->willReturn('node');
     $this->contentHubEntitiesTracking->expects($this->once())
@@ -425,20 +434,29 @@ class ImportEntityManagerTest extends UnitTestCase {
       ->method('hasLocalChange')
       ->willReturn(FALSE);
 
+    $fieldDefinition = $this->getMock('\Drupal\Core\Field\FieldDefinitionInterface');
+    $fieldDefinition->expects($this->any())
+      ->method('getType')
+      ->willReturn('text');
+
+    $node->expects($this->any())
+      ->method('getFieldDefinition')
+      ->willReturn($fieldDefinition);
+
     $field_comparisons = [
-      'same_field_1' => [
+      '12:node.same_field_1' => [
         '#data' => [
           '#left' => 'same_value_1',
           '#right' => 'same_value_1',
         ],
       ],
-      'difference_field_2' => [
+      '12:node.difference_field_2' => [
         '#data' => [
           '#left' => 'a_value',
           '#right' => 'a_different_value',
         ],
       ],
-      'same_field_2' => [
+      '12:node.same_field_2' => [
         '#data' => [
           '#left' => 'same_value_2',
           '#right' => 'same_value_2',
@@ -516,6 +534,383 @@ class ImportEntityManagerTest extends UnitTestCase {
     $result = $this->importEntityManager->importRemoteEntity($uuid, FALSE);
     $status_code = json_decode($result->getStatusCode());
     $this->assertEquals($status_code, 403);
+  }
+
+  /**
+   * Tests the entityPresave() method.
+   *
+   * Include content entities from comparison.
+   *
+   * @covers ::entityPresave
+   */
+  public function testEntityPresaveCompareIncludeFieldReference() {
+    $node = $this->getMock('\Drupal\node\NodeInterface');
+    $original_node = $this->getMock('\Drupal\node\NodeInterface');
+    $node->original = $original_node;
+
+    $node->expects($this->any())
+      ->method('id')
+      ->willReturn(12);
+    $node->expects($this->any())
+      ->method('getEntityTypeId')
+      ->willReturn('node');
+    $this->contentHubEntitiesTracking->expects($this->once())
+      ->method('loadImportedByDrupalEntity')
+      ->with('node', 12)
+      ->willReturn($this->contentHubEntitiesTracking);
+    $node->expects($this->any())
+      ->method('referencedEntities')
+      ->willReturn([]);
+    $node->original->expects($this->any())
+      ->method('referencedEntities')
+      ->willReturn([]);
+
+    $this->contentHubEntitiesTracking->expects($this->once())
+      ->method('isPendingSync')
+      ->willReturn(FALSE);
+    $this->contentHubEntitiesTracking->expects($this->once())
+      ->method('hasLocalChange')
+      ->willReturn(FALSE);
+
+    $fieldReferenceInterface = $this->getMock('Drupal\Core\Field\EntityReferenceFieldItemListInterface');
+
+    // Get reference entity.
+    $referenced_entities = [];
+    $entity1 = $this->getMock('\Drupal\Core\Entity\EntityInterface');
+
+    $entity_type = $this->getMock('\Drupal\Core\Entity\EntityTypeInterface');
+    $entity1->expects($this->any())
+      ->method('getEntityType')
+      ->will($this->returnValue($entity_type));
+    $entity_type->expects($this->once())
+      ->method('isSubclassOf')
+      ->willReturn(FALSE);
+    $referenced_entities[] = $entity1;
+
+    $fieldReferenceInterface->expects($this->any())
+      ->method('referencedEntities')
+      ->willReturn($referenced_entities);
+
+    $fieldDefinition = $this->getMock('\Drupal\Core\Field\FieldDefinitionInterface');
+    $fieldDefinition->expects($this->once())
+      ->method('getType')
+      ->willReturn('entity_reference');
+
+    $node->expects($this->once())
+      ->method('getFieldDefinition')
+      ->with('same_field_1')
+      ->willReturn($fieldDefinition);
+
+    $node->expects($this->once())
+      ->method('get')
+      ->with('same_field_1')
+      ->willReturn($fieldReferenceInterface);
+
+    $field_comparisons = [
+      '12:node.same_field_1' => [
+        '#data' => [
+          '#left' => 'same_value_1',
+          '#right' => 'same_value_2',
+        ],
+      ],
+    ];
+
+    $this->diffEntityComparison->expects($this->once())
+      ->method('compareRevisions')
+      ->with($original_node, $node)
+      ->willReturn($field_comparisons);
+    $this->contentHubEntitiesTracking->expects($this->once())
+      ->method('setLocalChange');
+    $this->contentHubEntitiesTracking->expects($this->once())
+      ->method('save');
+    $this->importEntityManager->entityPresave($node);
+  }
+
+  /**
+   * Tests the entityPresave() method.
+   *
+   * Exclude configuration entities from comparison.
+   *
+   * @covers ::entityPresave
+   */
+  public function testEntityPresaveCompareExcludeFieldReference() {
+    $node = $this->getMock('\Drupal\node\NodeInterface');
+    $original_node = $this->getMock('\Drupal\node\NodeInterface');
+    $node->original = $original_node;
+    $node->expects($this->any())
+      ->method('id')
+      ->willReturn(12);
+    $node->expects($this->any())
+      ->method('getEntityTypeId')
+      ->willReturn('node');
+    $this->contentHubEntitiesTracking->expects($this->once())
+      ->method('loadImportedByDrupalEntity')
+      ->with('node', 12)
+      ->willReturn($this->contentHubEntitiesTracking);
+    $node->expects($this->any())
+      ->method('referencedEntities')
+      ->willReturn([]);
+    $node->original->expects($this->any())
+      ->method('referencedEntities')
+      ->willReturn([]);
+    $this->contentHubEntitiesTracking->expects($this->once())
+      ->method('isPendingSync')
+      ->willReturn(FALSE);
+    $this->contentHubEntitiesTracking->expects($this->once())
+      ->method('hasLocalChange')
+      ->willReturn(FALSE);
+
+    // Get reference entity.
+    $referenced_entities = [];
+    $entity1 = $this->getMock('\Drupal\Core\Entity\EntityInterface');
+    $entity_type = $this->getMock('Drupal\Core\Config\Entity\ConfigEntityTypeInterface');
+    $entity1->expects($this->any())
+      ->method('getEntityType')
+      ->will($this->returnValue($entity_type));
+    $entity_type->expects($this->once())
+      ->method('isSubclassOf')
+      ->willReturn(TRUE);
+    $referenced_entities[] = $entity1;
+
+    // Set reference field.
+    $fieldReferenceInterface = $this->getMock('Drupal\Core\Field\EntityReferenceFieldItemListInterface');
+    $fieldReferenceInterface->expects($this->any())
+      ->method('referencedEntities')
+      ->willReturn($referenced_entities);
+
+    $fieldDefinition = $this->getMock('\Drupal\Core\Field\FieldDefinitionInterface');
+    $fieldDefinition->expects($this->at(0))
+      ->method('getType')
+      ->willReturn('entity_reference');
+
+    $fieldDefinition->expects($this->at(1))
+      ->method('getType')
+      ->willReturn('text');
+
+    $node->expects($this->any())
+      ->method('getFieldDefinition')
+      ->willReturn($fieldDefinition);
+
+    $node->expects($this->any())
+      ->method('get')
+      ->with('same_field_1')
+      ->willReturn($fieldReferenceInterface);
+
+    $field_comparisons = [
+      '12:node.same_field_1' => [
+        '#data' => [
+          '#left' => 'same_value_1',
+          '#right' => 'same_value_2',
+        ],
+      ],
+      '12:node.same_field_2' => [
+        '#data' => [
+          '#left' => 'same_value_2',
+          '#right' => 'same_value_2',
+        ],
+      ],
+    ];
+    $this->diffEntityComparison->expects($this->once())
+      ->method('compareRevisions')
+      ->with($original_node, $node)
+      ->willReturn($field_comparisons);
+    $this->contentHubEntitiesTracking->expects($this->never())
+      ->method('setLocalChange');
+    $this->contentHubEntitiesTracking->expects($this->never())
+      ->method('save');
+    $this->importEntityManager->entityPresave($node);
+  }
+
+  /**
+   * Tests the entityPresave() method.
+   *
+   * Exclude configuration entity from comparison.
+   *
+   * @covers ::entityPresave
+   */
+  public function testEntityPresaveCompareExcludeEntityFromComparison() {
+    $node = $this->getMock('\Drupal\node\NodeInterface');
+    $original_node = $this->getMock('\Drupal\node\NodeInterface');
+    $node->original = $original_node;
+
+    $node->expects($this->any())
+      ->method('id')
+      ->willReturn(12);
+    $node->expects($this->any())
+      ->method('getEntityTypeId')
+      ->willReturn('node');
+    $this->contentHubEntitiesTracking->expects($this->once())
+      ->method('loadImportedByDrupalEntity')
+      ->with('node', 12)
+      ->willReturn($this->contentHubEntitiesTracking);
+    $this->contentHubEntitiesTracking->expects($this->once())
+      ->method('isPendingSync')
+      ->willReturn(FALSE);
+    $this->contentHubEntitiesTracking->expects($this->once())
+      ->method('hasLocalChange')
+      ->willReturn(FALSE);
+
+    $fieldDefinition = $this->getMock('\Drupal\Core\Field\FieldDefinitionInterface');
+    $fieldDefinition->expects($this->any())
+      ->method('getType')
+      ->willReturn('text');
+
+    $node->expects($this->any())
+      ->method('getFieldDefinition')
+      ->willReturn($fieldDefinition);
+
+    $field_comparisons = [
+      '12:node.same_field_2' => [
+        '#data' => [
+          '#left' => 'same_value_2',
+          '#right' => 'same_value_2',
+        ],
+      ],
+    ];
+
+    $reference = $this->getMock('\Drupal\node\NodeInterface');
+    $reference->original = $this->getMock('\Drupal\node\NodeInterface');
+    $entity1 = $this->getMock('\Drupal\Core\Entity\EntityInterface');
+    $entity_type = $this->getMock('Drupal\Core\Config\Entity\ConfigEntityTypeInterface');
+
+    $entity1->expects($this->any())
+      ->method('getEntityType')
+      ->will($this->returnValue($entity_type));
+    // Set uuid for entity reference 1.
+    $entity1->method('uuid')
+      ->willReturn('test-uuid-reference-1');
+    $entity_type->expects($this->any())
+      ->method('isSubclassOf')
+      ->willReturn(TRUE);
+    $referenced_entities1[] = $entity1;
+
+    $entity2 = $this->getMock('\Drupal\Core\Entity\EntityInterface');
+    $entity2->expects($this->any())
+      ->method('getEntityType')
+      ->will($this->returnValue($entity_type));
+    // Set uuid for entity reference 2.
+    $entity2->method('uuid')
+      ->willReturn('test-uuid-reference-2');
+    $entity_type->expects($this->any())
+      ->method('isSubclassOf')
+      ->willReturn(TRUE);
+    $referenced_entities2[] = $entity2;
+
+    // Set reference to node.
+    $node->expects($this->once())
+      ->method('referencedEntities')
+      ->willReturn($referenced_entities1);
+
+    // Set reference to origin node.
+    $node->original->expects($this->once())
+      ->method('referencedEntities')
+      ->willReturn($referenced_entities2);
+
+    $this->diffEntityComparison->expects($this->once())
+      ->method('compareRevisions')
+      ->with($original_node, $node)
+      ->willReturn($field_comparisons);
+    $this->contentHubEntitiesTracking->expects($this->never())
+      ->method('setLocalChange');
+    $this->contentHubEntitiesTracking->expects($this->never())
+      ->method('save');
+    $this->importEntityManager->entityPresave($node);
+  }
+
+  /**
+   * Tests the entityPresave() method.
+   *
+   * Include content entities to comparison.
+   *
+   * @covers ::entityPresave
+   */
+  public function testEntityPresaveCompareIncludeEntityFromComparison() {
+    $node = $this->getMock('\Drupal\node\NodeInterface');
+    $original_node = $this->getMock('\Drupal\node\NodeInterface');
+    $node->original = $original_node;
+
+    $node->expects($this->any())
+      ->method('id')
+      ->willReturn(12);
+    $node->expects($this->any())
+      ->method('getEntityTypeId')
+      ->willReturn('node');
+    $this->contentHubEntitiesTracking->expects($this->once())
+      ->method('loadImportedByDrupalEntity')
+      ->with('node', 12)
+      ->willReturn($this->contentHubEntitiesTracking);
+    $this->contentHubEntitiesTracking->expects($this->once())
+      ->method('isPendingSync')
+      ->willReturn(FALSE);
+    $this->contentHubEntitiesTracking->expects($this->once())
+      ->method('hasLocalChange')
+      ->willReturn(FALSE);
+
+    $fieldDefinition = $this->getMock('\Drupal\Core\Field\FieldDefinitionInterface');
+    $fieldDefinition->expects($this->once())
+      ->method('getType')
+      ->willReturn('text');
+
+    $node->expects($this->any())
+      ->method('getFieldDefinition')
+      ->willReturn($fieldDefinition);
+
+    $field_comparisons = [
+      '12:node.same_field_2' => [
+        '#data' => [
+          '#left' => 'same_value_2',
+          '#right' => 'same_value_2',
+        ],
+      ],
+    ];
+
+    $reference = $this->getMock('\Drupal\node\NodeInterface');
+    $reference->original = $this->getMock('\Drupal\node\NodeInterface');
+    $entity1 = $this->getMock('\Drupal\Core\Entity\EntityInterface');
+    $entity_type = $this->getMock('Drupal\Core\Config\Entity\ConfigEntityTypeInterface');
+
+    $entity1->expects($this->any())
+      ->method('getEntityType')
+      ->will($this->returnValue($entity_type));
+    // Set uuid for entity reference 1.
+    $entity1->method('uuid')
+      ->willReturn('test-uuid-reference-1');
+    $entity_type->expects($this->any())
+      ->method('isSubclassOf')
+      ->willReturn(FALSE);
+    $referenced_entities1[] = $entity1;
+
+    $entity2 = $this->getMock('\Drupal\Core\Entity\EntityInterface');
+    $entity2->expects($this->any())
+      ->method('getEntityType')
+      ->will($this->returnValue($entity_type));
+    // Set uuid for entity reference 2.
+    $entity2->method('uuid')
+      ->willReturn('test-uuid-reference-2');
+    $entity_type->expects($this->any())
+      ->method('isSubclassOf')
+      ->willReturn(FALSE);
+    $referenced_entities2[] = $entity2;
+
+    // Set reference to node.
+    $node->expects($this->once())
+      ->method('referencedEntities')
+      ->willReturn($referenced_entities1);
+
+    // Set reference to origin node.
+    $node->original->expects($this->once())
+      ->method('referencedEntities')
+      ->willReturn($referenced_entities2);
+
+    $this->diffEntityComparison->expects($this->once())
+      ->method('compareRevisions')
+      ->with($original_node, $node)
+      ->willReturn($field_comparisons);
+    $this->contentHubEntitiesTracking->expects($this->once())
+      ->method('setLocalChange');
+    $this->contentHubEntitiesTracking->expects($this->once())
+      ->method('save');
+    $this->importEntityManager->entityPresave($node);
   }
 
 }

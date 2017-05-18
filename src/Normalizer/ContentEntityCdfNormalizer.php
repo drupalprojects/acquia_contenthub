@@ -884,6 +884,9 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         'comment',
         'comment_count',
         'comment_count_new',
+
+        // Do not include moderation state.
+        'moderation_state',
       ],
 
       // Excluded fields for nodes.
