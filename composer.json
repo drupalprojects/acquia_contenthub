@@ -4,17 +4,13 @@
   "description": "Module allowing Drupal sites to connect to Acquia Content Hub.",
   "license": "GPL-2.0+",
   "repositories": {
-    "content-hub-php": {
-      "type": "vcs",
-      "url": "https://github.com/acquia/content-hub-php"
-    },
     "drupal": {
       "type": "composer",
       "url": "https://packages.drupal.org/8"
     }
   },
   "require": {
-    "acquia/content-hub-php": "dev-master"
+    "acquia/content-hub-php": "^1.0.0"
   },
   "require-dev": {
     "drupal/entity_reference_revisions": "1.0",
