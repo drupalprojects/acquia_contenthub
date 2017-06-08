@@ -694,4 +694,16 @@ class ContentHubEntitiesTracking {
     return [];
   }
 
+  /**
+   * Deletes all exported entities from the tracking table.
+   *
+   * @return int
+   *   The output result from the delete query.
+   */
+  public function deleteExportedEntities() {
+    return $this->database->delete(self::TABLE)
+      ->condition('status_export', [self::INITIATED, self::EXPORTED], 'IN')
+      ->execute();
+  }
+
 }

@@ -147,11 +147,12 @@ class ClientManager implements ClientManagerInterface {
    *   The Configuration options.
    */
   public function resetConnection(array $variables, array $config = []) {
-    $hostname = isset($variables['hostname']) ? $variables['hostname'] : '';;
     $api = isset($variables['api']) ? $variables['api'] : '';
-
     $secret = isset($variables['secret']) ? $variables['secret'] : '';;
-    $origin = isset($variables['origin']) ? $variables['origin'] : '';
+
+    // If not overwritten, these should use the same configured variables.
+    $hostname = isset($variables['hostname']) ? $variables['hostname'] : $this->config->get('hostname');
+    $origin = isset($variables['origin']) ? $variables['origin'] : $this->config->get('origin');
 
     $module_info = system_get_info('module', 'acquia_contenthub');
     $module_version = (isset($module_info['version'])) ? $module_info['version'] : '0.0.0';
@@ -261,7 +262,7 @@ class ClientManager implements ClientManagerInterface {
   public function createRequest($request, array $args = [], array $exception_messages = []) {
     try {
       // Check that we have a valid connection.
-      if ($this->getConnection() === FALSE) {
+      if (empty($this->getConnection())) {
         $error = t('This client is NOT registered to Content Hub. Please register first');
         throw new Exception($error);
       }
@@ -277,6 +278,9 @@ class ClientManager implements ClientManagerInterface {
         // Case for all API calls with no argument that require authentication.
         case 'getSettings':
         case 'purge':
+        case 'restore':
+        case 'reindex':
+        case 'mapping':
         case 'regenerateSharedSecret':
           return $this->client->$request();
 
@@ -304,6 +308,7 @@ class ClientManager implements ClientManagerInterface {
           return $this->client->$request($args[0]);
 
         // Case for all API calls with 2 arguments.
+        case 'logs':
         case 'updateEntity':
           if (!isset($args[0]) || !isset($args[1])) {
             $error = t('Request %request requires %num arguments.', [
@@ -327,7 +332,7 @@ class ClientManager implements ClientManagerInterface {
       $msg = $this->getExceptionMessage($request, $args, $ex, $exception_messages, $response);
     }
     catch (RequestException $ex) {
-      $msg = $this->getExceptionMessage($request, $args, ex, $exception_messages);
+      $msg = $this->getExceptionMessage($request, $args, $ex, $exception_messages);
     }
     catch (BadResponseException $ex) {
       $response = json_decode($ex->getResponse()->getBody(), TRUE);
