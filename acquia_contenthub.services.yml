@@ -59,7 +59,7 @@ services:
 
   acquia_contenthub.content_hub_view_subscriber:
     class: Drupal\acquia_contenthub\EventSubscriber\ContentHubViewSubscriber
-    arguments: ['@current_route_match', '@config.factory', '@account_switcher']
+    arguments: ['@current_route_match', '@config.factory', '@account_switcher', '@logger.factory']
     tags:
       - { name: event_subscriber }
 

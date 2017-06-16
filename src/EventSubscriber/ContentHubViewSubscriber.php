@@ -10,6 +10,8 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\FilterControllerEvent;
 use Symfony\Component\HttpKernel\Event\FinishRequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
+use Drupal\Core\Logger\LoggerChannelFactoryInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 
 /**
  * View subscriber rendering main content render arrays into responses.
@@ -24,6 +26,8 @@ use Symfony\Component\HttpKernel\KernelEvents;
  * @see \Drupal\Core\Render\MainContentControllerPass
  */
 class ContentHubViewSubscriber implements EventSubscriberInterface {
+
+  use StringTranslationTrait;
 
   /**
    * The current route match.
@@ -54,6 +58,13 @@ class ContentHubViewSubscriber implements EventSubscriberInterface {
   protected $renderAccount;
 
   /**
+   * Logger.
+   *
+   * @var \Drupal\Core\Logger\LoggerChannelFactoryInterface
+   */
+  protected $loggerFactory;
+
+  /**
    * ContentHubViewSubscriber constructor.
    *
    * @param \Drupal\Core\Routing\RouteMatchInterface $route_match
@@ -62,12 +73,15 @@ class ContentHubViewSubscriber implements EventSubscriberInterface {
    *   The config factory.
    * @param \Drupal\Core\Session\AccountSwitcherInterface $account_switcher
    *   The Account Switcher Service.
+   * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_factory
+   *   The logger factory.
    */
-  public function __construct(RouteMatchInterface $route_match, ConfigFactoryInterface $config_factory, AccountSwitcherInterface $account_switcher) {
+  public function __construct(RouteMatchInterface $route_match, ConfigFactoryInterface $config_factory, AccountSwitcherInterface $account_switcher, LoggerChannelFactoryInterface $logger_factory) {
     $this->routeMatch = $route_match;
     $this->configFactory = $config_factory;
     $this->accountSwitcher = $account_switcher;
     $this->renderAccount = new ContentHubUserSession($this->configFactory->get('acquia_contenthub.entity_config')->get('user_role'));
+    $this->loggerFactory = $logger_factory;
   }
 
   /**
@@ -90,7 +104,14 @@ class ContentHubViewSubscriber implements EventSubscriberInterface {
    */
   public function onKernelFinishRequest(FinishRequestEvent $event) {
     if ($this->routeMatch->getRouteName() === 'acquia_contenthub.content_entity_display.entity') {
-      $this->accountSwitcher->switchBack();
+      try {
+        $this->accountSwitcher->switchBack();
+      }
+      catch (\RuntimeException $e) {
+        $this->loggerFactory->get('acquia_contenthub')->debug($this->t("Not able to switch back from Content Hub user's account because it was never changed. Current user ID: %id", [
+          '%id' => \Drupal::currentUser()->id(),
+        ]));
+      }
     }
   }
 
