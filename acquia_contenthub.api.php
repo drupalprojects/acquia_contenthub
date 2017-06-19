@@ -186,7 +186,7 @@ function hook_acquia_contenthub_drupal_from_cdf_alter($entity_type_id, $entity) 
  *
  * @see \Drupal\acquia_contenthub\Normalizer\ContentEntityNormalizer
  */
-function hook_acquia_contenthub_exclude_field_alter(array &$excluded_fields, ContentEntityInterface $entity) {
+function hook_acquia_contenthub_exclude_fields_alter(array &$excluded_fields, ContentEntityInterface $entity) {
   // Do not include the uuid field.
   $excluded_fields[] = 'uuid';
   // Gets a specific entity key and add it to the excluded fields array.

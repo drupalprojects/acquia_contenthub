@@ -5,8 +5,6 @@ namespace Drupal\Tests\acquia_contenthub\Unit\Normalizer;
 use Acquia\ContentHubClient\Entity;
 use Drupal\acquia_contenthub\Normalizer\ContentEntityCdfNormalizer;
 use Drupal\acquia_contenthub\Session\ContentHubUserSession;
-use Drupal\Core\DependencyInjection\ContainerBuilder;
-use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Tests\UnitTestCase;
 
@@ -107,6 +105,13 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   protected $entityManager;
 
   /**
+   * The Core Entity Manager.
+   *
+   * @var \Drupal\Core\Entity\EntityManagerInterface
+   */
+  protected $coreEntityManager;
+
+  /**
    * The Entity Type Manager Interface.
    *
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
@@ -138,9 +143,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * {@inheritdoc}
    */
   protected function setUp() {
-    $this->container = new ContainerBuilder();
-    $entity_manager = $this->prophesize(EntityManagerInterface::class)->reveal();
-    $this->container->set('entity.manager', $entity_manager);
+    $this->container = $this->getMock('Drupal\Core\DependencyInjection\Container');
     \Drupal::setContainer($this->container);
 
     $this->configFactory = $this->getMock('Drupal\Core\Config\ConfigFactoryInterface');
@@ -235,7 +238,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    */
   public function testNormalizeOneField() {
 
-    $this->createMockContainerResponse();
+    $this->mockContainerResponseForNormalize();
 
     $definitions = [
       'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, $this->userContext, ['0' => ['value' => 'test']]),
@@ -283,7 +286,8 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * @covers ::appendToAttribute
    */
   public function testNormalizeOneFieldMultiValued() {
-    $this->createMockContainerResponse();
+    $this->mockContainerResponseForNormalize();
+    $this->container->expects($this->at(3))->method('get')->with('entity.manager')->willReturn($this->coreEntityManager);
 
     $definitions = [
       'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, $this->userContext, [['value' => 'test'], ['value' => 'test2']]),
@@ -335,7 +339,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * @covers ::excludedProperties
    */
   public function testNormalizeWithCreatedAndChanged() {
-    $this->createMockContainerResponse();
+    $this->mockContainerResponseForNormalize();
 
     $definitions = [
       'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, $this->userContext, ['0' => ['value' => 'test']]),
@@ -380,7 +384,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * @covers ::addFieldsToContentHubEntity
    */
   public function testNormalizeWithNoFieldValue() {
-    $this->createMockContainerResponse();
+    $this->mockContainerResponseForNormalize();
     $definitions = [
       'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, $this->userContext, []),
     ];
@@ -416,7 +420,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * @covers ::addFieldsToContentHubEntity
    */
   public function testNormalizeWithFieldNameAsType() {
-    $this->createMockContainerResponse();
+    $this->mockContainerResponseForNormalize();
     $definitions = [
       'title' => $this->createMockFieldListItem('title', 'string', TRUE, $this->userContext, ['0' => ['value' => 'test']]),
     ];
@@ -450,7 +454,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * @covers ::addFieldsToContentHubEntity
    */
   public function testNormalizeWithNonStringFieldType() {
-    $this->createMockContainerResponse();
+    $this->mockContainerResponseForNormalize();
     $definitions = [
       'voted' => $this->createMockFieldListItem('voted', 'boolean', TRUE, $this->userContext, ['0' => ['value' => TRUE]]),
     ];
@@ -484,7 +488,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * @covers ::addFieldsToContentHubEntity
    */
   public function testNormalizeWithComplexFieldValues() {
-    $this->createMockContainerResponse();
+    $this->mockContainerResponseForNormalize();
     $definitions = [
       'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, $this->userContext, ['0' => ['value' => 'test', 'random_key' => 'random_data']]),
     ];
@@ -517,7 +521,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * @covers ::addFieldsToContentHubEntity
    */
   public function testNormalizeWithFieldWithoutAccess() {
-    $this->createMockContainerResponse();
+    $this->mockContainerResponseForNormalize();
     $definitions = [
       'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, $this->userContext, ['0' => ['value' => 'test']]),
       'field_2' => $this->createMockFieldListItem('field_2', 'string', FALSE, $this->userContext, ['0' => ['value' => 'test']]),
@@ -554,7 +558,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * @covers ::addFieldsToContentHubEntity
    */
   public function testNormalizeWithAccountContext() {
-    $this->createMockContainerResponse();
+    $this->mockContainerResponseForNormalize();
     $mock_account = $this->getMock('Drupal\Core\Session\AccountInterface');
     $context = ['account' => $mock_account];
 
@@ -596,7 +600,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * @covers ::addFieldsToContentHubEntity
    */
   public function testNormalizeWithRevisionId() {
-    $this->createMockContainerResponse();
+    $this->mockContainerResponseForNormalize();
     $mock_account = $this->getMock('Drupal\Core\Session\AccountInterface');
     $context = ['account' => $mock_account];
 
@@ -638,7 +642,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * @covers ::addFieldsToContentHubEntity
    */
   public function testNormalizeReferenceField() {
-    $this->createMockContainerResponse();
+    $this->mockContainerResponseForNormalize();
     $definitions = [
       'field_ref' => $this->createMockEntityReferenceFieldItemList('field_ref', TRUE, $this->userContext),
     ];
@@ -673,7 +677,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * @covers ::addFieldsToContentHubEntity
    */
   public function testNormalizeTypeReferenceField() {
-    $this->createMockContainerResponse();
+    $this->mockContainerResponseForNormalize();
     // NOTE: If you set the machine name of the mock field to 'type' things
     // don't work. Going with 'field_ref'.
     $definitions = [
@@ -1002,12 +1006,9 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   }
 
   /**
-   * Builds a Container Response.
+   * Mock container response for normalize().
    */
-  protected function createMockContainerResponse() {
-    // Defining Container Service.
-    $container = $this->getMock('Drupal\Core\DependencyInjection\Container');
-
+  protected function mockContainerResponseForNormalize() {
     $request_stack = $this->getMock('Symfony\Component\HttpFoundation\RequestStack');
     $request = $this->getMock('Symfony\Component\HttpFoundation\Request');
 
@@ -1025,11 +1026,26 @@ class ContentEntityNormalizerTest extends UnitTestCase {
       ->with('entity.node.canonical', ['node' => 1], [], FALSE)
       ->willReturn('http://localhost/node/1');
 
-    \Drupal::setContainer($container);
+    $entity_type = $this->getMock('\Drupal\Core\Entity\EntityTypeInterface');
+    $entity_type->expects($this->any())
+      ->method('getKeys')
+      ->willReturn([
+        'uid' => 'uid',
+        'id' => 'nid',
+        'revision' => 'vid',
+        'uuid' => 'uuid',
+      ]);
+
+    $this->coreEntityManager = $this->getMock('Drupal\Core\Entity\EntityManagerInterface');
+    $this->coreEntityManager
+      ->method('getDefinition')
+      ->with('node')
+      ->willReturn($entity_type);
 
     // Defining some services.
-    $container->expects($this->at(0))->method('get')->with('request_stack')->willReturn($request_stack);
-    $container->expects($this->at(1))->method('get')->with('url_generator')->willReturn($url_generator);
+    $this->container->expects($this->at(0))->method('get')->with('request_stack')->willReturn($request_stack);
+    $this->container->expects($this->at(1))->method('get')->with('entity.manager')->willReturn($this->coreEntityManager);
+    $this->container->expects($this->at(2))->method('get')->with('url_generator')->willReturn($url_generator);
   }
 
 }

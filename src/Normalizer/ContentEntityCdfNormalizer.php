@@ -853,19 +853,10 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       'global' => [
         // The following properties are always included in constructor, so we do
         // not need to check them again.
-        'id',
-        'revision',
-        'uuid',
         'created',
         'changed',
         'uri',
-
-        // Getting rid of identifiers and others.
-        'nid',
-        'fid',
-        'tid',
         'uid',
-        'cid',
 
         // Getting rid of workflow fields.
         'status',
@@ -891,29 +882,24 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
 
       // Excluded fields for nodes.
       'node' => [
-        // In the cases of nodes, exclude the revision ID.
-        'vid',
-
         // Getting rid of workflow fields.
         'sticky',
         'promote',
       ],
-
-      // Excluded fields for media.
-      'media' => [
-        'mid',
-        'vid',
-      ],
-
-      // Excluded fields for paragraphs.
-      'paragraph' => [
-        'revision_id',
-      ],
     ];
 
-    // Provide excluded properties per entity type.
     $entity_type_id = $entity->getEntityTypeId();
-    $excluded = array_merge($excluded_fields['global'], isset($excluded_fields[$entity_type_id]) ? $excluded_fields[$entity_type_id] : []);
+    $entity_keys = $entity->getEntityType()->getKeys();
+
+    // Ignore specific properties based on the entity type keys.
+    $ignored_keys = ['uid', 'id', 'revision', 'uuid'];
+    $excluded_keys = array_values(array_intersect_key($entity_keys, array_flip($ignored_keys)));
+
+    // Provide default excluded properties per entity type.
+    if (!isset($excluded_fields[$entity_type_id])) {
+      $excluded_fields[$entity_type_id] = [];
+    }
+    $excluded = array_merge($excluded_fields['global'], $excluded_fields[$entity_type_id], $excluded_keys);
 
     $excluded_to_alter = [];
 
