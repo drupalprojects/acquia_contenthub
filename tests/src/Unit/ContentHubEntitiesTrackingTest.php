@@ -120,9 +120,11 @@ class ContentHubEntitiesTrackingTest extends UnitTestCase {
     $this->assertEquals($entity->origin, $this->contentHubEntitiesTracking->getOrigin());
     $this->assertTrue($this->contentHubEntitiesTracking->isInitiated());
     $this->assertFalse($this->contentHubEntitiesTracking->isExported());
+    $this->assertFalse($this->contentHubEntitiesTracking->isReindex());
 
     $this->contentHubEntitiesTracking->setExported();
     $this->assertFalse($this->contentHubEntitiesTracking->isInitiated());
+    $this->assertFalse($this->contentHubEntitiesTracking->isReindex());
     $this->assertTrue($this->contentHubEntitiesTracking->isExported());
 
     $modified = '2017-11-04T20:51:45+00:00';

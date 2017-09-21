@@ -269,6 +269,11 @@ class ContentHubWebhookController extends ControllerBase {
    *   The Response Object.
    */
   public function processWebhook(array $webhook) {
+    // Process Reindex Webhook.
+    if ($webhook['crud'] === 'reindex') {
+      $this->processReindexWebhook($webhook);
+      return new Response('');
+    }
     $assets = isset($webhook['assets']) ? $webhook['assets'] : FALSE;
     if (count($assets) > 0) {
       $this->moduleHandler->alter('acquia_contenthub_process_webhook', $webhook);
@@ -316,6 +321,21 @@ class ContentHubWebhookController extends ControllerBase {
       ]);
       $this->loggerFactory->get('acquia_contenthub')->debug($message);
       return new Response('');
+    }
+  }
+
+  /**
+   * Process a Reindex Webhook.
+   *
+   * @param array $webhook
+   *   The webhook array.
+   */
+  private function processReindexWebhook(array $webhook) {
+    // Update the Reindex State Variable.
+    /** @var \Drupal\acquia_contenthub\Controller\ContentHubReindex $reindex */
+    $reindex = \Drupal::service('acquia_contenthub.acquia_contenthub_reindex');
+    if ($reindex->isReindexSent()) {
+      $reindex->setReindexStateFinished();
     }
   }
 

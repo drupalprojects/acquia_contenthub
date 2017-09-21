@@ -27,6 +27,10 @@ services:
     class: Drupal\acquia_contenthub\ContentHubSearch
     arguments: ['@acquia_contenthub.client_manager']
 
+  acquia_contenthub.acquia_contenthub_reindex:
+    class: Drupal\acquia_contenthub\Controller\ContentHubReindex
+    arguments: ['@acquia_contenthub.acquia_contenthub_entities_tracking', '@acquia_contenthub.client_manager']
+
   acquia_contenthub.client_manager:
     class: Drupal\acquia_contenthub\Client\ClientManager
     arguments: ['@logger.factory', '@config.factory', '@language_manager']

@@ -33,6 +33,7 @@ class ContentHubEntitiesTracking {
   // 1) initiated -> exported.
   const INITIATED = 'INITIATED';
   const EXPORTED = 'EXPORTED';
+  const REINDEX = 'REINDEX';
 
   /**
    * The Database Connection.
@@ -259,6 +260,16 @@ class ContentHubEntitiesTracking {
    */
   public function isExported() {
     return $this->getExportStatus() === self::EXPORTED;
+  }
+
+  /**
+   * Check if the entity is set for reindex or not.
+   *
+   * @return bool
+   *   TRUE if the entity is set for REINDEX, FALSE otherwise.
+   */
+  public function isReindex() {
+    return $this->getExportStatus() === self::REINDEX;
   }
 
   /**
@@ -675,23 +686,133 @@ class ContentHubEntitiesTracking {
   }
 
   /**
-   * Obtains a list of all imported entities that match a certain origin.
+   * Produces a database query that matches an origin and status.
    *
    * @param string $origin
    *   The origin UUID.
+   * @param string $status_export
+   *   The Export Status.
+   * @param string $status_import
+   *   The Import Status.
+   * @param string $entity_type_id
+   *   The Entity type.
+   *
+   * @return bool|\Drupal\Core\Database\Query\SelectInterface
+   *   The Select Query or FALSE.
+   */
+  private function getFromOriginQuery($origin, $status_export = '', $status_import = '', $entity_type_id = '') {
+    if (Uuid::isValid($origin) && ($status_export xor $status_import)) {
+      /** @var \Drupal\Core\Database\Query\SelectInterface $query */
+      $query = $this->database->select(self::TABLE, 'ci')
+        ->fields('ci')
+        ->condition('origin', $origin);
+      if (!empty($status_export)) {
+        $query = $query->condition('status_export', $status_export);
+      }
+      else {
+        $query = $query->condition('status_import', $status_import);
+      }
+      if (!empty($entity_type_id)) {
+        $query = $query->condition('entity_type', $entity_type_id);
+      }
+      return $query;
+    }
+    return FALSE;
+  }
+
+  /**
+   * Lists all imported entities that match a certain origin and status.
+   *
+   * @param string $origin
+   *   The origin UUID.
+   * @param string $status_export
+   *   The Export Status.
+   * @param string $status_import
+   *   The Import Status.
+   * @param string $entity_type_id
+   *   The Entity type.
    *
    * @return array
    *   An array containing the list of imported entities from a certain origin.
    */
-  public function getFromOrigin($origin) {
-    if (Uuid::isValid($origin)) {
-      return $this->database->select(self::TABLE, 'ci')
-        ->fields('ci')
-        ->condition('origin', $origin)
+  private function getFromOrigin($origin, $status_export = '', $status_import = '', $entity_type_id = '') {
+    if ($query = $this->getFromOriginQuery($origin, $status_export, $status_import, $entity_type_id)) {
+      return $query
         ->execute()
         ->fetchAll();
     }
     return [];
+  }
+
+  /**
+   * Obtains the number of entities that match a certain origin and status.
+   *
+   * @param string $origin
+   *   The origin UUID.
+   * @param string $status_export
+   *   The Export Status.
+   * @param string $status_import
+   *   The Import Status.
+   * @param string $entity_type_id
+   *   The Entity type.
+   *
+   * @return int
+   *   The number of entities.
+   */
+  private function getFromOriginCount($origin, $status_export = '', $status_import = '', $entity_type_id = '') {
+    if ($query = $this->getFromOriginQuery($origin, $status_export, $status_import, $entity_type_id)) {
+      return $query->countQuery()->execute()->fetchField();
+    }
+    return 0;
+  }
+
+  /**
+   * Obtains a list of exported entities set to Reindex.
+   *
+   * @param string $entity_type_id
+   *   The Entity type.
+   *
+   * @return array
+   *   An array of Tracked Entities set to reindex.
+   */
+  public function getEntitiesToReindex($entity_type_id = NULL) {
+    $origin = $this->getSiteOrigin();
+    return $this->getFromOrigin($origin, self::REINDEX, '', $entity_type_id);
+  }
+
+  /**
+   * Obtains the number of exported entities marked for Reindex.
+   *
+   * @return int
+   *   The number of entities marked for reindex.
+   */
+  public function getCountEntitiesToReindex() {
+    $origin = $this->getSiteOrigin();
+    return $this->getFromOriginCount($origin, self::REINDEX);
+  }
+
+  /**
+   * Sets all Exported Entities as Need Reindex.
+   *
+   * @param string $entity_type_id
+   *   The Entity type.
+   *
+   * @return bool|\Drupal\Core\Database\StatementInterface|int|null
+   *   The new Update Object if given a valid origin, FALSE otherwise.
+   */
+  public function setExportedEntitiesForReindex($entity_type_id = '') {
+    $origin = $this->getSiteOrigin();
+    if (Uuid::isValid($origin)) {
+      return $this->database->update(self::TABLE)
+        ->condition('entity_type', $entity_type_id)
+        ->condition('status_export', self::EXPORTED)
+        ->condition('origin', $origin)
+        ->fields([
+          'status_export' => self::REINDEX,
+        ])
+        ->execute();
+    }
+    return FALSE;
   }
 
   /**

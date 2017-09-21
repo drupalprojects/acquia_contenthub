@@ -233,6 +233,17 @@ function acquia_contenthub_drush_command() {
       'webhook_url' => dt('The webhook URL to register or unregister.'),
     ],
   ];
+  $items['acquia-contenthub-reset-entities'] = [
+    'description' => dt("Deletes all entities of a particular type from Content Hub, reindex subscription and exports all deleted entities again to allow for Elasticsearch to map correct field types."),
+    'aliases' => ['ach-reset'],
+    'bootstrap' => DRUSH_BOOTSTRAP_MAX,
+    'required-arguments' => 1,
+    'arguments' => [
+      'entity_type' => dt('The entity type.'),
+      'api' => 'API Key',
+      'secret' => 'Secret Key',
+    ],
+  ];
   return $items;
 }
 
@@ -655,7 +666,10 @@ function drush_acquia_contenthub_reindex($api = NULL, $secret = NULL) {
 
     // Execute the 'reindex' command.
     if ($client_manager->isConnected()) {
+      /** @var \Drupal\acquia_contenthub\Controller\ContentHubReindex $reindex */
+      $reindex = \Drupal::service('acquia_contenthub.acquia_contenthub_reindex');
       $response = $client_manager->createRequest('reindex');
+      $reindex->setReindexStateSent();
     }
     else {
       return drush_set_error(dt('Error trying to connect to the Content Hub. Make sure this site is registered to Content hub.'));
@@ -934,4 +948,144 @@ function drush_acquia_contenthub_webhooks($op, $webhook_url = NULL) {
   else {
     drush_set_error(dt('The Content Hub client is not connected so the webhook operations could not be performed.'));
   }
+}
+
+/**
+ * Rebuilds the Elastic Search Index in the Content Hub Subscription.
+ *
+ * WARNING! This requires elevated keys.
+ * This command will rebuild the Elastic Search Index from the subscription.
+ * It is important in cases where the field definition has changed, then all
+ * existing entities with the previous definition would have to be deleted and
+ * the index rebuilt. After that the new definition of the entities with that
+ * field can be pushed to Content Hub.
+ *
+ * @param string|null $entity_type
+ *   The entity type.
+ * @param string|null $api
+ *   API Key.
+ * @param string|null $secret
+ *   Secret Key.
+ *
+ * @return mixed|false
+ *   Drush Output.
+ */
+function drush_acquia_contenthub_reset_entities($entity_type = NULL, $api = NULL, $secret = NULL) {
+  if (empty($entity_type)) {
+    return drush_set_error(dt('You need to provide at least the entity type of the entities you want to reset.'), LogLevel::CANCEL);
+  }
+  /** @var \Drupal\acquia_contenthub\Client\ClientManager $client_manager */
+  $client_manager = \Drupal::service('acquia_contenthub.client_manager');
+
+  $warning_message = "Are you sure you want to remotely DELETE entities of type '@entity_type', REINDEX subscription and RE-EXPORT deleted entities in this Content Hub Subscription?\n" .
+    "*************************************************************************************\n" .
+    "PROCEED WITH CAUTION. THIS ACTION WILL REBUILD THE ELASTIC SEARCH INDEX IN YOUR CONTENT HUB SUBSCRIPTION.\n" .
+    "This command will rebuild your index from the data currently stored in Content Hub. Make sure to first 'unpublish' all the entities that contain undesired\n" .
+    "field definitions, otherwise you will rebuild essentially the same index you have today. Entities containing fields with new definitions can be\n" .
+    "published after the index has been rebuilt.
+    For more information, check https://docs.acquia.com/content-hub.\n" .
+    "*************************************************************************************\n" .
+    "Are you sure you want to proceed?\n";
+  $warning_message = sprintf($warning_message, ['@entity_type' => $entity_type]);
+  if (drush_confirm($warning_message)) {
+    // If API/Secret Keys have been given, reset the connection to use those
+    // keys instead of the ones set in the configuration.
+    if (!empty($api) && !empty($secret)) {
+      $client_manager->resetConnection([
+        'api' => $api,
+        'secret' => $secret,
+      ]);
+    }
+
+    // Verify that this site has a registered webhook before proceeding.
+    /** @var \Drupal\acquia_contenthub\ContentHubSubscription $subscription */
+    $subscription = \Drupal::service('acquia_contenthub.acquia_contenthub_subscription');
+    if (!$subscription->isWebhookSet()) {
+      return drush_set_error(dt("Error trying to re-set and reindex entities. You are required to have a registered webhook in this site before proceeding."));
+    }
+
+    // Execute the 'reindex' command.
+    if ($client_manager->isConnected()) {
+      /** @var \Drupal\acquia_contenthub\Controller\ContentHubReindex $reindex */
+      $reindex = \Drupal::service('acquia_contenthub.acquia_contenthub_reindex');
+
+      // Only continue with the command if we didn't send a reindex request yet.
+      // If we already sent a reindex request, then we are just waiting for it
+      // to be completed.
+      if (!$reindex->isReindexSent()) {
+
+        // If the reindex has been completed then execute the batch process to
+        // re-export entities.
+        if ($reindex->isReindexFinished()) {
+          $reindex->reExportEntitiesAfterReindex();
+
+          // Start the batch process.
+          drush_backend_batch_process();
+        }
+        else {
+          // Check whether there are entities in Content Hub that are not
+          // owned by this site.
+          $entities = $reindex->getExportedEntitiesNotOwnedByThisSite($entity_type);
+          if (count($entities) > 0) {
+            $header = [
+              'UUID',
+              'Origin',
+              'Modified',
+              'Entity Type',
+            ];
+            drush_print(dt("You cannot perform this operation because there are entities exported to Content Hub that do not belong to this site. Please go to the origins listed (sites) and delete those entities (by doing 'ach-del <UUID>') before proceeding to reindex your subscription. Below is a list of those entities that cannot be deleted from this site:\n"));
+            array_unshift($entities, $header);
+            drush_print_table($entities, TRUE);
+            return drush_set_error(dt("Error trying to re-index your subscription. You have entities that do not belong to this site."));
+          }
+
+          // Delete entities and reindex subscription.
+          $success = $reindex->setExportedEntitiesToReindex($entity_type);
+          if ($success && $reindex->isReindexSent()) {
+            drush_print("Your Subscription is being re-indexed. All clients who have registered to received webhooks will be notified with a reindex webhook when the process has been completed.\n");
+          }
+          elseif (!$success && $reindex->isReindexFailed()) {
+            return drush_set_error(dt("Error trying to re-index your subscription. You might require elevated keys to perform this operation."));
+          }
+          elseif (!$success && $reindex->isReindexNone()) {
+            return drush_set_error(dt("You are trying to reset entities of type = '@entity_type' but none of them have been exported.", [
+              '@entity_type' => $entity_type,
+            ]));
+          }
+        }
+      }
+      else {
+        return drush_set_error(dt('You have already sent a Reindex Request to Content Hub. Please wait until the current reindex is processed and finalized before you can send another reindex request again.'));
+      }
+    }
+    else {
+      return drush_set_error(dt('Error trying to connect to the Content Hub. Make sure this site is registered to Content hub.'));
+    }
+  }
+  else {
+    return drush_user_abort();
+  }
+}
+
+/**
+ * Batch finished function for re-export entities.
+ *
+ * @param bool $success
+ *   TRUE if succeeded, FALSE otherwise.
+ * @param mixed $results
+ *   The results array.
+ * @param mixed $operations
+ *   The operations array.
+ */
+function acquia_contenthub_reexport_finished($success, $results, $operations) {
+  if ($success) {
+    $message = \Drupal::translation()->formatPlural(count($results), 'One entity processed.', '@count entities processed.');
+    /** @var \Drupal\acquia_contenthub\Controller\ContentHubReindex $reindex */
+    $reindex = \Drupal::service('acquia_contenthub.acquia_contenthub_reindex');
+    $reindex->setReindexStateNone();
+  }
+  else {
+    $message = t('Finished with an error.');
+  }
+  drupal_set_message($message);
 }

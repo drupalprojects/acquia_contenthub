@@ -401,6 +401,13 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         continue;
       }
 
+      if ($name == 'bundle' && $entity->getEntityTypeId() === 'media') {
+        $attribute = new Attribute(Attribute::TYPE_ARRAY_STRING);
+        $attribute->setValue([$entity->bundle()], $langcode);
+        $contenthub_entity->setAttribute('bundle', $attribute);
+        continue;
+      }
+
       // Try to map it to a known field type.
       $field_type = $field->getFieldDefinition()->getType();
       // Go to the fallback data type when the field type is not known.
@@ -1022,9 +1029,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
             if (isset($attribute['value'][$lang])) {
               $value = reset($attribute['value'][$lang]);
               // Media entity didn't import by previous version of the module.
-              if (!Uuid::isValid($value)) {
-                $values['bundle'] = $value;
-              }
+              $values['bundle'] = $value;
             }
           }
           // Remove an attribute to avoid the 'Error reading entity with

@@ -291,6 +291,23 @@ class ContentHubSubscription {
   }
 
   /**
+   * Checks whether we have a registered webhook in this site.
+   *
+   * @return bool
+   *   TRUE if we have a registered webhook in this site, FALSE otherwise.
+   */
+  public function isWebhookSet() {
+    $webhook_uuid = $this->config->get('webhook_uuid');
+    $webhook_url = $this->config->get('webhook_url');
+    if ($settings = $this->clientManager->createRequest('getSettings')) {
+      if ($webhook = $settings->getWebhook($webhook_url)) {
+        return $webhook['uuid'] == $webhook_uuid;
+      }
+    }
+    return FALSE;
+  }
+
+  /**
    * Unregisters a Webhook from Content Hub.
    *
    * @param string $webhook_url

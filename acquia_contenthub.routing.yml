@@ -30,6 +30,14 @@ acquia_contenthub.entity_config:
   requirements:
     _permission: 'administer acquia content hub'
 
+acquia_contenthub.re_export:
+  path: '/admin/config/services/acquia-contenthub/re-export'
+  defaults:
+    _form: '\Drupal\acquia_contenthub\Form\ReExportEntitiesForm'
+    _title: 'Re-export'
+  requirements:
+    _permission: 'administer acquia content hub'
+
 acquia_contenthub.acquia_contenthub_cdf.entity:
   path: '/acquia-contenthub/{uuid}'
   methods:

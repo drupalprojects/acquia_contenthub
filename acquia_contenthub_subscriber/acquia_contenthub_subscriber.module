@@ -14,6 +14,10 @@ use Drupal\user\Entity\User;
  * Implements hook_acquia_contenthub_process_webhook_alter().
  */
 function acquia_contenthub_subscriber_acquia_contenthub_process_webhook_alter($webhook) {
+  // Do not process delete webhooks.
+  if ($webhook['crud'] === 'delete') {
+    return;
+  }
   /* @var \Drupal\acquia_contenthub\ContentHubEntitiesTracking $contenthub_entity_tracking */
   $contenthub_entity_tracking = \Drupal::service('acquia_contenthub.acquia_contenthub_entities_tracking');
 
