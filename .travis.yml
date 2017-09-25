@@ -37,8 +37,6 @@ before_install:
   - composer install
   - vendor/bin/phpcs --config-set installed_paths vendor/drupal/coder/coder_sniffer
 
-  # drush
-  - composer global require drush/drush:8.*
   # add composer's global bin directory to the path
   # see: https://github.com/drush-ops/drush#install---composer
   - export PATH="`composer global config bin-dir --absolute`:$PATH"
@@ -68,9 +66,16 @@ install:
   - echo 'sendmail_path = /bin/true' >> drupal.php.ini;
   - phpenv config-add drupal.php.ini
   - phpenv rehash
+  # drush
+  # Lightning for Drupal 8.2.x does not include drush. For Drupal 8.3.x it does.
+  - if [[ $DRUPAL == '8.2.x' ]]; then composer require drush/drush:8.*; fi
+  # Adding drush downloaded by composer to the PATH.
+  - export PATH="$PATH:`echo $PWD/vendor/drush/drush`"
+  - echo $PATH
 
   - cd docroot
-  - drush site-install lightning --db-url=mysql://root:@127.0.0.1/drupal --yes install_configure_form.update_status_module='array(FALSE,FALSE)'
+  - if [[ $DRUPAL == '8.2.x' ]]; then drush site-install lightning --db-url=mysql://root:@127.0.0.1/drupal --yes install_configure_form.update_status_module='array(FALSE,FALSE)'; fi
+  - if [[ $DRUPAL == '8.3.x' ]]; then drush site-install lightning --db-url=mysql://root:@127.0.0.1/drupal --yes install_configure_form.enable_update_status_emails=NULL; fi
   - cd ../..
 
 before_script:
