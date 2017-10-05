@@ -16,6 +16,7 @@ use Drupal\acquia_contenthub\ContentHubEntitiesTracking;
 use Drupal\Core\Session\AccountSwitcherInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\acquia_contenthub\Session\ContentHubUserSession;
+use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 
 /**
  * Controller for Content Hub Export Entities using bulk upload.
@@ -23,6 +24,13 @@ use Drupal\acquia_contenthub\Session\ContentHubUserSession;
 class ContentHubEntityExportController extends ControllerBase {
 
   protected $format = 'acquia_contenthub_cdf';
+
+  /**
+   * Logger.
+   *
+   * @var \Drupal\Core\Logger\LoggerChannelFactoryInterface
+   */
+  protected $loggerFactory;
 
   /**
    * The Basic HTTP Kernel to make requests.
@@ -90,8 +98,10 @@ class ContentHubEntityExportController extends ControllerBase {
    *   The Account Switcher Service.
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The config factory.
+   * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_factory
+   *   The logger factory.
    */
-  public function __construct(HttpKernelInterface $kernel, ClientManagerInterface $client_manager, ContentHubSubscription $contenthub_subscription, ContentHubEntitiesTracking $contenthub_entities_tracking, EntityRepositoryInterface $entity_repository, AccountSwitcherInterface $account_switcher, ConfigFactoryInterface $config_factory) {
+  public function __construct(HttpKernelInterface $kernel, ClientManagerInterface $client_manager, ContentHubSubscription $contenthub_subscription, ContentHubEntitiesTracking $contenthub_entities_tracking, EntityRepositoryInterface $entity_repository, AccountSwitcherInterface $account_switcher, ConfigFactoryInterface $config_factory, LoggerChannelFactoryInterface $logger_factory) {
     $this->kernel = $kernel;
     $this->clientManager = $client_manager;
     $this->contentHubSubscription = $contenthub_subscription;
@@ -99,6 +109,7 @@ class ContentHubEntityExportController extends ControllerBase {
     $this->entityRepository = $entity_repository;
     $this->accountSwitcher = $account_switcher;
     $this->renderUser = new ContentHubUserSession($config_factory->get('acquia_contenthub.entity_config')->get('user_role'));
+    $this->loggerFactory = $logger_factory;
   }
 
   /**
@@ -112,7 +123,8 @@ class ContentHubEntityExportController extends ControllerBase {
       $container->get('acquia_contenthub.acquia_contenthub_entities_tracking'),
       $container->get('entity.repository'),
       $container->get('account_switcher'),
-      $container->get('config.factory')
+      $container->get('config.factory'),
+      $container->get('logger.factory')
     );
   }
 
