@@ -388,4 +388,96 @@ class EntityManagerTest extends UnitTestCase {
     $this->assertEquals($expected_url, $result_url);
   }
 
+  /**
+   * Generate a list of config entity configurations.
+   */
+  private function getContentHubEntityTypeConfigEntityId($id) {
+    $bundles = [
+      'node' => [
+        'article' => [
+          'enable_index' => 1,
+          'enable_viewmodes' => 1,
+          'rendering' => [
+            'view_node1',
+            'view_node2',
+            'view_node3',
+          ],
+        ],
+      ],
+      'file' => [
+        'image' => [
+          'enable_index' => 1,
+          'enable_viewmodes' => 1,
+          'rendering' => [
+            'view_file1',
+            'view_file2',
+            'view_file3',
+          ],
+        ],
+      ],
+    ];
+    $values = [
+      'id' => $id,
+    ];
+    $config_entity = new ContentHubEntityTypeConfig($values, 'acquia_contenthub_entity_config');
+    $config_entity->setBundles($bundles[$id]);
+    return $config_entity;
+  }
+
+  /**
+   * Test for isEligibleDependency(), isEligibleEntity() methods.
+   *
+   * @covers ::isEligibleDependency
+   */
+  public function testIsEligibleDependency() {
+
+    // Defining configuration entities.
+    $node_config_entity = $this->getContentHubEntityTypeConfigEntityId('node');
+    $file_config_entity = $this->getContentHubEntityTypeConfigEntityId('file');
+    $config_entities = [
+      'node' => $node_config_entity,
+      'file' => $file_config_entity,
+    ];
+    $config_storage = $this->getMock('Drupal\Core\Entity\EntityStorageInterface');
+    $config_storage->method('loadMultiple')->willReturn($config_entities);
+    $this->entityTypeManager->method('getStorage')->with('acquia_contenthub_entity_config')->willReturn($config_storage);
+
+    $entity_manager = new EntityManager($this->loggerFactory, $this->configFactory, $this->clientManager, $this->contentHubEntitiesTracking, $this->entityTypeManager, $this->entityTypeBundleInfoManager, $this->kernel);
+
+    // Testing a Node that has been already synchronized.
+    $node = $this->getMock('\Drupal\node\NodeInterface');
+    $node->method('id')->willReturn(1);
+    $node->expects($this->any())->method('getEntityTypeId')->willReturn('node');
+    $node->__contenthub_entity_syncing = TRUE;
+    $result = $entity_manager->isEligibleDependency($node);
+    $this->assertFalse($result);
+
+    // Testing a bundle that is not configured to be exportable.
+    unset($node->__contenthub_entity_syncing);
+    $node->expects($this->at(0))->method('bundle')->willReturn('page');
+    $result = $entity_manager->isEligibleDependency($node);
+    $this->assertFalse($result);
+
+    // Testing an qualified entity that was not previously imported or exported.
+    $node->expects($this->at(1))->method('bundle')->willReturn('article');
+    $this->contentHubEntitiesTracking->expects($this->any())->method('loadImportedByDrupalEntity')->willReturn(FALSE);
+    $this->contentHubEntitiesTracking->expects($this->any())->method('loadExportedByUuid')->willReturn(FALSE);
+    $result = $entity_manager->isEligibleDependency($node);
+    $this->assertTrue($result);
+
+    // Testing a file entity with status = TEMPORARY.
+    $file = $this->getMock('\Drupal\file\FileInterface');
+    $file->method('id')->willReturn(1);
+    $file->expects($this->any())->method('getEntityTypeId')->willReturn('file');
+    $file->expects($this->any())->method('bundle')->willReturn('image');
+    $file->expects($this->at(2))->method('isTemporary')->willReturn(TRUE);
+    $file->expects($this->at(3))->method('isTemporary')->willReturn(FALSE);
+    $result = $entity_manager->isEligibleDependency($file);
+    $this->assertFalse($result);
+
+    // Testing a file entity with status = PERMANENT.
+    $result = $entity_manager->isEligibleDependency($file);
+    $this->assertTrue($result);
+  }
+
 }

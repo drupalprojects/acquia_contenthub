@@ -583,6 +583,17 @@ class ImportEntityManager {
       return $this->jsonErrorResponseMessage($error, FALSE, 400);
     }
 
+    // If the entity cannot be serialized (we detected it cannot be saved
+    // because it has missing information) then we should not try to save it.
+    if (empty($entity)) {
+      $message = $this->t('Entity (type = "%type", uuid = "%uuid") cannot be saved.', [
+        '%type' => $entity_type,
+        '%uuid' => $contenthub_entity->getUuid(),
+      ]);
+      $this->loggerFactory->get('acquia_contenthub')->debug($message);
+      return new JsonResponse(NULL);
+    }
+
     // Finally Save the Entity.
     $transaction = $this->database->startTransaction();
     try {

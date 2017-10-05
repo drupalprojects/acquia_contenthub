@@ -6,6 +6,7 @@ use Drupal\Core\Field\EntityReferenceFieldItemListInterface;
 use Acquia\ContentHubClient\Asset;
 use Acquia\ContentHubClient\Attribute;
 use Drupal\acquia_contenthub\Session\ContentHubUserSession;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Component\Render\FormattableMarkup;
 use Drupal\acquia_contenthub\ContentHubException;
@@ -31,6 +32,8 @@ use Drupal\taxonomy\Entity\Vocabulary;
  * Converts the Drupal entity object to a Acquia Content Hub CDF array.
  */
 class ContentEntityCdfNormalizer extends NormalizerBase {
+
+  use StringTranslationTrait;
 
   /**
    * The format that the Normalizer can handle.
@@ -1045,9 +1048,24 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
           foreach ($langcodes as $lang) {
             if (isset($attribute['value'][$lang])) {
               $remote_uri = $attribute['value'][$lang];
-              $file_drupal_path = system_retrieve_file($remote_uri, NULL, FALSE);
-              // @TODO: Fix this 'value' key. It should not be like that.
-              $values['uri']['value'] = $file_drupal_path;
+              if ($file_drupal_path = system_retrieve_file($remote_uri, NULL, FALSE)) {
+                $values['uri']['value'] = $file_drupal_path;
+              }
+              else {
+                // If the file URL is not publicly accessible, then this file
+                // entity cannot be created. There is no point in trying to
+                // complete the creation of this entity because it will fail
+                // to be saved in the system.
+                // Return a NULL entity and deal with it afterwards.
+                $logger = \Drupal::getContainer()->get('logger.factory');
+                $message = $this->t('File Entity with UUID = "%uuid" cannot be created: The remote resource %uri could not be downloaded into the system. Make sure this resource has a publicly accessible URL.', [
+                  '%uuid' => $values['uuid'],
+                  '%uri' => $remote_uri,
+                ]);
+                $logger->get('acquia_contenthub')->error($message);
+                drupal_set_message($message, 'error');
+                return NULL;
+              }
             }
           }
           break;

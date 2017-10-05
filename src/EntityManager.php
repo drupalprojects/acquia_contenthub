@@ -2,6 +2,7 @@
 
 namespace Drupal\acquia_contenthub;
 
+use Drupal\file\FileInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\acquia_contenthub\Client\ClientManagerInterface;
 use Drupal\Core\Entity\ContentEntityTypeInterface;
@@ -476,6 +477,12 @@ class EntityManager {
 
     $bundle_id = $entity->bundle();
     if (empty($entity_type_config) || empty($entity_type_config->isEnableIndex($bundle_id))) {
+      return FALSE;
+    }
+
+    // If this is a file with status = 0 (TEMPORARY FILE) do not export it.
+    // This is a check to avoid exporting temporary files.
+    if ($entity instanceof FileInterface && $entity->isTemporary()) {
       return FALSE;
     }
 
