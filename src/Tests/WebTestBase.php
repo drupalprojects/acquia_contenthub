@@ -128,7 +128,7 @@ abstract class WebTestBase extends SimpletestWebTestBase {
    */
   public function setContentHubConnection() {
     $config = [
-      'hostname' => 'http://localhost',
+      'hostname' => \Drupal::request()->getHost(),
       'api' => '11111111-0000-0000-0000-000000000000',
       'secret' => '22222222-0000-0000-0000-000000000000',
       'origin' => '00000000-0000-0000-0000-000000000000',

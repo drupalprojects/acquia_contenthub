@@ -16,6 +16,7 @@
     "drupal/entity_reference_revisions": "1.0",
     "drupal/diff": "*@dev",
     "drupal/workbench_moderation": "*",
-    "drupal/paragraphs": "1.0"
+    "drupal/paragraphs": "1.0",
+    "drupal/field_permissions": "^1.0@beta"
   }
 }
