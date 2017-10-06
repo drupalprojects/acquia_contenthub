@@ -243,6 +243,9 @@ class ContentHubEntityDependency {
     // consideration the dependency information contained on them.
     $excluded_attributes = $this->getExcludedAttributesFromDependencies();
 
+    // Check if 'entity_embed' exists.
+    $exists_entity_embed = \Drupal::moduleHandler()->moduleExists('entity_embed');
+
     // Finding attributes (entity references) dependencies.
     foreach ($this->cdf->getAttributes() as $name => $attribute) {
       if (!in_array($name, $excluded_attributes)) {
@@ -259,6 +262,28 @@ class ContentHubEntityDependency {
           $languages = array_keys($attribute['value']);
           foreach ($languages as $lang) {
             $dependencies = array_merge($dependencies, $attribute['value'][$lang]);
+          }
+        }
+        elseif ($exists_entity_embed && $type == Attribute::TYPE_ARRAY_STRING) {
+          // Obtaining values for every language.
+          $languages = array_keys($attribute['value']);
+          foreach ($languages as $lang) {
+            if (!is_array($attribute['value'][$lang])) {
+              continue;
+            }
+
+            // Process all text items.
+            foreach ($attribute['value'][$lang] as $item) {
+              $field = json_decode($item, TRUE);
+              $value = isset($field['value']) ? $field['value'] : '';
+
+              if (!empty($value)) {
+                // Parse uuid from text.
+                $entity_embed_handler = new ContentHubEntityEmbedHandler();
+                $uuids = $entity_embed_handler->getReferencedUuids($value);
+                $dependencies = array_merge($dependencies, $uuids);
+              }
+            }
           }
         }
       }

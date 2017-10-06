@@ -2,6 +2,7 @@
 
 namespace Drupal\acquia_contenthub\Normalizer;
 
+use Drupal\acquia_contenthub\ContentHubEntityEmbedHandler;
 use Drupal\Core\Field\EntityReferenceFieldItemListInterface;
 use Acquia\ContentHubClient\Asset;
 use Acquia\ContentHubClient\Attribute;
@@ -584,6 +585,10 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
 
     /** @var \Drupal\Core\Field\FieldItemListInterface[] $fields */
     $fields = $entity->getFields();
+
+    // Check if 'entity_embed' exists.
+    $exists_entity_embed = \Drupal::moduleHandler()->moduleExists('entity_embed');
+
     $referenced_entities = [];
     // Ignore the entity ID and revision ID.
     // Excluded comes here.
@@ -594,6 +599,14 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       $context['account'] = isset($context['account']) ? $context['account'] : NULL;
       if (in_array($field->getFieldDefinition()->getName(), $excluded_fields) || !$field->access('view', $context['account']) || $name == 'type') {
         continue;
+      }
+
+      if ($exists_entity_embed) {
+        $entity_embed_handler = new ContentHubEntityEmbedHandler($field);
+        if ($entity_embed_handler->isProcessable()) {
+          $embed_entities = $entity_embed_handler->getReferencedEntities();
+          $referenced_entities = array_merge($embed_entities, $referenced_entities);
+        }
       }
 
       if ($field instanceof EntityReferenceFieldItemListInterface) {
@@ -1047,7 +1060,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
           $attribute = $contenthub_entity->getAttribute('url');
           foreach ($langcodes as $lang) {
             if (isset($attribute['value'][$lang])) {
-              $remote_uri = $attribute['value'][$lang];
+              $remote_uri = is_array($attribute['value'][$lang]) ? array_values($attribute['value'][$lang])[0] : $attribute['value'][$lang];
               if ($file_drupal_path = system_retrieve_file($remote_uri, NULL, FALSE)) {
                 $values['uri']['value'] = $file_drupal_path;
               }
