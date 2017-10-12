@@ -45,7 +45,7 @@ before_install:
 
 install:
   - if [[ $DRUPAL == '8.2.x' ]]; then composer create-project acquia/lightning-project:8.2.0 drupal --no-interaction --no-install; fi
-  - if [[ $DRUPAL == '8.3.x' ]]; then composer create-project acquia/lightning-project:^8.1.0 drupal --no-interaction --no-install; fi
+  - if [[ $DRUPAL == '8.3.x' ]]; then composer create-project acquia/lightning-project:8.2.* drupal --no-interaction --no-install; fi
   - cd drupal
   # see https://github.com/drupal-composer/drupal-project/issues/175
   - composer config repositories.acquia_contenthub path ../build
