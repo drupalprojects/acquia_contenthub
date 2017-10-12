@@ -67,7 +67,12 @@ class ContentHubImportQueue extends ControllerBase {
       'finished' => [self::class, 'batchFinished'],
     ];
 
-    for ($i = 0; ceil($i < $queue->numberOfItems() / $config->get('import_queue_batch_size')); $i++) {
+    // Define a default value for batch_size in case it is not defined.
+    $batch_size = $config->get('import_queue_batch_size');
+    $batch_size = !empty($batch_size) && is_numeric($batch_size) ? $batch_size : 1;
+
+    // Batch operations.
+    for ($i = 0; ceil($i < $queue->numberOfItems() / $batch_size); $i++) {
       $batch['operations'][] = [[self::class, 'batchProcess'], [$config]];
     }
 
