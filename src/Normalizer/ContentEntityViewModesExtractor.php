@@ -188,8 +188,9 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
   public function getRenderedViewModes(ContentEntityInterface $object) {
     $normalized = [];
 
-    // Exit if the class does not support normalizing to the given format.
-    if (!$this->isChildOfSupportedClass($object)) {
+    // Exit if the class does not support normalizing to the given format or
+    // the entity is not yet saved in the database (does not have an ID).
+    if (!$this->isChildOfSupportedClass($object) || $object->isNew()) {
       return NULL;
     }
 

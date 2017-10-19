@@ -547,7 +547,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
 
         default:
           // Get entity URL fromRoute.
-          if ($entity->hasLinkTemplate('canonical')) {
+          if (!$entity->isNew() && $entity->hasLinkTemplate('canonical')) {
             $route_name = $entity->toUrl()->getRouteName();
             $route_params = $entity->toUrl()->getRouteParameters();
             $value = Url::fromRoute($route_name, $route_params)->toString();

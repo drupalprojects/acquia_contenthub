@@ -851,11 +851,13 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    *   The field definitions.
    * @param array $languages
    *   The languages that this fake entity should have.
+   * @param bool $is_new
+   *   TRUE if the entity is new, FALSE otherwise.
    *
    * @return \PHPUnit_Framework_MockObject_MockObject
    *   The fake ContentEntity.
    */
-  public function createMockForContentEntity(array $definitions, array $languages) {
+  public function createMockForContentEntity(array $definitions, array $languages, $is_new = FALSE) {
     $enabled_methods = [
       'getFields',
       'getEntityTypeId',
@@ -867,6 +869,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
       'toUrl',
       'access',
       'hasLinkTemplate',
+      'isNew',
     ];
 
     $content_entity_mock = $this->getMockBuilder('Drupal\Core\Entity\ContentEntityBase')
@@ -875,6 +878,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
       ->getMockForAbstractClass();
 
     $content_entity_mock->method('getFields')->willReturn($definitions);
+    $content_entity_mock->method('isNew')->willReturn($is_new);
 
     // Return the given content.
     $content_entity_mock->method('get')->willReturnCallback(function ($name) use ($definitions) {

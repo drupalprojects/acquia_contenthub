@@ -165,6 +165,9 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
     $this->contentEntity->expects($this->once())
       ->method('bundle')
       ->willReturn('bundle_1');
+    $this->contentEntity->expects($this->any())
+      ->method('isNew')
+      ->willReturn(FALSE);
 
     $this->entityTypeManager->expects($this->once())
       ->method('getStorage')
@@ -192,6 +195,9 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
     $this->contentEntity->expects($this->any())
       ->method('bundle')
       ->willReturn('bundle_1');
+    $this->contentEntity->expects($this->any())
+      ->method('isNew')
+      ->willReturn(FALSE);
 
     $this->entityTypeManager->expects($this->at(0))
       ->method('getStorage')
