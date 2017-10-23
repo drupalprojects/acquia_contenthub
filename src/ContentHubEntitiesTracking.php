@@ -827,4 +827,26 @@ class ContentHubEntitiesTracking {
       ->execute();
   }
 
+  /**
+   * Method to load multiple uuid, timestamp by given array.
+   *
+   * @param array $uuids
+   *   Array of uuid.
+   *
+   * @return array
+   *   Array[uuid] = timestamp
+   */
+  public function loadMultipleByUuid(array $uuids) {
+    $query = $this->database->select(self::TABLE, 'acet');
+
+    $query->addField('acet', 'entity_uuid');
+    $query->addField('acet', 'modified');
+
+    $query->condition('entity_uuid', $uuids, 'IN');
+    $query->condition('status_import', self::AUTO_UPDATE_ENABLED);
+
+    $result = $query->execute()->fetchAllKeyed();
+    return $result;
+  }
+
 }

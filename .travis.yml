@@ -88,6 +88,7 @@ script:
   - mkdir themes
   - cd core
   - phpunit --debug --group acquia_contenthub
+  - phpunit --debug --group acquia_contenthub_status
   - cd ..
   # fix this first: The always_populate_raw_post_data PHP setting should be set to -1
   #- drush pm-enable acquia_contenthub_subscriber -y

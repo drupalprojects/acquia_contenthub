@@ -1,0 +1,10 @@
+name: Acquia Content Hub Status
+description: Module for get status of importing content from Acquia Content Hub.
+package: Acquia Content Hub
+
+type: module
+core: 8.x
+
+dependencies:
+  - acquia_contenthub:acquia_contenthub
+  - acquia_contenthub:acquia_contenthub_subscriber
