@@ -289,7 +289,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    */
   public function testNormalizeOneFieldMultiValued() {
     $this->mockContainerResponseForNormalize();
-    $this->container->expects($this->at(3))->method('get')->with('entity.manager')->willReturn($this->coreEntityManager);
+    $this->container->expects($this->at(2))->method('get')->with('entity.manager')->willReturn($this->coreEntityManager);
 
     $definitions = [
       'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, $this->userContext, [['value' => 'test'], ['value' => 'test2']]),
@@ -905,8 +905,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     $content_entity_mock->method('getTranslationLanguages')->willReturn($languages);
 
     $url = $this->getMockBuilder('Drupal\Core\Url')->disableOriginalConstructor()->getMock();
-    $url->method('getRouteName')->willReturn('entity.node.canonical');
-    $url->method('getRouteParameters')->willReturn(['node' => 1]);
+    $url->method('toString')->willReturn('http://localhost/node/1');
     $content_entity_mock->method('toUrl')->willReturn($url);
 
     $access = $this->getMock('Drupal\Core\Access\AccessResultInterface');
@@ -1139,7 +1138,6 @@ class ContentEntityNormalizerTest extends UnitTestCase {
     // Defining some services.
     $this->container->expects($this->at(0))->method('get')->with('request_stack')->willReturn($request_stack);
     $this->container->expects($this->at(1))->method('get')->with('entity.manager')->willReturn($this->coreEntityManager);
-    $this->container->expects($this->at(2))->method('get')->with('url_generator')->willReturn($url_generator);
   }
 
 }

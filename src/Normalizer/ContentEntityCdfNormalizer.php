@@ -21,7 +21,6 @@ use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Render\RendererInterface;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
-use Drupal\Core\Url;
 use Drupal\Component\Uuid\Uuid;
 use Drupal\acquia_contenthub\EntityManager;
 use Drupal\acquia_contenthub\Controller\ContentHubEntityExportController;
@@ -546,13 +545,11 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
           break;
 
         default:
-          // Get entity URL fromRoute.
+          // Get entity URL.
           if (!$entity->isNew() && $entity->hasLinkTemplate('canonical')) {
-            $route_name = $entity->toUrl()->getRouteName();
-            $route_params = $entity->toUrl()->getRouteParameters();
-            $value = Url::fromRoute($route_name, $route_params)->toString();
-            $value = str_replace($base_path, '/', $value);
-            $value = Url::fromUri($this->baseUrl . $value)->toUriString();
+            $url = $entity->toUrl();
+            $url->setAbsolute(TRUE);
+            $value = $url->toString();
           }
           break;
       }
@@ -945,6 +942,9 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         // Getting rid of workflow fields.
         'sticky',
         'promote',
+      ],
+      'file' => [
+        'url',
       ],
     ];
 
