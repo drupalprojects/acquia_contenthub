@@ -6,6 +6,7 @@ use Drupal\Component\Render\FormattableMarkup;
 use Drupal\acquia_contenthub\Client\ClientManagerInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
+use Drupal\Core\State\StateInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -50,13 +51,21 @@ class ContentHubSubscription {
   protected $config;
 
   /**
+   * Drupal State.
+   *
+   * @var \Drupal\Core\State\StateInterface
+   */
+  protected $state;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('logger.factory'),
       $container->get('config.factory'),
-      $container->get('acquia_contenthub.client_manager')
+      $container->get('acquia_contenthub.client_manager'),
+      $container->get('state')
     );
   }
 
@@ -69,13 +78,17 @@ class ContentHubSubscription {
    *   The config factory.
    * @param \Drupal\acquia_contenthub\Client\ClientManagerInterface $client_manager
    *   The client manager.
+   * @param \Drupal\Core\State\StateInterface $state
+   *   The state class.
    */
-  public function __construct(LoggerChannelFactoryInterface $logger_factory, ConfigFactoryInterface $config_factory, ClientManagerInterface $client_manager) {
+  public function __construct(LoggerChannelFactoryInterface $logger_factory, ConfigFactoryInterface $config_factory, ClientManagerInterface $client_manager, StateInterface $state) {
     $this->loggerFactory = $logger_factory;
     $this->configFactory = $config_factory;
     $this->clientManager = $client_manager;
     // Get the content hub config settings.
     $this->config = $this->configFactory->getEditable('acquia_contenthub.admin_settings');
+
+    $this->state = $state;
   }
 
   /**
@@ -88,8 +101,7 @@ class ContentHubSubscription {
   public function getSettings() {
     if ($this->settings = $this->clientManager->createRequest('getSettings')) {
       $shared_secret = $this->settings->getSharedSecret();
-      $this->config->set('shared_secret', $shared_secret);
-      $this->config->save();
+      $this->state->set('acquia_contenthub.shared_secret', $shared_secret);
       return $this->settings;
     }
     return FALSE;
@@ -174,7 +186,7 @@ class ContentHubSubscription {
    *   The shared secret, FALSE otherwise.
    */
   public function getSharedSecret() {
-    if ($shared_secret = $this->config->get('shared_secret')) {
+    if ($shared_secret = $this->state->get('acquia_contenthub.shared_secret')) {
       return $shared_secret;
     }
     else {

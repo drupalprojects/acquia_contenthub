@@ -23,9 +23,7 @@ class SharedSecretRequirement extends ContentHubRequirementBase {
       return REQUIREMENT_OK;
     }
 
-    $config = \Drupal::configFactory()->get('acquia_contenthub.admin_settings');
-    $shared_secret = $config->get('shared_secret');
-
+    $shared_secret = \Drupal::state()->get('acquia_contenthub.shared_secret');
     $client_manager = \Drupal::service('acquia_contenthub.client_manager');
 
     // If client manager is not connected we cannot verify the remote key.

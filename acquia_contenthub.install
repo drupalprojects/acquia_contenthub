@@ -212,3 +212,11 @@ function acquia_contenthub_update_8302() {
   }
   $config->save();
 }
+
+/**
+ * Remove shared_secret config variable.
+ */
+function acquia_contenthub_update_8303() {
+  $config = \Drupal::configFactory()->getEditable('acquia_contenthub.admin_settings');
+  $config->clear('shared_secret')->save();
+}
