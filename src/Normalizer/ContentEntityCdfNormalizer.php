@@ -491,7 +491,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         else {
           // Loop over the items to get the values for each field.
           foreach ($items as $item) {
-            $keys = array_keys($item);
+            $keys = is_array($item) ? array_keys($item) : [];
             if (count($keys) == 1 && isset($item['value'])) {
               $value = $item['value'];
             }
