@@ -101,7 +101,7 @@ class ContentHubSettingsForm extends ConfigFormBase {
     $form['settings']['hostname'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Acquia Content Hub Hostname'),
-      '#description' => $this->t('The hostname of the Acquia Content Hub API, e.g. http://localhost:5000'),
+      '#description' => $this->t('The hostname of the Acquia Content Hub API without trailing slash at end of URL, e.g. http://localhost:5000'),
       '#default_value' => $config->get('hostname'),
       '#required' => TRUE,
     ];
@@ -146,7 +146,8 @@ class ContentHubSettingsForm extends ConfigFormBase {
   public function validateForm(array &$form, FormStateInterface $form_state) {
     $hostname = NULL;
     if (UrlHelper::isValid($form_state->getValue('hostname'), TRUE)) {
-      $hostname = $form_state->getValue('hostname');
+      // Remove trailing slash at end of URL.
+      $hostname = rtrim($form_state->getValue('hostname'), '/');
     }
     else {
       return $form_state->setErrorByName('hostname', $this->t('This is not a valid URL. Please insert it again.'));
@@ -215,7 +216,9 @@ class ContentHubSettingsForm extends ConfigFormBase {
       // Get the admin config.
       $config = $this->config('acquia_contenthub.admin_settings');
       if ($form_state->hasValue('hostname')) {
-        $config->set('hostname', $form_state->getValue('hostname'));
+        // Remove trailing slash at end of URL.
+        $hostname = rtrim($form_state->getValue('hostname'), '/');
+        $config->set('hostname', $hostname);
       }
 
       if ($form_state->hasValue('api_key')) {
