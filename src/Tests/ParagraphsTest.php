@@ -96,7 +96,13 @@ class ParagraphsTest extends SimpletestWebTestBase {
       'field_client_data[0][subform][field_client_location][1][subform][field_address][0][value]' => 'Another Test Address',
     ];
 
-    $this->drupalPostForm(NULL, $edit, t('Save and publish'));
+    // 8.3 has the label 'Save and publish'.
+    if ((floatval(\Drupal::VERSION) <= 8.3)) {
+      $this->drupalPostForm(NULL, $edit, t('Save and publish'));
+    }
+    else {
+      $this->drupalPostForm(NULL, $edit, t('Save'));
+    }
     $this->node = $this->getNodeByTitle($title);
 
     // Check format acquia_contenthub_cdf.
