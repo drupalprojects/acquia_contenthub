@@ -114,8 +114,10 @@ class ContentHubEntityEmbedHandlerTest extends UnitTestCase {
     $field_definition = $this->getMock('\Drupal\Core\Field\FieldDefinitionInterface');
     $field_definition->expects($this->at(0))->method('getType')->willReturn('text_with_summary');
     $field_definition->expects($this->at(1))->method('getType')->willReturn('string_long');
-    $field_definition->expects($this->at(2))->method('getType')->willReturn('text');
+    $field_definition->expects($this->at(2))->method('getType')->willReturn('text_long');
+    $field_definition->expects($this->at(3))->method('getType')->willReturn('text');
     $this->field->expects($this->any())->method('getFieldDefinition')->willReturn($field_definition);
+    $this->assertTrue($this->entityEmbedHandler->isProcessable());
     $this->assertTrue($this->entityEmbedHandler->isProcessable());
     $this->assertTrue($this->entityEmbedHandler->isProcessable());
     $this->assertFalse($this->entityEmbedHandler->isProcessable());

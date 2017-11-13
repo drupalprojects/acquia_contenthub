@@ -121,7 +121,7 @@ class ContentHubEntityEmbedHandler {
 
     $field_type = $this->field->getFieldDefinition()->getType();
     // Field types to process.
-    $types = ['text_with_summary', 'string_long'];
+    $types = ['text_with_summary', 'string_long', 'text_long'];
     return in_array($field_type, $types);
   }
 
