@@ -79,6 +79,7 @@ class ContentHubAccess implements AccessInterface {
     }
     else {
       if (empty($this->clientManager->isConnected())) {
+        $this->loggerFactory->get('acquia_contenthub')->debug('Access denied: Acquia Content Hub Client not connected.');
         return AccessResult::forbidden('Acquia Content Hub Client not connected.');
       }
       // If this user has no permission, then validate Request Signature.
@@ -87,6 +88,14 @@ class ContentHubAccess implements AccessInterface {
       $shared_secret = $this->contentHubSubscription->getSharedSecret();
       $signature = $this->clientManager->getRequestSignature($request, $shared_secret);
       $authorization = 'Acquia ContentHub:' . $signature;
+
+      // Log debug information if validation fails.
+      if ($authorization !== $authorization_header) {
+        $this->loggerFactory->get('acquia_contenthub')->debug('HMAC validation failed. [authorization = %authorization]. [authorization_header = %authorization_header]', [
+          '%authorization' => $authorization,
+          '%authorization_header' => $authorization_header,
+        ]);
+      }
 
       // Only allow access if the Signature validates.
       return AccessResult::allowedIf($authorization === $authorization_header);

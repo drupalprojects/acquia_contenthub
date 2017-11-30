@@ -256,6 +256,17 @@ class ContentHubWebhookController extends ControllerBase {
         break;
 
     }
+
+    // Log debug information if validation fails.
+    if ($authorization !== $authorization_header) {
+      $message = new FormattableMarkup('The Webhook request failed HMAC validation. [authorization = %authorization]. [authorization_header = %authorization_header]', [
+        '%authorization' => $authorization,
+        '%authorization_header' => $authorization_header,
+      ]);
+      $this->loggerFactory->get('acquia_contenthub')->debug($message);
+
+    }
+
     return (bool) ($authorization === $authorization_header);
   }
 
