@@ -777,9 +777,15 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         }
         else {
           if ($field instanceof FieldItemListInterface && is_array($value)) {
-            foreach ($value as $json_item) {
-              // Assigning the output.
-              $item = json_decode($json_item, TRUE) ?: $json_item;
+            foreach ($value as $item) {
+              // Only decode $item if it is a valid json string, otherwise just
+              // assign the value as it comes.
+              if (is_string($item) && isset($item[0]) && $item[0] === '{') {
+                $decoded = json_decode($item, TRUE);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                  $item = $decoded;
+                }
+              }
               $field->appendItem($item);
             }
           }
