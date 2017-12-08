@@ -9,6 +9,10 @@ env:
   - DRUPAL=8.3.x
   - DRUPAL=8.4.x
 
+cache:
+  directories:
+    - $HOME/.composer/cache
+
 dist: trusty
 sudo: required
 
@@ -30,7 +34,15 @@ before_install:
 
   # drop xdebug (need to read this for code coverage)
   - phpenv config-rm xdebug.ini
-  - alias php="php -d default_socket_timeout=1 -d xdebug.remote_enable=0"
+  
+  # set memory limits (x_ makes it load last)
+  - echo 'memory_limit="-1"' > x_memory.ini
+  - phpenv config-add x_memory.ini
+  - php -i | grep memory
+  
+  # alias some other values
+  - alias php="php -d default_socket_timeout=1 -d xdebug.remote_enable=0 -d memory_limit=-1"
+  
   - composer self-update
 
   # items for phpcs
@@ -43,16 +55,19 @@ before_install:
   - export PATH="`composer global config bin-dir --absolute`:$PATH"
   # debug
   - composer global config bin-dir --absolute
+  
 
 install:
   - if [[ $DRUPAL == '8.3.x' ]]; then composer create-project acquia/lightning-project:8.2.* drupal --no-interaction --no-install; fi
   - if [[ $DRUPAL == '8.4.x' ]]; then composer create-project acquia/lightning-project:8.3.* drupal --no-interaction --no-install; fi
   - cd drupal
+  
   # see https://github.com/drupal-composer/drupal-project/issues/175
   - composer config repositories.acquia_contenthub path ../build
   - composer config repositories.acquia_contenthub.symlink false
   - composer config --unset repositories.0
   - composer config repositories.drupal composer https://packages.drupal.org/8
+  
   # Fix Drupal core version to 8.4.0 see https://github.com/acquia/lightning/issues/509
   - if [[ $DRUPAL == '8.4.x' ]];
     then composer require drupal/core:8.4.0 --no-update;
@@ -60,20 +75,25 @@ install:
     fi
   - composer require drupal/acquia_contenthub:*
   - cat composer.json
+  
   # Adding paragraphs contrib module.
   - composer require drupal/entity_reference_revisions:1.3 --profile
   - composer require drupal/paragraphs:1.2 --profile
   - composer require drupal/field_permissions --profile
+  
   # Package of the lightning: 2.2.1 includes module the media_entity:2 - not intended for installation.
   - if [[ $DRUPAL == '8.4.x' ]]; then composer remove acquia/lightning; fi
+  
   # Make changes (lightning:2.2.0) to install the media_entity: 1.6 which allows to pass all the tests.
   - if [[ $DRUPAL == '8.4.x' ]]; then composer require acquia/lightning:2.2.0; fi
   - composer update
   - composer install
+  
   # Tweak PHP configuration.
   - echo 'sendmail_path = /bin/true' >> drupal.php.ini;
   - phpenv config-add drupal.php.ini
   - phpenv rehash
+  
   # Adding drush downloaded by composer to the PATH.
   - export PATH="$PATH:`echo $PWD/vendor/drush/drush`"
   - echo $PATH
@@ -91,10 +111,12 @@ script:
   - cd drupal/docroot
   - mkdir themes
   - cd core
+  
   # Use phpunit assigned require in the composer in drupal. Otherwise drupal 8.3 does not pass all the tests for PHP 7.1.
   - if [[ ( $DRUPAL == '8.4.x' && ${TRAVIS_PHP_VERSION:0:3} != '5.6' ) || ( $DRUPAL == '8.3.x' ) ]]; then ../../vendor/phpunit/phpunit/phpunit --debug --group acquia_contenthub; fi
   - if [[ ( $DRUPAL == '8.4.x' && ${TRAVIS_PHP_VERSION:0:3} != '5.6' ) || ( $DRUPAL == '8.3.x' ) ]]; then ../../vendor/phpunit/phpunit/phpunit --debug --group acquia_contenthub_status; fi
   - cd ..
+  
   # fix this first: The always_populate_raw_post_data PHP setting should be set to -1
   # - drush pm-enable acquia_contenthub_subscriber -y
   - drush pm-enable simpletest -y
