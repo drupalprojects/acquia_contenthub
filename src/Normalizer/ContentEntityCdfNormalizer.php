@@ -27,6 +27,7 @@ use Drupal\acquia_contenthub\Controller\ContentHubEntityExportController;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\taxonomy\Entity\Vocabulary;
+use Drupal\Core\Entity\EntityInterface;
 
 /**
  * Converts the Drupal entity object to a Acquia Content Hub CDF array.
@@ -606,25 +607,50 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         }
       }
 
-      if ($field instanceof EntityReferenceFieldItemListInterface) {
-
-        // Before checking each individual entity, verify if we can skip all
-        // of them at once by checking their type.
+      if ($field instanceof EntityReferenceFieldItemListInterface && !$field->isEmpty()) {
+        // Before checking each individual target entity, verify if we can skip
+        // all of them at once by checking if none of the target bundles are set
+        // to be exported in Content Hub configuration.
         $skip_entities = FALSE;
         $settings = $field->getFieldDefinition()->getSettings();
         $target_type = isset($settings['target_type']) ? $settings['target_type'] : NULL;
-        $target_bundles = isset($settings['handler_settings']['target_bundles']) ? $settings['handler_settings']['target_bundles'] : [$target_type];
+        if (isset($settings['handler_settings']['target_bundles'])) {
+          $target_bundles = $settings['handler_settings']['target_bundles'];
+        }
+        else {
+          // Certain field types such as file or user do not have target
+          // bundles. In this case, we have to inspect each referenced entity
+          // and collect all their bundles.
+          $target_bundles = [];
+          $field_entities = $field->referencedEntities();
+          foreach ($field_entities as $field_entity) {
+            if ($field_entity instanceof EntityInterface) {
+              $target_bundles[] = $field_entity->bundle();
+            }
+          }
+          $target_bundles = array_unique($target_bundles);
+          if (empty($target_bundles)) {
+            // In cases where there is no bundle defined, the default bundle
+            // name is the same as the entity type, e.g. 'file', 'user'.
+            $target_bundles = [$target_type];
+          }
+        }
+        // Compare the list of bundles with the bundles set to be exportable in
+        // the Content Hub Entity configuration form.
         if (!empty($target_type)) {
           $skip_entities = TRUE;
           foreach ($target_bundles as $target_bundle) {
-            $enable_index = isset($content_hub_entity_type_ids[$target_type]) ? !$content_hub_entity_type_ids[$target_type]->isEnableIndex($target_bundle) : FALSE;
-            $skip_entities = $skip_entities && $enable_index;
+            // If there is at least one bundle set to be exportable, it means
+            // this field cannot be skipped.
+            if (isset($content_hub_entity_type_ids[$target_type]) && $content_hub_entity_type_ids[$target_type]->isEnableIndex($target_bundle)) {
+              $skip_entities = FALSE;
+              break;
+            }
           }
         }
 
+        // Check each referenced entity to see if it should be exported.
         if (!$skip_entities) {
-          // Check whether the referenced entities should be transferred to
-          // Content Hub.
           $field_entities = $field->referencedEntities();
           foreach ($field_entities as $key => $field_entity) {
             if (!$this->entityManager->isEligibleDependency($field_entity)) {
