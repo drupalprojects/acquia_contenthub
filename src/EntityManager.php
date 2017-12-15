@@ -656,7 +656,7 @@ class EntityManager {
    * @return bool
    *   TRUE if it is a supported entity, FALSE otherwise.
    */
-  private function isSupportedContentHubEntity(EntityInterface $entity) {
+  public function isSupportedContentHubEntity(EntityInterface $entity) {
     // If the entity is not a Content Entity then it is not supported.
     if (!($entity instanceof ContentEntityInterface)) {
       return FALSE;

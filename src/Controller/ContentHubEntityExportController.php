@@ -2,21 +2,19 @@
 
 namespace Drupal\acquia_contenthub\Controller;
 
+use Drupal\acquia_contenthub\ContentHubInternalRequest;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\acquia_contenthub\Client\ClientManagerInterface;
+use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityRepositoryInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\acquia_contenthub\ContentHubSubscription;
+use Drupal\acquia_contenthub\Normalizer\ContentEntityCdfNormalizer;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Drupal\Core\Url;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpKernel\HttpKernelInterface;
-use Drupal\Component\Serialization\Json;
 use Drupal\acquia_contenthub\ContentHubEntitiesTracking;
-use Drupal\Core\Session\AccountSwitcherInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
-use Drupal\acquia_contenthub\Session\ContentHubUserSession;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
+use Drupal\acquia_contenthub\EntityManager;
 
 /**
  * Controller for Content Hub Export Entities using bulk upload.
@@ -33,13 +31,6 @@ class ContentHubEntityExportController extends ControllerBase {
   protected $loggerFactory;
 
   /**
-   * The Basic HTTP Kernel to make requests.
-   *
-   * @var \Symfony\Component\HttpKernel\HttpKernelInterface
-   */
-  protected $kernel;
-
-  /**
    * Content Hub Client Manager.
    *
    * @var \Drupal\acquia_contenthub\Client\ClientManager
@@ -47,11 +38,11 @@ class ContentHubEntityExportController extends ControllerBase {
   protected $clientManager;
 
   /**
-   * Content Hub Subscription.
+   * Content Hub Entity Manager.
    *
-   * @var \Drupal\acquia_contenthub\ContentHubSubscription
+   * @var \Drupal\acquia_contenthub\EntityManager
    */
-  protected $contentHubSubscription;
+  protected $entityManager;
 
   /**
    * Content Hub Entities Tracking.
@@ -59,6 +50,20 @@ class ContentHubEntityExportController extends ControllerBase {
    * @var \Drupal\acquia_contenthub\ContentHubEntitiesTracking
    */
   protected $contentHubEntitiesTracking;
+
+  /**
+   * The Entity CDF Normalizer.
+   *
+   * @var \Drupal\acquia_contenthub\Normalizer\ContentEntityCdfNormalizer
+   */
+  protected $entityCdfNormalizer;
+
+  /**
+   * Content Hub Export Queue Controller.
+   *
+   * @var \Drupal\acquia_contenthub\Controller\ContentHubExportQueueController
+   */
+  protected $exportQueueController;
 
   /**
    * Entity Repository.
@@ -70,45 +75,49 @@ class ContentHubEntityExportController extends ControllerBase {
   /**
    * The account switcher service.
    *
-   * @var \Drupal\Core\Session\AccountSwitcherInterface
+   * @var \Drupal\acquia_contenthub\ContentHubInternalRequest
    */
-  protected $accountSwitcher;
+  protected $internalRequest;
 
   /**
-   * The renderer.
+   * The flag to check whether the export queue is active or not.
    *
-   * @var \Drupal\Core\Render\RendererInterface
+   * @var bool
    */
-  protected $renderer;
+  protected $exportQueueEnabled;
 
   /**
    * Public Constructor.
    *
-   * @param \Symfony\Component\HttpKernel\HttpKernelInterface $kernel
-   *   The HttpKernel.
    * @param \Drupal\acquia_contenthub\Client\ClientManagerInterface $client_manager
    *   The client manager.
-   * @param \Drupal\acquia_contenthub\ContentHubSubscription $contenthub_subscription
-   *   The Content Hub Subscription.
+   * @param \Drupal\acquia_contenthub\EntityManager $entity_manager
+   *   The Content Hub Entity Manager.
    * @param \Drupal\acquia_contenthub\ContentHubEntitiesTracking $contenthub_entities_tracking
    *   The table where all entities are tracked.
+   * @param \Drupal\acquia_contenthub\Normalizer\ContentEntityCdfNormalizer $acquia_contenthub_normalizer
+   *   The Content Hub Normalizer.
+   * @param \Drupal\acquia_contenthub\Controller\ContentHubExportQueueController $export_queue_controller
+   *   The Content Hub Export Queue Controller.
    * @param \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository
    *   Entity Repository.
-   * @param \Drupal\Core\Session\AccountSwitcherInterface $account_switcher
-   *   The Account Switcher Service.
+   * @param \Drupal\acquia_contenthub\ContentHubInternalRequest $internal_request
+   *   The Content Hub Internal Request Service.
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The config factory.
    * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_factory
    *   The logger factory.
    */
-  public function __construct(HttpKernelInterface $kernel, ClientManagerInterface $client_manager, ContentHubSubscription $contenthub_subscription, ContentHubEntitiesTracking $contenthub_entities_tracking, EntityRepositoryInterface $entity_repository, AccountSwitcherInterface $account_switcher, ConfigFactoryInterface $config_factory, LoggerChannelFactoryInterface $logger_factory) {
-    $this->kernel = $kernel;
+  public function __construct(ClientManagerInterface $client_manager, EntityManager $entity_manager, ContentHubEntitiesTracking $contenthub_entities_tracking, ContentEntityCdfNormalizer $acquia_contenthub_normalizer, ContentHubExportQueueController $export_queue_controller, EntityRepositoryInterface $entity_repository, ContentHubInternalRequest $internal_request, ConfigFactoryInterface $config_factory, LoggerChannelFactoryInterface $logger_factory) {
     $this->clientManager = $client_manager;
-    $this->contentHubSubscription = $contenthub_subscription;
+    $this->entityManager = $entity_manager;
     $this->contentHubEntitiesTracking = $contenthub_entities_tracking;
+    $this->entityCdfNormalizer = $acquia_contenthub_normalizer;
+    $this->exportQueueController = $export_queue_controller;
     $this->entityRepository = $entity_repository;
-    $this->accountSwitcher = $account_switcher;
-    $this->renderUser = new ContentHubUserSession($config_factory->get('acquia_contenthub.entity_config')->get('user_role'));
+    $this->internalRequest = $internal_request;
+    $entity_config = $config_factory->get('acquia_contenthub.entity_config');
+    $this->exportQueueEnabled = (bool) $entity_config->get('export_with_queue');
     $this->loggerFactory = $logger_factory;
   }
 
@@ -117,77 +126,107 @@ class ContentHubEntityExportController extends ControllerBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('http_kernel.basic'),
       $container->get('acquia_contenthub.client_manager'),
-      $container->get('acquia_contenthub.acquia_contenthub_subscription'),
+      $container->get('acquia_contenthub.entity_manager'),
       $container->get('acquia_contenthub.acquia_contenthub_entities_tracking'),
+      $container->get('acquia_contenthub.normalizer.entity.acquia_contenthub_cdf'),
+      $container->get('acquia_contenthub.acquia_contenthub_export_queue'),
       $container->get('entity.repository'),
-      $container->get('account_switcher'),
+      $container->get('acquia_contenthub.internal_request'),
       $container->get('config.factory'),
       $container->get('logger.factory')
     );
   }
 
   /**
-   * Makes an internal HMAC-authenticated request to the site to obtain CDF.
+   * Export entities to Content Hub (using the queue if enabled).
    *
-   * @param string $entity_type
-   *   The Entity type.
-   * @param string $entity_id
-   *   The Entity ID.
-   * @param bool $include_references
-   *   Whether to include referenced entities in the CDF.
+   * @param \Drupal\Core\Entity\ContentEntityInterface[] $candidate_entities
+   *   An array of entities (uuid, entity object) to be exported to Content Hub.
    *
-   * @return array
-   *   The CDF array.
+   * @return bool
+   *   TRUE if we are using the export queue, FALSE otherwise.
    */
-  public function getEntityCdfByInternalRequest($entity_type, $entity_id, $include_references = TRUE) {
-    global $base_path;
-
-    // Creating a fake user account to give as context to the normalization.
-    $this->accountSwitcher->switchTo($this->renderUser);
-
-    try {
-      $params = [
-        'entity_type' => $entity_type,
-        'entity_id' => $entity_id,
-        $entity_type => $entity_id,
-        '_format' => 'acquia_contenthub_cdf',
-      ];
-      if ($include_references) {
-        $params['include_references'] = 'true';
+  public function exportEntities(array $candidate_entities) {
+    if ($this->exportQueueEnabled) {
+      // These entities that reacted to a hook should always be re-exported,
+      // then mark them as "queued" in the tracking table so they do not get
+      // confused with exported entities (even if a previous version of the
+      // entity has been previously exported).
+      // This is fine because they will change back to exported status in the
+      // tracking table after the queue runs, but we want to make sure that
+      // these entities are taken again when collecting dependencies.
+      // Dependencies are not exported if they have an entry in the tracking
+      // table that says that they have been previously "exported".
+      foreach ($candidate_entities as $candidate_entity) {
+        $this->queueExportedEntity($candidate_entity);
       }
-      $url = Url::fromRoute('acquia_contenthub.entity.' . $entity_type . '.GET.acquia_contenthub_cdf', $params)->toString();
-      $url = str_replace($base_path, '/', $url);
-
-      // Creating an internal HMAC-signed request.
-      $request = Request::create($url);
-      $request = $this->contentHubSubscription->setHmacAuthorization($request, TRUE);
-
-      /** @var \Drupal\Core\Render\HtmlResponse $response */
-      $response = $this->kernel->handle($request, HttpKernelInterface::SUB_REQUEST);
-      $entity_cdf_json = $response->getContent();
-      $bulk_cdf = Json::decode($entity_cdf_json);
-    }
-    catch (\Exception $e) {
-      // Do nothing, route does not exist, just log a message about it.
-      $this->loggerFactory->get('acquia_contenthub')->debug($this->t('Exception: %msg', ['%msg' => $e->getMessage()]));
-      $bulk_cdf = [];
     }
 
-    // Restore user account.
-    try {
-      $this->accountSwitcher->switchBack();
-    }
-    catch (\RuntimeException $e) {
-      // If it is not possible to switch accounts, just log a message about it.
-      $this->loggerFactory->get('acquia_contenthub')->debug($this->t("Not able to switch back from Content Hub user's account because it was never changed. Current user ID: %id", [
-        '%id' => \Drupal::currentUser()->id(),
-      ]));
+    // Verify that the collected entities are not already included within the
+    // the references of other collected entities.
+    $uuids = array_keys($candidate_entities);
+    foreach ($candidate_entities as $candidate_entity) {
+      // @TODO skip taxonomy terms because their parents will not be added to
+      // the queue here and won't get processed in the normalizer (LAT-1345).
+      if ($candidate_entity->getEntityTypeId() === 'taxonomy_term') {
+        continue;
+      }
+
+      // Get referenced entities.
+      $referenced_entities = $this->entityCdfNormalizer->getReferencedFields($candidate_entity);
+
+      // If entities are included as references then delete them from the
+      // collected entities array. They will be processed as dependencies.
+      foreach ($referenced_entities as $referenced_entity) {
+        if (in_array($referenced_entity->uuid(), $uuids)) {
+          unset($candidate_entities[$referenced_entity->uuid()]);
+        }
+      }
     }
 
-    // Return CDF.
-    return empty($bulk_cdf) ? ['entities' => []] : $bulk_cdf;
+    // Process the collected entities now that the list has been optimized.
+    if ($this->exportQueueEnabled) {
+      $this->exportQueueController->enqueueExportEntities($candidate_entities);
+      return TRUE;
+    }
+    else {
+      $exported_entities = [];
+      $bulk_url_array = [];
+      foreach ($candidate_entities as $candidate_entity) {
+        $entity_type = $candidate_entity->getEntityTypeId();
+        $entity_id = $candidate_entity->id();
+        $bulk_url_array[$entity_type][$entity_id] = $entity_id;
+        $exported_entity = $this->internalRequest->getEntityCdfByInternalRequest($entity_type, $entity_id);
+        $exported_entities = array_merge($exported_entities, $exported_entity['entities']);
+      }
+      // Eliminate duplicates.
+      $exported_cdfs = [];
+      foreach ($exported_entities as $cdf) {
+        $exported_cdfs[$cdf['uuid']] = $cdf;
+      }
+
+      // Now implode parameters.
+      foreach ($bulk_url_array as $entity_type => $entities) {
+        $bulk_url_array[$entity_type] = implode(',', $entities);
+      }
+      $resource_url = $this->entityManager->getBulkResourceUrl($bulk_url_array);
+
+      // @TODO This logic should be reviewed later on. We are just saving the
+      // exported entities and not using this information to optimize the export
+      // yet.
+      // Setting up INITIATED status to all tracked exported entities.
+      foreach ($exported_cdfs as $exported_entity) {
+        // Obtaining the entity ID from the entity.
+        $this->trackExportedEntity($exported_entity);
+      }
+      // @TODO: If we are not able to set export status for entities then we are
+      // not exporting entities. Check these lines for media entities.
+      if (!empty($exported_cdfs)) {
+        $this->entityManager->updateRemoteEntities($resource_url);
+      }
+      return FALSE;
+    }
   }
 
   /**
@@ -203,7 +242,7 @@ class ContentHubEntityExportController extends ControllerBase {
       $ids = explode(",", $entity_ids);
       foreach ($ids as $id) {
         try {
-          $bulk_cdf = $this->getEntityCDFByInternalRequest($entity, $id);
+          $bulk_cdf = $this->internalRequest->getEntityCDFByInternalRequest($entity, $id);
           $bulk_cdf = array_pop($bulk_cdf);
           if (is_array($bulk_cdf)) {
             foreach ($bulk_cdf as $cdf) {
@@ -278,6 +317,53 @@ class ContentHubEntityExportController extends ControllerBase {
 
     // Now save the entity.
     $this->contentHubEntitiesTracking->save();
+  }
+
+  /**
+   * Sets a record for an entity to be queued for export.
+   *
+   * @param \Drupal\Core\Entity\ContentEntityInterface $entity
+   *   The entity that has to be queued for export.
+   */
+  public function queueExportedEntity(ContentEntityInterface $entity) {
+    if ($exported_entity = $this->contentHubEntitiesTracking->loadExportedByUuid($entity->uuid())) {
+      $exported_entity->setQueued();
+    }
+    else {
+      // Add a new tracking record with exported status set, and
+      // imported status empty.
+      $entity = $this->entityRepository->loadEntityByUuid($entity->getEntityTypeId(), $entity->uuid());
+      $exported_entity = $this->contentHubEntitiesTracking->setExportedEntity(
+        $entity->getEntityTypeId(),
+        $entity->id(),
+        $entity->uuid(),
+      // Assigning current time/date.
+        date('c'),
+        $this->contentHubEntitiesTracking->getSiteOrigin()
+      );
+      $exported_entity->setQueued();
+    }
+
+    // Now save the entity.
+    $this->contentHubEntitiesTracking->save();
+  }
+
+  /**
+   * Deletes a set of exported entities.
+   *
+   * @param array $uuids
+   *   An array of entities' UUIDs to delete.
+   *
+   * @return int
+   *   The number of rows affected.
+   */
+  public function deleteExportedEntities(array $uuids) {
+    // Prevent deleting all exported entities. Only proceed if a set of
+    // entities is given.
+    if (!empty($uuids)) {
+      return $this->contentHubEntitiesTracking->deleteExportedEntities($uuids);
+    }
+    return 0;
   }
 
 }

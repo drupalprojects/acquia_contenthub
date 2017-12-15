@@ -205,7 +205,7 @@ class ContentHubWebhookController extends ControllerBase {
     $timestamp = time();
     // Due to networking delays and mismatched clocks, we are making the request
     // accepting window 60s.
-    if (abs($request_timestamp - $timestamp) > 60) {
+    if (abs($request_timestamp - $timestamp) > 900) {
       $message = new FormattableMarkup('The Webhook request seems that was issued in the past [Request timestamp = @t1, server timestamp = @t2]: rejected: @whook', [
         '@t1' => $request_timestamp,
         '@t2' => $timestamp,

@@ -319,9 +319,9 @@ class EntityManagerTest extends UnitTestCase {
     $content_entity->expects($this->at(2))
       ->method('getEntityTypeId')
       ->willReturn('user');
-    $this->assertTrue($this->invokeMethod($entity_manager, 'isSupportedContentHubEntity', [$content_entity]));
-    $this->assertTrue($this->invokeMethod($entity_manager, 'isSupportedContentHubEntity', [$content_entity]));
-    $this->assertFalse($this->invokeMethod($entity_manager, 'isSupportedContentHubEntity', [$content_entity]));
+    $this->assertTrue($entity_manager->isSupportedContentHubEntity($content_entity));
+    $this->assertTrue($entity_manager->isSupportedContentHubEntity($content_entity));
+    $this->assertFalse($entity_manager->isSupportedContentHubEntity($content_entity));
   }
 
   /**

@@ -35,6 +35,18 @@ acquia_contenthub.entity_config:
     use_block_content_view_builder:
       type: boolean
       label: "If true, uses block_content view builder instead of block plugin render."
+    export_with_queue:
+      type: integer
+      label: "Whether to export entities using the queue"
+    export_queue_entities_per_item:
+      type: integer
+      label: "Number of top-level entities that will be included in each item."
+    export_queue_batch_size:
+      type: integer
+      label: "Number of items that will be processed in the same batch."
+    export_queue_waiting_time:
+      type: integer
+      label: "Waiting time in seconds between processing queue items."
 
 acquia_contenthub.entity.*:
   type: config_entity

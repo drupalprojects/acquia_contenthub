@@ -72,70 +72,23 @@ function acquia_contenthub_entity_presave(EntityInterface $entity) {
 function acquia_contenthub_bulk_export() {
   /** @var \Drupal\acquia_contenthub\EntityManager $entity_manager */
   $entity_manager = \Drupal::service('acquia_contenthub.entity_manager');
-
   $entity_manager->bulkExport();
-
-  // @TODO Move all code below from acquia_contenthub_bulk_export() to
-  // entity_manager's bulkExport().
-  /** @var \Drupal\acquia_contenthub\Normalizer\ContentEntityCdfNormalizer $acquia_contenthub_normalizer */
-  $acquia_contenthub_normalizer = \Drupal::service('acquia_contenthub.normalizer.entity.acquia_contenthub_cdf');
-
-  /** @var \Drupal\acquia_contenthub\Controller\ContentHubEntityExportController $acquia_contenthub_export_controller */
-  $acquia_contenthub_export_controller = \Drupal::service('acquia_contenthub.acquia_contenthub_export_entities');
-
-  // Verify that the collected entities are not already included within the
-  // the references of other collected entities.
   $candidate_entities = $entity_manager->getExportCandidateEntities();
-  $uuids = array_keys($candidate_entities);
-  foreach ($candidate_entities as $candidate_entity) {
-    // Get referenced entities.
-    $referenced_entities = $acquia_contenthub_normalizer->getReferencedFields($candidate_entity);
 
-    // If entities are included as references then delete them from the
-    // collected entities array.
-    foreach ($referenced_entities as $referenced_entity) {
-      if (in_array($referenced_entity->uuid(), $uuids)) {
-        unset($candidate_entities[$referenced_entity->uuid()]);
-      }
-    }
-  }
+  /** @var \Drupal\acquia_contenthub\Controller\ContentHubEntityExportController $export_controller */
+  $export_controller = \Drupal::service('acquia_contenthub.acquia_contenthub_export_entities');
 
-  // The collected entities are clean now and should all be processed.
-  $exported_entities = [];
-  $bulk_url_array = [];
-  foreach ($candidate_entities as $candidate_entity) {
-    $entity_type = $candidate_entity->getEntityTypeId();
-    $entity_id = $candidate_entity->id();
-    $bulk_url_array[$entity_type][$entity_id] = $entity_id;
-    $exported_entity = $acquia_contenthub_export_controller->getEntityCdfByInternalRequest($entity_type, $entity_id);
-    $exported_entities = array_merge($exported_entities, $exported_entity['entities']);
-  }
-  // Eliminating duplicates.
-  $exported_cdfs = [];
-  foreach ($exported_entities as $cdf) {
-    $exported_cdfs[$cdf['uuid']] = $cdf;
-  }
+  // Export Entities.
+  $use_export_queue = $export_controller->exportEntities($candidate_entities);
 
-  // Now implode parameters.
-  foreach ($bulk_url_array as $entity_type => $entities) {
-    $bulk_url_array[$entity_type] = implode(',', $entities);
+  // If we are using the export queue, then always process the first item of the
+  // queue.
+  if ($use_export_queue) {
+    /** @var \Drupal\acquia_contenthub\Controller\ContentHubExportQueueController $export_queue */
+    $export_queue = \Drupal::service('acquia_contenthub.acquia_contenthub_export_queue');
+    $context = [];
+    $export_queue->batchProcess(1, $context);
   }
-  $resource_url = $entity_manager->getBulkResourceUrl($bulk_url_array);
-
-  // @TODO This logic should be reviewed later on. We are just saving the
-  // exported entities and not using this information to optimize the export
-  // yet.
-  // Setting up INITIATED status to all tracked exported entities.
-  foreach ($exported_cdfs as $exported_entity) {
-    // Obtaining the entity ID from the entity.
-    $acquia_contenthub_export_controller->trackExportedEntity($exported_entity);
-  }
-  // @TODO: If we are not able to set export status for entities then we are
-  // not exportig entities. Check these lines for media entities.
-  if (!empty($exported_cdfs)) {
-    $entity_manager->updateRemoteEntities($resource_url);
-  }
-
 }
 
 /**

@@ -125,6 +125,7 @@ class ContentHubEntitiesTrackingTest extends UnitTestCase {
     $this->contentHubEntitiesTracking->setExported();
     $this->assertFalse($this->contentHubEntitiesTracking->isInitiated());
     $this->assertFalse($this->contentHubEntitiesTracking->isReindex());
+    $this->assertFalse($this->contentHubEntitiesTracking->isQueued());
     $this->assertTrue($this->contentHubEntitiesTracking->isExported());
 
     $modified = '2017-11-04T20:51:45+00:00';
@@ -155,7 +156,12 @@ class ContentHubEntitiesTrackingTest extends UnitTestCase {
     $this->assertEquals($database_entity['modified'], $this->contentHubEntitiesTracking->getModified());
     $this->assertEquals($database_entity['origin'], $this->contentHubEntitiesTracking->getOrigin());
     $this->assertTrue($this->contentHubEntitiesTracking->isInitiated());
+    $this->assertFalse($this->contentHubEntitiesTracking->isQueued());
     $this->assertFalse($this->contentHubEntitiesTracking->isExported());
+    $this->contentHubEntitiesTracking->setQueued();
+    $this->assertTrue($this->contentHubEntitiesTracking->isQueued());
+    $this->assertFalse($this->contentHubEntitiesTracking->isExported());
+    $this->assertFalse($this->contentHubEntitiesTracking->isInitiated());
   }
 
   /**

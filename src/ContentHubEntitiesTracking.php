@@ -30,7 +30,9 @@ class ContentHubEntitiesTracking {
   const HAS_LOCAL_CHANGE     = 'HAS_LOCAL_CHANGE';
   const IS_DEPENDENT         = 'IS_DEPENDENT';
 
+  // 0) queued -> initiated.
   // 1) initiated -> exported.
+  const QUEUED = 'QUEUED';
   const INITIATED = 'INITIATED';
   const EXPORTED = 'EXPORTED';
   const REINDEX = 'REINDEX';
@@ -253,6 +255,16 @@ class ContentHubEntitiesTracking {
   }
 
   /**
+   * Check if the entity queued or not.
+   *
+   * @return bool
+   *   TRUE if the entity queued, FALSE otherwise.
+   */
+  public function isQueued() {
+    return $this->getExportStatus() === self::QUEUED;
+  }
+
+  /**
    * Check if the entity exported or not.
    *
    * @return bool
@@ -367,6 +379,17 @@ class ContentHubEntitiesTracking {
    */
   protected function setExportStatus($status_export) {
     $this->getTrackingEntity()->status_export = $status_export;
+    return $this;
+  }
+
+  /**
+   * Sets the entity to the state of "queued".
+   *
+   * @return \Drupal\acquia_contenthub\ContentHubEntitiesTracking
+   *   This ContentHubEntitiesTracking object.
+   */
+  public function setQueued() {
+    $this->setExportStatus(self::QUEUED);
     return $this;
   }
 
@@ -816,15 +839,29 @@ class ContentHubEntitiesTracking {
   }
 
   /**
-   * Deletes all exported entities from the tracking table.
+   * Deletes all or a given set of exported entities from the tracking table.
+   *
+   * @param array $uuids
+   *   An array of entities' uuids to delete.
    *
    * @return int
    *   The output result from the delete query.
    */
-  public function deleteExportedEntities() {
-    return $this->database->delete(self::TABLE)
-      ->condition('status_export', [self::INITIATED, self::EXPORTED], 'IN')
-      ->execute();
+  public function deleteExportedEntities(array $uuids = []) {
+    $query = $this->database->delete(self::TABLE)
+      ->condition('status_export', [
+        self::QUEUED,
+        self::INITIATED,
+        self::EXPORTED,
+      ], 'IN');
+
+    // If a set of uuids were given.
+    if (count($uuids) > 0) {
+      $query->condition('entity_uuid', $uuids, 'IN');
+    }
+
+    // Delete entities.
+    return $query->execute();
   }
 
   /**

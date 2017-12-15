@@ -86,3 +86,11 @@ acquia_contenthub.import_queue_batch:
     _controller: '\Drupal\acquia_contenthub\Controller\ContentHubImportQueue::process'
   requirements:
     _permission: 'administer acquia content hub'
+
+acquia_contenthub.export_queue:
+  path: '/admin/config/services/acquia-contenthub/export-queue'
+  defaults:
+    _form: '\Drupal\acquia_contenthub\Form\ContentHubExportQueueForm'
+    _title: 'Export Queue'
+  requirements:
+    _permission: 'administer acquia content hub'

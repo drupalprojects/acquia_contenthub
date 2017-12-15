@@ -1,7 +1,7 @@
 acquia_contenthub_subscriber.contenthub_filter:
   route_name: entity.contenthub_filter.collection
   title: 'Content Hub Filters'
-  weight: 150
+  weight: 550
   base_route: acquia_contenthub.admin_settings
 
 acquia_contenthub_subscriber.discovery:

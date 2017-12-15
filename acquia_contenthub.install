@@ -220,3 +220,20 @@ function acquia_contenthub_update_8303() {
   $config = \Drupal::configFactory()->getEditable('acquia_contenthub.admin_settings');
   $config->clear('shared_secret')->save();
 }
+
+/**
+ * Set default export queue parameters in acquia_contenthub.entity_config.
+ */
+function acquia_contenthub_update_8401() {
+  $config = \Drupal::configFactory()->getEditable('acquia_contenthub.entity_config');
+  if (!$config->get('export_queue_nodes_per_item')) {
+    $config->set('export_queue_nodes_per_item', 1);
+  }
+  if (!$config->get('export_queue_batch_size')) {
+    $config->set('export_queue_batch_size', 1);
+  }
+  if (!$config->get('export_queue_waiting_time')) {
+    $config->set('export_queue_waiting_time', 3);
+  }
+  $config->save();
+}

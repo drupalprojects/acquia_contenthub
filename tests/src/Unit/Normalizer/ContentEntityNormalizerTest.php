@@ -121,11 +121,11 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   protected $entityTypeManager;
 
   /**
-   * The Content Hub Export Controller.
+   * The account switcher service.
    *
-   * @var \Drupal\acquia_contenthub\Controller\ContentHubEntityExportController
+   * @var \Drupal\acquia_contenthub\ContentHubInternalRequest
    */
-  protected $exportController;
+  protected $internalRequest;
 
   /**
    * The Language Manager.
@@ -161,7 +161,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
         return NULL;
       });
 
-    $this->exportControler = $this->getMockBuilder('Drupal\acquia_contenthub\Controller\ContentHubEntityExportController')
+    $this->internalRequest = $this->getMockBuilder('Drupal\acquia_contenthub\ContentHubInternalRequest')
       ->disableOriginalConstructor()
       ->getMock();
 
@@ -176,15 +176,12 @@ class ContentEntityNormalizerTest extends UnitTestCase {
       ->getMock();
 
     $this->entityTypeManager = $this->getMock('Drupal\Core\Entity\EntityTypeManagerInterface');
-    $this->exportController = $this->getMockBuilder('Drupal\acquia_contenthub\Controller\ContentHubEntityExportController')
-      ->disableOriginalConstructor()
-      ->getMock();
 
     $this->languageManager = $this->getMock('Drupal\Core\Language\LanguageManagerInterface');
 
     $this->userContext = new ContentHubUserSession(AccountInterface::ANONYMOUS_ROLE);
 
-    $this->contentEntityNormalizer = new ContentEntityCdfNormalizer($this->configFactory, $this->contentEntityViewModesExtractor, $this->moduleHandler, $this->entityRepository, $this->kernel, $this->renderer, $this->entityManager, $this->entityTypeManager, $this->exportController, $this->languageManager);
+    $this->contentEntityNormalizer = new ContentEntityCdfNormalizer($this->configFactory, $this->contentEntityViewModesExtractor, $this->moduleHandler, $this->entityRepository, $this->kernel, $this->renderer, $this->entityManager, $this->entityTypeManager, $this->internalRequest, $this->languageManager);
   }
 
   /**

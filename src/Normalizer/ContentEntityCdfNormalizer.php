@@ -23,7 +23,7 @@ use Drupal\Core\Render\RendererInterface;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Drupal\Component\Uuid\Uuid;
 use Drupal\acquia_contenthub\EntityManager;
-use Drupal\acquia_contenthub\Controller\ContentHubEntityExportController;
+use Drupal\acquia_contenthub\ContentHubInternalRequest;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\taxonomy\Entity\Vocabulary;
@@ -121,11 +121,11 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
   protected $entityTypeManager;
 
   /**
-   * The Export Controller.
+   * The account switcher service.
    *
-   * @var \Drupal\acquia_contenthub\Controller\ContentHubEntityExportController
+   * @var \Drupal\acquia_contenthub\ContentHubInternalRequest
    */
-  protected $exportController;
+  protected $internalRequest;
 
   /**
    * Language Manager.
@@ -147,7 +147,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       $container->get('renderer'),
       $container->get('acquia_contenthub.entity_manager'),
       $container->get('entity_type.manager'),
-      $container->get('acquia_contenthub.acquia_contenthub_export_entities'),
+      $container->get('acquia_contenthub.internal_request'),
       $container->get('language_manager')
     );
   }
@@ -171,12 +171,12 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    *   The entity manager.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
-   * @param \Drupal\acquia_contenthub\Controller\ContentHubEntityExportController $export_controller
-   *   The Export Controller.
+   * @param \Drupal\acquia_contenthub\ContentHubInternalRequest $internal_request
+   *   The Content Hub Internal Request Service.
    * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
    *   The Language Manager.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, ContentEntityViewModesExtractorInterface $content_entity_view_modes_normalizer, ModuleHandlerInterface $module_handler, EntityRepositoryInterface $entity_repository, HttpKernelInterface $kernel, RendererInterface $renderer, EntityManager $entity_manager, EntityTypeManagerInterface $entity_type_manager, ContentHubEntityExportController $export_controller, LanguageManagerInterface $language_manager) {
+  public function __construct(ConfigFactoryInterface $config_factory, ContentEntityViewModesExtractorInterface $content_entity_view_modes_normalizer, ModuleHandlerInterface $module_handler, EntityRepositoryInterface $entity_repository, HttpKernelInterface $kernel, RendererInterface $renderer, EntityManager $entity_manager, EntityTypeManagerInterface $entity_type_manager, ContentHubInternalRequest $internal_request, LanguageManagerInterface $language_manager) {
     global $base_url;
     $this->baseUrl = $base_url;
     $this->config = $config_factory;
@@ -187,7 +187,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     $this->renderer = $renderer;
     $this->entityManager = $entity_manager;
     $this->entityTypeManager = $entity_type_manager;
-    $this->exportController = $export_controller;
+    $this->internalRequest = $internal_request;
     $this->languageManager = $language_manager;
   }
 
@@ -321,7 +321,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         // and the content shown to any user is 100% the same.
         try {
           // Obtain the Entity CDF by making an hmac-signed internal request.
-          $referenced_entity_list_cdf = $this->exportController->getEntityCdfByInternalRequest($entity->getEntityTypeId(), $entity->id(), FALSE);
+          $referenced_entity_list_cdf = $this->internalRequest->getEntityCdfByInternalRequest($entity->getEntityTypeId(), $entity->id(), FALSE);
           $referenced_entity_list_cdf = array_pop($referenced_entity_list_cdf);
           if (is_array($referenced_entity_list_cdf)) {
             foreach ($referenced_entity_list_cdf as $referenced_entity_cdf) {
