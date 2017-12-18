@@ -697,17 +697,25 @@ class ImportEntityManager {
     }
     // If the entity is new, create a new imported entity.
     $entity = $this->entityRepository->loadEntityByUuid($cdf['type'], $cdf['uuid']);
-    $this->contentHubEntitiesTracking->setImportedEntity(
-      $cdf['type'],
-      $entity->id(),
-      $cdf['uuid'],
-      $cdf['modified'],
-      $cdf['origin']
-    );
-    if ($contenthub_entity->isEntityDependent()) {
-      $this->contentHubEntitiesTracking->setDependent();
+    if ($entity) {
+      $this->contentHubEntitiesTracking->setImportedEntity(
+        $cdf['type'],
+        $entity->id(),
+        $cdf['uuid'],
+        $cdf['modified'],
+        $cdf['origin']
+      );
+      if ($contenthub_entity->isEntityDependent()) {
+        $this->contentHubEntitiesTracking->setDependent();
+      }
+      $this->saveImportedEntity();
+      return;
     }
-    $this->saveImportedEntity();
+    // We should never reach this far.
+    $this->loggerFactory->get('acquia_contenthub')->error('Error trying to track imported entity with uuid=%uuid, type=%type. Check if the entity exists and is being tracked properly.', [
+      '%type' => $cdf['type'],
+      '%uuid' => $cdf['uuid'],
+    ]);
   }
 
   /**
