@@ -136,6 +136,24 @@ class ContentHubFilterForm extends EntityForm {
       '#description' => $this->t('Source'),
     ];
 
+    // The Source.
+    $form['entity_types'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Entity Types'),
+      '#rows' => 4,
+      '#default_value' => implode("\n", $contenthub_filter->getEntityTypes()),
+      '#description' => $this->t('Entity types (one entity type per line)'),
+    ];
+
+    // The Source.
+    $form['bundles'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Bundles'),
+      '#rows' => 4,
+      '#default_value' => implode("\n", $contenthub_filter->getBundles()),
+      '#description' => $this->t('Bundles (one bundle per line)'),
+    ];
+
     // The Tags.
     $form['tags'] = [
       '#type' => 'textfield',
@@ -159,6 +177,9 @@ class ContentHubFilterForm extends EntityForm {
     if (empty($contenthub_filter->author)) {
       $contenthub_filter->author = $this->currentUser->id();
     }
+
+    // Fix the "entity_types" and "bundles" properties to be arrays.
+    $contenthub_filter->formatEntityTypesAndBundles();
 
     // Save the filter.
     $status = $contenthub_filter->save();

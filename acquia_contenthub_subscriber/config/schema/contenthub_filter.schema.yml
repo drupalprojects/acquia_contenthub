@@ -26,6 +26,18 @@ acquia_contenthub_subscriber.contenthub_filter.*:
     source:
       type: string
       label: 'Source'
+    entity_types:
+      type: sequence
+      label: 'Entity types'
+      sequence:
+        type: string
+        label: 'Entity type'
+    bundles:
+      type: sequence
+      label: 'Entity bundles'
+      sequence:
+        type: string
+        label: 'Entity bundle'
     tags:
       type: string
       label: 'Tags'

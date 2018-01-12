@@ -3,7 +3,9 @@
 namespace Drupal\acquia_contenthub;
 
 use Drupal\acquia_contenthub\Client\ClientManagerInterface;
-use Drupal\Component\Utility\Tags;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Language\LanguageManagerInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 
 /**
  * Perform queries to the Content Hub "_search" endpoint [Elasticsearch].
@@ -18,11 +20,27 @@ class ContentHubSearch {
   protected $clientManager;
 
   /**
+   * Language Manager.
+   *
+   * @var \Drupal\Core\Language\LanguageManagerInterface
+   */
+  protected $languageManager;
+
+  /**
+   * The entity manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  private $entityTypeManager;
+
+  /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container) {
+  public static function create(ContainerInterface $container, LanguageManagerInterface $language_manager, EntityTypeManagerInterface $entity_type_manager) {
     return new static(
-      $container->get('acquia_contenthub.client_manager')
+      $container->get('acquia_contenthub.client_manager'),
+      $language_manager,
+      $entity_type_manager
     );
   }
 
@@ -31,9 +49,15 @@ class ContentHubSearch {
    *
    * @param \Drupal\acquia_contenthub\Client\ClientManagerInterface $client_manager
    *   The client manager.
+   * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
+   *   The language manager.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The Entity Type Manager.
    */
-  public function __construct(ClientManagerInterface $client_manager) {
+  public function __construct(ClientManagerInterface $client_manager, LanguageManagerInterface $language_manager, EntityTypeManagerInterface $entity_type_manager) {
     $this->clientManager = $client_manager;
+    $this->languageManager = $language_manager;
+    $this->entityTypeManager = $entity_type_manager;
   }
 
   /**
@@ -112,128 +136,14 @@ class ContentHubSearch {
   }
 
   /**
-   * Builds Search query for given search terms.
+   * Builds Search query for given search terms..
    *
-   * @param array $typed_terms
-   *   Entered terms array.
-   * @param string $webhook_uuid
-   *   Webhook Uuid.
-   * @param string $type
-   *   Module Type to identify, which query needs to be executed.
-   * @param array $options
-   *   An associative array of options for this query, including:
-   *   - count: number of items per page.
-   *   - start: defines the offset to start from.
-   *
-   * @return int|mixed
-   *   Returns query result.
-   */
-  public function getSearchResponse(array $typed_terms, $webhook_uuid = '', $type = '', array $options = []) {
-    $origins = '';
-    foreach ($typed_terms as $typed_term) {
-      if ($typed_term['filter'] !== '_all') {
-        if ($typed_term['filter'] == 'modified') {
-          $dates = explode('to', $typed_term['value']);
-          $from = isset($dates[0]) ? trim($dates[0]) : '';
-          $to = isset($dates[1]) ? trim($dates[1]) : '';
-          if (!empty($from)) {
-            $query['filter']['range']['data.modified']['gte'] = $from;
-          }
-          if (!empty($to)) {
-            $query['filter']['range']['data.modified']['lte'] = $to;
-          }
-          $query['filter']['range']['data.modified']['time_zone'] = '+1:00';
-        }
-        elseif ($typed_term['filter'] == 'origin') {
-          $origins .= $typed_term['value'] . ',';
-        }
-        // Retrieve results for any language.
-        else {
-          $match[] = [
-            'multi_match' => [
-              'query' => $typed_term['value'],
-              'fields' => ['data.attributes.' . $typed_term['filter'] . '.value.*'],
-            ],
-          ];
-        }
-      }
-      else {
-        $array_ref = $this->getReferenceDocs($typed_term['value']);
-        if (is_array($array_ref)) {
-          $tags = implode(', ', $array_ref);
-        }
-        if ($tags) {
-          $match[] = ['match' => [$typed_term['filter'] => "*" . $typed_term['value'] . "*" . ',' . $tags]];
-        }
-        else {
-          $match[] = [
-            'match' => [
-              $typed_term['filter'] => [
-                "query" => "*" . $typed_term['value'] . "*" ,
-                "operator" => "and",
-              ],
-            ],
-          ];
-        }
-      }
-    }
-
-    if (isset($match)) {
-      $query['query']['filtered']['query']['bool']['must'] = $match;
-    }
-    if (!empty($origins)) {
-      $match[] = ['match' => ['data.origin' => $origins]];
-      $query['query']['filtered']['query']['bool']['must'] = $match;
-    }
-    $query['query']['filtered']['filter']['term']['data.type'] = 'node';
-    $query['size'] = !empty($options['count']) ? $options['count'] : 10;
-    $query['from'] = !empty($options['start']) ? $options['start'] : 0;
-    $query['highlight'] = [
-      'fields' => [
-        '*' => new \stdClass(),
-      ],
-    ];
-    if (!empty($options['sort']) && strtolower($options['sort']) !== 'relevance') {
-      $query['sort']['data.modified'] = strtolower($options['sort']);
-    }
-    switch ($type) {
-      case 'content_hub':
-        if (isset($webhook_uuid)) {
-          $query['query']['filtered']['filter']['term']['_id'] = $webhook_uuid;
-        }
-    }
-    return $this->executeSearchQuery($query);
-  }
-
-  /**
-   * Helper function to get Uuids of referenced documents.
-   *
-   * @param string $str_val
-   *   String value.
-   *
-   * @return array
-   *   Reference terms Uuid array.
-   */
-  public function getReferenceDocs($str_val) {
-    $ref_uuid = [];
-    $ref_result = $this->getFilters($str_val);
-    if ($ref_result) {
-      foreach ($ref_result as $rows) {
-        $ref_uuid[] = $rows['_id'];
-      }
-    }
-    return $ref_uuid;
-  }
-
-  /**
-   * Helper function to parse the given string with filters.
-   *
-   * @param string $str_val
-   *   The string that needs to be parsed for querying elasticsearch.
-   * @param string $webhook_uuid
-   *   The Webhook Uuid.
-   * @param string $type
-   *   Module Type to identify, which query needs to be executed.
+   * @param array $conditions
+   *   The conditions string that needs to be parsed for querying elasticsearch.
+   * @param string $asset_uuid
+   *   The Asset Uuid that came through a webhook.
+   * @param string $asset_type
+   *   The Asset Type (entity_type_id).
    * @param array $options
    *   An associative array of options for this query, including:
    *   - count: number of items per page.
@@ -242,45 +152,136 @@ class ContentHubSearch {
    * @return int|mixed
    *   Returns query response.
    */
-  public function parseSearchString($str_val, $webhook_uuid = '', $type = '', array $options = []) {
-    if ($str_val) {
-      $search_terms = Tags::explode($str_val);
-      foreach ($search_terms as $search_term) {
-        $check_for_filter = preg_match('/[:]/', $search_term);
-        if ($check_for_filter) {
-          list($filter, $value) = explode(':', $search_term);
-          $typed_terms[] = [
-            'filter' => $filter,
-            'value' => $value,
-          ];
-        }
-        else {
-          $typed_terms[] = [
-            'filter' => '_all',
-            'value' => $search_term,
-          ];
-        }
-      }
+  public function getElasticSearchQueryResponse(array $conditions, $asset_uuid, $asset_type, array $options = []) {
+    $query = [
+      'query' => [
+        'bool' => [
+          'must' => [],
+          'should' => [],
+        ],
+      ],
+      'size' => !empty($options['count']) ? $options['count'] : 10,
+      'from' => !empty($options['start']) ? $options['start'] : 0,
+      'highlight' => [
+        'fields' => [
+          '*' => new \stdClass(),
+        ],
+      ],
+    ];
 
-      return $this->getSearchResponse($typed_terms, $webhook_uuid, $type, $options);
+    // Iterating over each condition.
+    foreach ($conditions as $condition) {
+      list($filter, $value) = explode(':', $condition);
+
+      // Tweak ES query for each filter condition.
+      switch ($filter) {
+
+        // For entity types.
+        case 'entity_types':
+          $query['query']['bool']['should'][] = [
+            'terms' => [
+              'data.type' => explode(',', $value),
+            ],
+          ];
+          break;
+
+        // For bundles.
+        case 'bundle':
+          // Obtaining default language.
+          $language_default = $this->languageManager->getDefaultLanguage()->getId();
+          // Obtaining bundle_key for this bundle.
+          $bundle_key = $this->entityTypeManager->getDefinition($asset_type)->getKey('bundle');
+          if (!empty($bundle_key)) {
+            $query['query']['bool']['should'][] = [
+              'term' => [
+                "data.attributes.{$bundle_key}.value.{$language_default}" => $value,
+              ],
+            ];
+            $query['query']['bool']['should'][] = [
+              'term' => [
+                "data.attributes.{$bundle_key}.value.und" => $value,
+              ],
+            ];
+          }
+          break;
+
+        // For Search Term (Keyword).
+        case 'search_term':
+          if (!empty($value)) {
+            $query['query']['bool']['must'][] = [
+              'match' => [
+                "_all" => "*{$value}*",
+              ],
+            ];
+          }
+          break;
+
+        // For Tags.
+        case 'tags':
+          $query['query']['bool']['must'][] = [
+            'match' => [
+              "_all" => $value,
+            ],
+          ];
+          break;
+
+        // For Origin / Source.
+        case 'origins':
+          $query['query']['bool']['must'][] = [
+            'match' => [
+              "_all" => $value,
+            ],
+          ];
+          break;
+
+        case 'modified':
+          $dates = explode('to', $value);
+          $from = isset($dates[0]) ? trim($dates[0]) : '';
+          $to = isset($dates[1]) ? trim($dates[1]) : '';
+          if (!empty($from)) {
+            $date_modified['gte'] = $from;
+          }
+          if (!empty($to)) {
+            $date_modified['lte'] = $to;
+          }
+          $date_modified['time_zone'] = '+1:00';
+          $query['query']['bool']['must'][] = [
+            'range' => [
+              "data.modified" => $date_modified,
+            ],
+          ];
+          break;
+
+      }
     }
+    if (!empty($options['sort']) && strtolower($options['sort']) !== 'relevance') {
+      $query['sort']['data.modified'] = strtolower($options['sort']);
+    }
+    if (isset($asset_uuid)) {
+      $query['query']['bool']['must'][] = [
+        'term' => [
+          '_id' => $asset_uuid,
+        ],
+      ];
+    }
+    return $this->executeSearchQuery($query);
   }
 
   /**
-   * Builds tags list and executes query for a given webhook uuid.
+   * Executes and ES query for a given asset uuid.
    *
-   * @param string $tags
-   *   List of tags separated by comma.
-   * @param string $webhook_uuid
-   *   Webhook Uuid.
-   * @param string $type
-   *   Module Type to identify, which query needs to be executed.
+   * @param array $conditions
+   *   List of filter conditions.
+   * @param string $asset_uuid
+   *   The Asset Uuid that arrived through a webhook.
+   * @param string $asset_type
+   *   The Asset Type (entity_type_id).
    *
    * @return bool
    *   Returns query result.
    */
-  public function buildTagsQuery($tags, $webhook_uuid, $type = '') {
-    $result = $this->parseSearchString($tags, $webhook_uuid, $type);
+  public function buildElasticSearchQuery(array $conditions, $asset_uuid, $asset_type) {
+    $result = $this->getElasticSearchQueryResponse($conditions, $asset_uuid, $asset_type);
     if ($result & !empty($result['total'])) {
       return $result['total'];
     }

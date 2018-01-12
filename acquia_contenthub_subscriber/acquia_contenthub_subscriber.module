@@ -110,7 +110,8 @@ function acquia_contenthub_subscriber_process_filters(ImportEntityManager $impor
  *   TRUE if matches condition, FALSE otherwise.
  */
 function acquia_contenthub_subscriber_evaluate_filter_conditions(ContentHubFilterInterface $contenthub_filter, array $asset) {
-  $uuid = $asset['uuid'];
+  $asset_uuid = $asset['uuid'];
+  $asset_type = $asset['type'];
   /* @var \Drupal\acquia_contenthub\ContentHubSearch $contenthub_search */
   $contenthub_search = \Drupal::service('acquia_contenthub.acquia_contenthub_search');
 
@@ -118,9 +119,8 @@ function acquia_contenthub_subscriber_evaluate_filter_conditions(ContentHubFilte
   $conditions = $contenthub_filter->getConditions();
 
   // Process the uuid that comes in the webhook's asset.
-  $type = 'content_hub';
-  if (isset($uuid) && !empty($conditions)) {
-    $count = $contenthub_search->buildTagsQuery($conditions, $uuid, $type);
+  if (isset($asset_uuid) && !empty($conditions)) {
+    $count = $contenthub_search->buildElasticSearchQuery($conditions, $asset_uuid, $asset_type);
     if ($count > 0) {
       return TRUE;
     }

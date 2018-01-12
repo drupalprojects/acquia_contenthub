@@ -34,10 +34,10 @@ interface ContentHubFilterInterface extends ConfigEntityInterface {
   public function getAuthor();
 
   /**
-   * Returns the conditions string.
+   * Returns the filter conditions as an array.
    *
-   * @return string
-   *   Returns the condition string.
+   * @return array
+   *   Returns the filter conditions.
    */
   public function getConditions();
 

@@ -33,7 +33,7 @@ services:
 
   acquia_contenthub.acquia_contenthub_search:
     class: Drupal\acquia_contenthub\ContentHubSearch
-    arguments: ['@acquia_contenthub.client_manager']
+    arguments: ['@acquia_contenthub.client_manager', '@language_manager', '@entity_type.manager']
 
   acquia_contenthub.acquia_contenthub_reindex:
     class: Drupal\acquia_contenthub\Controller\ContentHubReindex

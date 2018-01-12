@@ -393,6 +393,13 @@ abstract class WebTestBase extends SimpletestWebTestBase {
         $values['search_term'] = $this->randomMachineName();
         $author = $account !== NULL ? $account->id() : $this->adminUser->id();
         $values['author'] = intval($author);
+        $values['entity_types'] = [
+          'node',
+        ];
+        $values['bundles'] = [
+          'article',
+          'page',
+        ];
         break;
     }
     return $values;

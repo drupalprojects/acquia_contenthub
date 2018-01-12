@@ -92,6 +92,20 @@ class ContentHubFilter extends ConfigEntityBase implements ContentHubFilterInter
   public $tags;
 
   /**
+   * Entity Types.
+   *
+   * @var string[]
+   */
+  public $entity_types;
+
+  /**
+   * The Entity Bundles.
+   *
+   * @var string[]
+   */
+  public $bundles;
+
+  /**
    * The Author or the user UID who created the filter.
    *
    * @var int
@@ -131,6 +145,26 @@ class ContentHubFilter extends ConfigEntityBase implements ContentHubFilterInter
   }
 
   /**
+   * Returns the list of entity types.
+   *
+   * @return \string[]
+   *   A list of entity types.
+   */
+  public function getEntityTypes() {
+    return is_array($this->entity_types) ? $this->entity_types : [];
+  }
+
+  /**
+   * Returns the list of bundles.
+   *
+   * @return \string[]
+   *   An array of bundles.
+   */
+  public function getBundles() {
+    return is_array($this->bundles) ? $this->bundles : [];
+  }
+
+  /**
    * Returns the Author name (User account name).
    *
    * @return string
@@ -142,38 +176,63 @@ class ContentHubFilter extends ConfigEntityBase implements ContentHubFilterInter
   }
 
   /**
-   * Gets the Conditions to match in a webhook.
+   * Gets the Filter Conditions to match in a webhook asset.
+   *
+   * @return array
+   *   An array of filter conditions.
    */
   public function getConditions() {
-    $tags = [];
+    $conditions = [];
 
     // Search Term.
     if (!empty($this->search_term)) {
-      $tags[] = $this->search_term;
+      $conditions[] = 'search_term:' . $this->search_term;
     }
 
     // <Date From>to<Date-To>.
     if (!empty($this->from_date) || !empty($this->to_date)) {
-      $tags[] = 'modified:' . $this->from_date . 'to' . $this->to_date;
+      $conditions[] = 'modified:' . $this->from_date . 'to' . $this->to_date;
     }
 
     // Building origin condition.
     if (!empty($this->source)) {
-      $origins = explode(',', $this->source);
-      foreach ($origins as $origin) {
-        $tags[] = 'origin:' . $origin;
-      }
+      $conditions[] = 'origins:' . $this->source;
     }
 
     // Building field_tags condition.
     if (!empty($this->tags)) {
       $field_tags = explode(',', $this->tags);
       foreach ($field_tags as $field_tag) {
-        $tags[] = 'field_tags:' . $field_tag;
+        $conditions[] = 'tags:' . $field_tag;
       }
     }
 
-    return implode(',', $tags);
+    // Buildling entity type condition.
+    if (!empty($this->entity_types)) {
+      $conditions[] = 'entity_types:' . implode(',', $this->entity_types);
+    }
+
+    // Buildling bundle condition.
+    if (!empty($this->bundles)) {
+      foreach ($this->bundles as $bundle) {
+        $conditions[] = 'bundle:' . $bundle;
+      }
+    }
+    return $conditions;
+  }
+
+  /**
+   * Formats the 'Entity Types' and 'Bundles' properties.
+   */
+  public function formatEntityTypesAndBundles() {
+    $entity_types = $this->entity_types;
+    $bundles = $this->bundles;
+    if (!is_array($entity_types)) {
+      $this->entity_types = array_filter(array_map('trim', explode(PHP_EOL, $this->entity_types)));
+    }
+    if (!is_array($bundles)) {
+      $this->bundles = array_filter(array_map('trim', explode(PHP_EOL, $bundles)));
+    }
   }
 
   /**
@@ -228,6 +287,8 @@ class ContentHubFilter extends ConfigEntityBase implements ContentHubFilterInter
       'from_date',
       'to_date',
       'source',
+      'entity_types',
+      'bundles',
       'tags',
     ];
 
