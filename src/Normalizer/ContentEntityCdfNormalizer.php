@@ -955,6 +955,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         // Translation fields.
         'content_translation_outdated',
         'content_translation_source',
+        'content_translation_uid',
         'default_langcode',
 
         // Do not include comments.
