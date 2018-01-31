@@ -1250,21 +1250,23 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         case 'paragraph':
           // In case of paragraphs, we need to strip out the parent_uuid and
           // change it for parent_id.
-          $attribute = $contenthub_entity->getAttribute('parent_uuid');
-          foreach ($langcodes as $lang) {
-            $uuid = $attribute['value'][$lang];
-            $parent_type = $contenthub_entity->getAttribute('parent_type');
-            $parent_type_id = reset($parent_type['value'][$lang]);
-            $parent_entity = $this->entityRepository->loadEntityByUuid($parent_type_id, $uuid);
+          // Fix a bug happening during export where parent_uuid only includes
+          // one language, which will fail during multilingual import. Extract
+          // the parent UUID and replicate it into all the languages.
+          $parent_uuid = current(array_filter($contenthub_entity->getAttribute('parent_uuid')['value']));
+          $parent_type = current(current(array_filter($contenthub_entity->getAttribute('parent_type')['value'])));
+          $parent_entity = $this->entityRepository->loadEntityByUuid($parent_type, $parent_uuid);
 
-            // Replace parent_uuid attribute with parent_id.
-            $contenthub_entity->removeAttribute('parent_uuid');
-            $attribute = new Attribute(Attribute::TYPE_ARRAY_STRING);
-            $attribute->setValue([$parent_entity->id()], $lang);
-            $attributes = $contenthub_entity->getAttributes();
-            $attributes['parent_id'] = (array) $attribute;
-            $contenthub_entity->setAttributes($attributes);
+          $parent_id_attribute = new Attribute(Attribute::TYPE_ARRAY_STRING);
+          foreach ($langcodes as $lang) {
+            $parent_id_attribute->setValue([$parent_entity->id()], $lang);
           }
+
+          // Add parent_id attribute to entity and remove parent_uuid.
+          $attributes = $contenthub_entity->getAttributes();
+          $attributes['parent_id'] = (array) $parent_id_attribute;
+          $contenthub_entity->setAttributes($attributes);
+          $contenthub_entity->removeAttribute('parent_uuid');
           break;
       }
 
