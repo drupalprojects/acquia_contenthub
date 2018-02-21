@@ -111,3 +111,7 @@ services:
   acquia_contenthub.form.node_form:
     class: Drupal\acquia_contenthub\Form\NodeForm
     arguments: ['@current_user', '@acquia_contenthub.acquia_contenthub_entities_tracking']
+
+  acquia_contenthub.queue.database.memory_limit:
+    class: Drupal\acquia_contenthub\Queue\MemoryLimitDatabaseQueueFactory
+    arguments: ['@database']
