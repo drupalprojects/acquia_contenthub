@@ -430,6 +430,15 @@ class EntityManagerTest extends UnitTestCase {
    * @covers ::isEligibleDependency
    */
   public function testIsEligibleDependency() {
+    // Initializing Container.
+    $module_handler = $this->getMock('\Drupal\Core\Extension\ModuleHandlerInterface');
+    $module_handler->expects($this->any())->method('invokeAll')->willReturn([]);
+    $container = $this->getMock('Drupal\Core\DependencyInjection\Container');
+    \Drupal::setContainer($container);
+    $container->expects($this->any())
+      ->method('get')
+      ->with('module_handler')
+      ->willReturn($module_handler);
 
     // Defining configuration entities.
     $node_config_entity = $this->getContentHubEntityTypeConfigEntityId('node');

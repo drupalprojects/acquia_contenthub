@@ -166,7 +166,7 @@ class EntityManager {
     if ($entity instanceof NodeInterface && isset($entity->original)) {
       // We also know the $do_export at this point should be TRUE.
       $old_is_published = $entity->original->isPublished();
-      $new_is_published = $entity->isPublished();
+      $new_is_published = $this->isPublished($entity);
       if (!$new_is_published) {
         $do_export = FALSE;
       }
@@ -319,7 +319,7 @@ class EntityManager {
     foreach ($candidate_entites as $uuid => $candidate_entity) {
       $root_ancestor_entity = $this->findRootAncestorEntity($candidate_entity);
       // If root ancestor is not published, delete the current entity.
-      if ($root_ancestor_entity instanceof NodeInterface && !$root_ancestor_entity->isPublished()) {
+      if ($root_ancestor_entity instanceof NodeInterface && !$this->isPublished($root_ancestor_entity)) {
         $this->candidateEntities[SELF::UNEXPORT][$uuid] = $candidate_entity;
         unset($this->candidateEntities[SELF::EXPORT][$uuid]);
       }
@@ -510,6 +510,15 @@ class EntityManager {
         // $this->loggerFactory->get('acquia_contenthub')->error($message);
       }
       return FALSE;
+    }
+
+    /** @var \Drupal\Core\Extension\ModuleHandlerInterface $module_handler */
+    $module_handler = \Drupal::getContainer()->get("module_handler");
+    $results = $module_handler->invokeAll('acquia_contenthub_is_eligible_entity', [$entity]);
+    foreach ($results as $result) {
+      if ($result === FALSE) {
+        return FALSE;
+      }
     }
 
     return TRUE;
@@ -705,6 +714,45 @@ class EntityManager {
     }
 
     return $this->findRootAncestorEntity($entity->getParentEntity());
+  }
+
+  /**
+   * Detect the publishing status of a particular entity.
+   *
+   * If the entity is translatable and has at least one published translation
+   * then the resulting publishing status will be TRUE.
+   *
+   * @param \Drupal\Core\Entity\ContentEntityInterface $entity
+   *   The Content Entity.
+   *
+   * @return bool
+   *   TRUE if at least one published translation, FALSE otherwise.
+   */
+  public function isPublished(ContentEntityInterface $entity) {
+    /** @var \Drupal\Core\Extension\ModuleHandlerInterface $module_handler */
+    $module_handler = \Drupal::getContainer()->get("module_handler");
+    if ($module_handler->moduleExists('content_translation')) {
+      /** @var \Drupal\content_translation\ContentTranslationManagerInterface $translation_manager */
+      $translation_manager = \Drupal::getContainer()->get("content_translation.manager");
+
+      // If we are using content_translation module and this is a 'translatable'
+      // entity, then check if at least one translation is published.
+      if ($translation_manager->isEnabled($entity->getEntityTypeId(), $entity->bundle())) {
+        // Check whether this entity has at least one published translation.
+        $languages = $entity->getTranslationLanguages();
+        foreach ($languages as $language) {
+          $langcode = $language->getId();
+          $localized_entity = $entity->getTranslation($langcode);
+          /** @var \Drupal\content_translation\ContentTranslationMetadataWrapperInterface $translation_metadata */
+          $translation_metadata = $translation_manager->getTranslationMetadata($localized_entity);
+          if ($translation_metadata->isPublished()) {
+            return TRUE;
+          }
+        }
+        return FALSE;
+      }
+    }
+    return ($entity instanceof NodeInterface) ? $entity->isPublished() : FALSE;
   }
 
 }

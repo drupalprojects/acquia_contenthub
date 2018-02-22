@@ -325,17 +325,19 @@ class ContentHubEntityDependency {
       if (isset($this->getRawEntity()['attributes']['author'])) {
         // Get the language.
         $languages = array_keys($this->cdf['attributes']['author']['value']);
-        $lang = reset($languages);
-        $this->cdf['attributes']['author']['value'][$lang] = $author;
+        foreach ($languages as $lang) {
+          $this->cdf['attributes']['author']['value'][$lang] = $author;
+        }
       }
       else {
-        // Get the language.
-        $lang = reset($this->cdf['attributes']['langcode']['value']);
+        // Set the author for each language.
+        $lang_author = [];
+        foreach ($this->cdf['attributes']['langcode']['value'] as $lang) {
+          $lang_author[$lang] = $author;
+        }
         $this->cdf['attributes']['author'] = [
           'type' => 'reference',
-          'value' => [
-            $lang => $author,
-          ],
+          'value' => $lang_author,
         ];
       }
     }
@@ -354,17 +356,19 @@ class ContentHubEntityDependency {
       if (isset($this->getRawEntity()['attributes']['status'])) {
         // Get the language.
         $languages = array_keys($this->cdf['attributes']['status']['value']);
-        $lang = reset($languages);
-        $this->cdf['attributes']['status']['value'][$lang] = $status;
+        foreach ($languages as $lang) {
+          $this->cdf['attributes']['status']['value'][$lang] = $status;
+        }
       }
       else {
-        // Get the language.
-        $lang = reset($this->cdf['attributes']['langcode']['value']);
+        // Set the status for each language.
+        $lang_status = [];
+        foreach ($this->cdf['attributes']['langcode']['value'] as $lang) {
+          $lang_status[$lang] = $status;
+        }
         $this->cdf['attributes']['status'] = [
           'type' => 'integer',
-          'value' => [
-            $lang => $status,
-          ],
+          'value' => $lang_status,
         ];
       }
     }

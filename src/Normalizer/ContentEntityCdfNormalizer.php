@@ -135,6 +135,13 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
   protected $languageManager;
 
   /**
+   * Translation Manager.
+   *
+   * @var \Drupal\content_translation\ContentTranslationManagerInterface
+   */
+  protected $translationManager;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
@@ -189,6 +196,11 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     $this->entityTypeManager = $entity_type_manager;
     $this->internalRequest = $internal_request;
     $this->languageManager = $language_manager;
+
+    // Setting this property only if content_translation is enabled.
+    if ($this->moduleHandler->moduleExists('content_translation')) {
+      $this->translationManager = \Drupal::getContainer()->get("content_translation.manager");
+    }
   }
 
   /**
@@ -297,6 +309,17 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     foreach ($languages as $language) {
       $langcode = $language->getId();
       $localized_entity = $entity->getTranslation($langcode);
+
+      // If content_translation is enabled, then check whether the current
+      // translation revision of the content has been published.
+      if (!empty($this->translationManager) && $this->translationManager->isEnabled($entity_type_id, $entity->bundle())) {
+        /** @var \Drupal\content_translation\ContentTranslationMetadataWrapperInterface $translation_metadata */
+        $translation_metadata = $this->translationManager->getTranslationMetadata($localized_entity);
+        if (!$translation_metadata->isPublished()) {
+          continue;
+        }
+      }
+
       $contenthub_entity = $this->addFieldsToContentHubEntity($contenthub_entity, $localized_entity, $langcode, $context);
     }
 
@@ -1057,7 +1080,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
             // Set the author as coming from the CDF.
             $author = $contenthub_entity->getAttribute('author') ? $contenthub_entity->getAttribute('author')['value'][$language] : FALSE;
             $user = Uuid::isValid($author) ? $this->entityRepository->loadEntityByUuid('user', $author) : \Drupal::currentUser();
-            $values['uid'] = $user->id() ? $user->id() : FALSE;
+            $values['uid'] = $user->id() ? $user->id() : 0;
 
             // Set the status as coming from the CDF.
             // If it doesn't have a status attribute, set it as 0 (unpublished).
@@ -1095,7 +1118,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
             if (isset($attribute['value'][$lang])) {
               $remote_uri = is_array($attribute['value'][$lang]) ? array_values($attribute['value'][$lang])[0] : $attribute['value'][$lang];
               if ($file_drupal_path = system_retrieve_file($remote_uri, NULL, FALSE)) {
-                $values['uri']['value'] = $file_drupal_path;
+                $values['uri'] = $file_drupal_path;
               }
               else {
                 // If the file URL is not publicly accessible, then this file
@@ -1150,11 +1173,10 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
           break;
       }
 
+      $langcode_key = $this->entityTypeManager->getDefinition($entity_type)->getKey('langcode');
+      $values[$langcode_key] = array_values($langcodes);
       $entity = $this->entityTypeManager->getStorage($entity_type)->create($values);
     }
-
-    // Assigning langcodes.
-    $entity->langcodes = array_values($langcodes);
 
     // We have to iterate over the entity translations and add all the
     // translations versions.
@@ -1162,7 +1184,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     foreach ($languages as $language => $languagedata) {
       // Make sure the entity language is one of the language contained in the
       // Content Hub Entity.
-      if (in_array($language, $langcodes)) {
+      if (in_array($language, array_keys($langcodes))) {
         if ($entity->hasTranslation($language)) {
           $localized_entity = $entity->getTranslation($language);
           $entity = $this->addFieldsToDrupalEntity($localized_entity, $contenthub_entity, $language, $context);

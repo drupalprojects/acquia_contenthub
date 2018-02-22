@@ -7,6 +7,7 @@
 
 use Drupal\Core\Entity\ContentEntityInterface;
 use Acquia\ContentHubClient\Entity as ContentHubEntity;
+use Drupal\Core\Entity\EntityInterface;
 
 /**
  * @addtogroup hooks
@@ -252,4 +253,27 @@ function hook_acquia_contenthub_field_type_mapping_alter(array &$mapping) {
 function hook_acquia_contenthub_cdf_alter(ContentHubEntity &$contenthub_entity, array &$context) {
   $langcode = isset($context['langcode']) ? $context['langcode'] : \Drupal::languageManager()->getDefaultLanguage();
   $contenthub_entity->setAttributeValue('my_attribute', 'this_is_my_value', $langcode);
+}
+
+/**
+ * Determines whether an entity is eligible to be published to Content Hub.
+ *
+ * Modules may implement this hook to determine whether a particular entity can
+ * be exported to Content Hub on a custom logic.
+ * Content Hub checks for entities that are published and selected in the entity
+ * configuration page but additional logic can be added through this hook.
+ *
+ * For example only nodes promoted to the frontpage can be published to Content
+ * Hub according to the following code.
+ *
+ * @param \Drupal\Core\Entity\EntityInterface $entity
+ *   The entity to check for eligibility.
+ *
+ * @return bool
+ *   TRUE if it is eligible to be published, FALSE otherwise.
+ */
+function hook_acquia_contenthub_is_eligible_entity(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() === 'node') {
+    return $entity->isPromoted();
+  }
 }
