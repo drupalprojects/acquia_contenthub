@@ -646,13 +646,13 @@ class EntityManager {
   private function getExcludedContentEntityTypeIds() {
     return [
       'comment',
-      'user',
       'contact_message',
-      'shortcut',
+      'crop',
       'menu_link_content',
-      'user',
       'scheduled_update',
       'search_api_task',
+      'shortcut',
+      'user',
     ];
   }
 

@@ -237,3 +237,13 @@ function acquia_contenthub_update_8401() {
   }
   $config->save();
 }
+
+/**
+ * Remove crop entities from contenthub entity configuration.
+ */
+function acquia_contenthub_update_8402() {
+  $entity = \Drupal::entityTypeManager()->getStorage('acquia_contenthub_entity_config')->load('crop');
+  if ($entity) {
+    $entity->delete();
+  }
+}
