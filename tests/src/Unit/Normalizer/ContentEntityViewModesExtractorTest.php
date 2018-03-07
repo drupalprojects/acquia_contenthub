@@ -2,9 +2,12 @@
 
 namespace Drupal\Tests\acquia_contenthub\Unit\Normalizer;
 
+use Drupal\Core\Render\HtmlResponse;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Tests\UnitTestCase;
 use Drupal\acquia_contenthub\Normalizer\ContentEntityViewModesExtractor;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\HttpKernelInterface;
 
 require_once __DIR__ . '/../Polyfill/Drupal.php';
 
@@ -116,6 +119,13 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
   private $contentEntityViewModesExtractor;
 
   /**
+   * The Request Stack Service.
+   *
+   * @var \Symfony\Component\HttpFoundation\RequestStack
+   */
+  protected $requestStack;
+
+  /**
    * {@inheritdoc}
    */
   public function setUp() {
@@ -149,7 +159,11 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
       ->with('acquia_contenthub.entity_config')
       ->willReturn($config);
 
-    $this->contentEntityViewModesExtractor = new ContentEntityViewModesExtractor($this->currentUser, $this->entityDisplayRepository, $this->entityTypeManager, $this->renderer, $this->kernel, $this->accountSwitcher, $this->contentHubSubscription, $this->configFactory, $this->blockManager);
+    $this->requestStack = $this->getMockBuilder('Symfony\Component\HttpFoundation\RequestStack')
+      ->disableOriginalConstructor()
+      ->getMock();
+
+    $this->contentEntityViewModesExtractor = new ContentEntityViewModesExtractor($this->currentUser, $this->entityDisplayRepository, $this->entityTypeManager, $this->renderer, $this->kernel, $this->accountSwitcher, $this->contentHubSubscription, $this->configFactory, $this->blockManager, $this->requestStack);
 
   }
 
@@ -303,15 +317,31 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
 
     $this->contentHubSubscription->expects($this->once())
       ->method('setHmacAuthorization')
-      ->will($this->returnArgument(0));
+      ->willReturnCallback(function (Request $request, $use_shared_secret) {
+        $request->headers->set('Authorization', 'Acquia ContentHub:testSignature');
+        return $request;
+      });
 
-    $response = $this->getMock('Drupal\Core\Render\HtmlResponse');
-    $response->expects($this->once())
-      ->method('getContent')
-      ->willReturn('a_html_response_content');
+    $request = new Request();
+    // Set cookies and server variables to the main request that are expected
+    // to be carried over to internal subrequests.
+    $request->cookies->set('test', 'cookie_test_value');
+    $request->server->set('test', 'server_test_value');
+    $this->requestStack->expects($this->once())->method('getCurrentRequest')->willReturn($request);
+
+    // Creating response obtained from the internal sub-request. Check that the
+    // cookies and server variables are passed to the sub-request.
     $this->kernel->expects($this->once())
       ->method('handle')
-      ->willReturn($response);
+      ->willReturnCallback(function (Request $request, $type) {
+        $cookie_value = $request->cookies->get('test');
+        $server_value = $request->server->get('test');
+        $authorization_header = $request->headers->get('Authorization');
+        $output = "<html>{$type}|{$cookie_value}|{$server_value}|{$authorization_header}</html>";
+        $response = new HtmlResponse();
+        $response->setContent($output);
+        return $response;
+      });
 
     $rendered_view_modes = $this->contentEntityViewModesExtractor->getRenderedViewModes($this->contentEntity);
 
@@ -321,7 +351,7 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
         'preview_image' => 'file_create_url:a_style_decorated_file_uri',
         'label' => 'view_mode_2 label',
         'url' => '/a_generated_url',
-        'html' => 'a_html_response_content',
+        'html' => '<html>' . HttpKernelInterface::SUB_REQUEST . '|cookie_test_value|server_test_value|Acquia ContentHub:testSignature</html>',
       ],
     ];
 

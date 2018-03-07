@@ -439,10 +439,10 @@ class ContentHubSubscription {
    */
   public function setHmacAuthorization(Request $request, $use_shared_secret = TRUE) {
     if ($this->clientManager->isConnected()) {
-      $request->headers->set('Date', gmdate('D, d M Y H:i:s T'));
+      $request->headers->set('Date', gmdate('D, d M Y H:i:s T'), TRUE);
       $secret = $use_shared_secret ? $this->getSharedSecret() : $this->config->get('secret_key');
       $signature = $this->clientManager->getRequestSignature($request, $secret);
-      $request->headers->set('Authorization', 'Acquia ContentHub:' . $signature, FALSE);
+      $request->headers->set('Authorization', 'Acquia ContentHub:' . $signature, TRUE);
     }
     return $request;
   }

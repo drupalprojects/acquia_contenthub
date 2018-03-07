@@ -25,7 +25,7 @@ services:
 
   acquia_contenthub.internal_request:
     class: Drupal\acquia_contenthub\ContentHubInternalRequest
-    arguments: ['@http_kernel.basic', '@acquia_contenthub.acquia_contenthub_subscription', '@account_switcher', '@config.factory', '@logger.factory']
+    arguments: ['@http_kernel.basic', '@acquia_contenthub.acquia_contenthub_subscription', '@account_switcher', '@config.factory', '@logger.factory', '@request_stack']
 
   acquia_contenthub.acquia_contenthub_subscription:
     class: Drupal\acquia_contenthub\ContentHubSubscription
@@ -51,7 +51,7 @@ services:
 
   acquia_contenthub.normalizer.content_entity_view_modes_extractor:
     class: Drupal\acquia_contenthub\Normalizer\ContentEntityViewModesExtractor
-    arguments: ['@current_user', '@entity_display.repository', '@entity_type.manager', '@renderer', '@http_kernel.basic', '@account_switcher', '@acquia_contenthub.acquia_contenthub_subscription', '@config.factory', '@plugin.manager.block']
+    arguments: ['@current_user', '@entity_display.repository', '@entity_type.manager', '@renderer', '@http_kernel.basic', '@account_switcher', '@acquia_contenthub.acquia_contenthub_subscription', '@config.factory', '@plugin.manager.block', '@request_stack']
 
   acquia_contenthub.encoder.acquia_contenthub_cdf:
     class: Drupal\acquia_contenthub\Encoder\ContentHubCdfEncoder

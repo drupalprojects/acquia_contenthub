@@ -17,6 +17,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Drupal\acquia_contenthub\ContentHubSubscription;
 use Drupal\acquia_contenthub\Session\ContentHubUserSession;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Extracts the rendered view modes from a given ContentEntity Object.
@@ -100,6 +101,13 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
   protected $blockManager;
 
   /**
+   * The Request Stack Service.
+   *
+   * @var \Symfony\Component\HttpFoundation\RequestStack
+   */
+  protected $requestStack;
+
+  /**
    * Constructs a ContentEntityViewModesExtractor object.
    *
    * @param \Drupal\Core\Session\AccountProxyInterface $current_user
@@ -120,8 +128,10 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
    *   The config factory.
    * @param \Drupal\Core\Block\BlockManagerInterface $block_manager
    *   The Block Manager Interface.
+   * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
+   *   The Request Stack.
    */
-  public function __construct(AccountProxyInterface $current_user, EntityDisplayRepositoryInterface $entity_display_repository, EntityTypeManagerInterface $entity_type_manager, RendererInterface $renderer, HttpKernelInterface $kernel, AccountSwitcherInterface $account_switcher, ContentHubSubscription $contenthub_subscription, ConfigFactoryInterface $config_factory, BlockManagerInterface $block_manager) {
+  public function __construct(AccountProxyInterface $current_user, EntityDisplayRepositoryInterface $entity_display_repository, EntityTypeManagerInterface $entity_type_manager, RendererInterface $renderer, HttpKernelInterface $kernel, AccountSwitcherInterface $account_switcher, ContentHubSubscription $contenthub_subscription, ConfigFactoryInterface $config_factory, BlockManagerInterface $block_manager, RequestStack $request_stack) {
     $this->currentUser = $current_user;
     $this->entityDisplayRepository = $entity_display_repository;
     $this->entityTypeManager = $entity_type_manager;
@@ -132,6 +142,7 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
     $this->config = $config_factory;
     $this->renderUser = new ContentHubUserSession($this->config->get('acquia_contenthub.entity_config')->get('user_role'));
     $this->blockManager = $block_manager;
+    $this->requestStack = $request_stack;
   }
 
   /**
@@ -226,8 +237,9 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
       ])->getInternalPath();
 
       $url = '/' . $url;
-      $request = Request::create($url);
-      $request = $this->contentHubSubscription->setHmacAuthorization($request);
+      $master_request = $this->requestStack->getCurrentRequest();
+      $request = Request::create($url, 'GET', [], $master_request->cookies->all(), [], $master_request->server->all());
+      $request = $this->contentHubSubscription->setHmacAuthorization($request, TRUE);
 
       /** @var \Drupal\Core\Render\HtmlResponse $response */
       $response = $this->kernel->handle($request, HttpKernelInterface::SUB_REQUEST);

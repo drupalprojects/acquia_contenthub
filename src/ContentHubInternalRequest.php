@@ -6,6 +6,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Url;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Session\AccountSwitcherInterface;
@@ -53,6 +54,13 @@ class ContentHubInternalRequest {
   protected $renderUser;
 
   /**
+   * The Request Stack Service.
+   *
+   * @var \Symfony\Component\HttpFoundation\RequestStack
+   */
+  protected $requestStack;
+
+  /**
    * Public Constructor.
    *
    * @param \Symfony\Component\HttpKernel\HttpKernelInterface $kernel
@@ -65,13 +73,16 @@ class ContentHubInternalRequest {
    *   The config factory.
    * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_factory
    *   The logger factory.
+   * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
+   *   The Request Stack.
    */
-  public function __construct(HttpKernelInterface $kernel, ContentHubSubscription $contenthub_subscription, AccountSwitcherInterface $account_switcher, ConfigFactoryInterface $config_factory, LoggerChannelFactoryInterface $logger_factory) {
+  public function __construct(HttpKernelInterface $kernel, ContentHubSubscription $contenthub_subscription, AccountSwitcherInterface $account_switcher, ConfigFactoryInterface $config_factory, LoggerChannelFactoryInterface $logger_factory, RequestStack $request_stack) {
     $this->kernel = $kernel;
     $this->contentHubSubscription = $contenthub_subscription;
     $this->accountSwitcher = $account_switcher;
     $this->loggerFactory = $logger_factory;
     $this->renderUser = new ContentHubUserSession($config_factory->get('acquia_contenthub.entity_config')->get('user_role'));
+    $this->requestStack = $request_stack;
   }
 
   /**
@@ -83,7 +94,8 @@ class ContentHubInternalRequest {
       $container->get('acquia_contenthub.acquia_contenthub_subscription'),
       $container->get('account_switcher'),
       $container->get('config.factory'),
-      $container->get('logger.factory')
+      $container->get('logger.factory'),
+      $container->get('request_stack')
     );
   }
 
@@ -120,7 +132,8 @@ class ContentHubInternalRequest {
       $url = str_replace($base_path, '/', $url);
 
       // Creating an internal HMAC-signed request.
-      $request = Request::create($url);
+      $master_request = $this->requestStack->getCurrentRequest();
+      $request = Request::create($url, 'GET', [], $master_request->cookies->all(), [], $master_request->server->all());
       $request = $this->contentHubSubscription->setHmacAuthorization($request, TRUE);
 
       /** @var \Drupal\Core\Render\HtmlResponse $response */
