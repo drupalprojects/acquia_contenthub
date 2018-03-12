@@ -3,6 +3,7 @@
 namespace Drupal\acquia_contenthub\Normalizer;
 
 use Drupal\acquia_contenthub\ContentHubEntityEmbedHandler;
+use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Field\EntityReferenceFieldItemListInterface;
 use Acquia\ContentHubClient\Asset;
 use Acquia\ContentHubClient\Attribute;
@@ -389,7 +390,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
 
     // Get our field mapping. This maps drupal field types to Content Hub
     // attribute types.
-    $type_mapping = $this->getFieldTypeMapping();
+    $type_mapping = $this->getFieldTypeMapping($entity);
 
     // Ignore the entity ID and revision ID.
     // Excluded comes here.
@@ -480,7 +481,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
           // Special case for type as we do not want the reference for the
           // bundle. In additional to the type field a media entity has a
           // bundle field which stores a media bundle configuration entity UUID.
-          if (in_array($name, $type_names, TRUE)) {
+          if (in_array($name, $type_names, TRUE) && $referenced_entity instanceof ConfigEntityBase) {
             $values[$langcode][] = $referenced_entity->id();
           }
           elseif (in_array($field_type, $file_types)) {
@@ -603,6 +604,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
   public function getReferencedFields(ContentEntityInterface $entity, array $context = []) {
     /** @var \Drupal\acquia_contenthub\Entity\ContentHubEntityTypeConfig[] $content_hub_entity_type_ids */
     $content_hub_entity_type_ids = $this->entityManager->getContentHubEntityTypeConfigurationEntities();
+    $bundle_key = $this->entityTypeManager->getDefinition($entity->getEntityTypeId())->getKey('bundle');
 
     /** @var \Drupal\Core\Field\FieldItemListInterface[] $fields */
     $fields = $entity->getFields();
@@ -618,7 +620,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       // Continue if this is an excluded field or the current user does not
       // have access to view it.
       $context['account'] = isset($context['account']) ? $context['account'] : NULL;
-      if (in_array($field->getFieldDefinition()->getName(), $excluded_fields) || !$field->access('view', $context['account']) || $name == 'type') {
+      if (in_array($field->getFieldDefinition()->getName(), $excluded_fields) || !$field->access('view', $context['account']) || $name === $bundle_key) {
         continue;
       }
 
@@ -762,7 +764,11 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     // Ignore the entity ID and revision ID.
     // Excluded comes here.
     $excluded_fields = $this->excludedProperties($entity);
-    $excluded_fields[] = 'type';
+
+    // Add the bundle key to be ignored as it should have already been assigned.
+    $bundle_key = $this->entityTypeManager->getDefinition($entity->getEntityTypeId())->getKey('bundle');
+    $excluded_fields[] = $bundle_key;
+
     // We ignore `langcode` selectively because und i.e LANGCODE_NOT_SPECIFIED
     // and zxx i.e LANGCODE_NOT_APPLICABLE content requires `langcode` field
     // to *not* be excluded for such content to be importable.
@@ -876,6 +882,9 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    * explicitly support certain field types as they map back to the known
    * complex data types such as string, uri that are known in Drupal Core.
    *
+   * @param \Drupal\Core\Entity\ContentEntityInterface $entity
+   *   An entity to map fields to.
+   *
    * @return string[]
    *   An array mapping all known (and supported) Drupal field types to their
    *   corresponding Content Hub data types. Empty values mean that fields of
@@ -883,7 +892,11 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
    *
    * @see hook_acquia_contenthub_field_type_mapping_alter()
    */
-  public function getFieldTypeMapping() {
+  public function getFieldTypeMapping(ContentEntityInterface $entity) {
+    // Getting the bundle key.
+    $bundle_key = $this->entityTypeManager->getDefinition($entity->getEntityTypeId())->getKey('bundle');
+    $langcode_key = $this->entityTypeManager->getDefinition($entity->getEntityTypeId())->getKey('langcode');
+
     $mapping = [];
     // It's easier to write and understand this array in the form of
     // $default_mapping => [$data_types] and flip it below.
@@ -892,8 +905,8 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         // These are special field names that we do not want to parse as
         // arrays.
         'title',
-        'type',
-        'langcode',
+        $bundle_key,
+        $langcode_key,
         // This is a special field that we will want to parse as string for now.
         // @TODO: Replace this to work with taxonomy_vocabulary entities.
         'vid',
@@ -1024,7 +1037,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     // to use for their data type.
     $this->moduleHandler->alter('acquia_contenthub_exclude_fields', $excluded_to_alter, $entity);
     $excluded = array_merge($excluded, $excluded_to_alter);
-    return $excluded;
+    return array_filter($excluded);
   }
 
   /**
@@ -1058,7 +1071,8 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     $this->moduleHandler->alter('acquia_contenthub_cdf_from_hub', $contenthub_entity);
 
     $entity_type = $contenthub_entity->getType();
-    $bundle = $contenthub_entity->getAttribute('type') ? reset($contenthub_entity->getAttribute('type')['value']) : NULL;
+    $bundle_key = $this->entityTypeManager->getDefinition($entity_type)->getKey('bundle');
+    $bundle = $contenthub_entity->getAttribute($bundle_key) ? reset($contenthub_entity->getAttribute($bundle_key)['value']) : NULL;
     $langcodes = $contenthub_entity->getAttribute('langcode')['value'];
 
     // Does this entity exist in this site already?
@@ -1070,7 +1084,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         'uuid' => $contenthub_entity->getUuid(),
       ];
       if ($bundle) {
-        $values['type'] = $bundle;
+        $values[$bundle_key] = $bundle;
       }
 
       // Special treatment according to entity types.
@@ -1096,18 +1110,18 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
           break;
 
         case 'media':
-          $attribute = $contenthub_entity->getAttribute('bundle');
+          $attribute = $contenthub_entity->getAttribute($bundle_key);
           foreach ($langcodes as $lang) {
             if (isset($attribute['value'][$lang])) {
               $value = reset($attribute['value'][$lang]);
               // Media entity didn't import by previous version of the module.
-              $values['bundle'] = $value;
+              $values[$bundle_key] = $value;
             }
           }
           // Remove an attribute to avoid the 'Error reading entity with
           // UUID="image" from Content Hub' error.
-          if (!empty($values['bundle'])) {
-            $contenthub_entity->removeAttribute('bundle');
+          if (!empty($values[$bundle_key])) {
+            $contenthub_entity->removeAttribute($bundle_key);
           }
           break;
 

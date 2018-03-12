@@ -2,7 +2,9 @@
 
 namespace Drupal\acquia_contenthub\Tests;
 
+use Drupal\taxonomy\Entity\Vocabulary;
 use Drupal\taxonomy\Tests\TaxonomyTestTrait;
+use Drupal\field\Tests\EntityReference\EntityReferenceTestTrait;
 
 /**
  * Test that Acquia Content Hub respects Taxonomy Term.
@@ -12,11 +14,12 @@ use Drupal\taxonomy\Tests\TaxonomyTestTrait;
 class TaxonomyTermTest extends WebTestBase {
 
   use TaxonomyTestTrait;
+  use EntityReferenceTestTrait;
 
   /**
    * Vocabulary for testing.
    *
-   * @var \Drupal\taxonomy\VocabularyInterface
+   * @var \Drupal\taxonomy\Entity\Vocabulary
    */
   protected $vocabulary;
 
@@ -61,6 +64,62 @@ class TaxonomyTermTest extends WebTestBase {
 
     // Enable Publish options for new vocabulary.
     $this->configureContentHubContentTypes('taxonomy_term', [$this->vocabulary->get('vid')]);
+  }
+
+  /**
+   * Tests that adding "type" fields that does not contain bundle should work.
+   *
+   * This tests adds an entity_reference field to a taxonomy term and tests that
+   * this is converted to 'array<reference>' pointing to a UUID.
+   */
+  public function testTaxonomyTermFields() {
+    // Create and enable Publish options for target vocabulary.
+    $vocabulary_target = $this->createVocabulary();
+
+    // Create a taxonomy term entity reference field that points to an entity
+    // from the other vocabulary.
+    $field_name = 'type';
+    $handler_settings = [
+      'target_bundles' => [
+        $vocabulary_target->id() => $vocabulary_target->id(),
+      ],
+    ];
+
+    $this->createEntityReferenceField('taxonomy_term', $this->vocabulary->id(), $field_name, $this->randomString(), 'taxonomy_term', 'default', $handler_settings);
+    entity_get_display('taxonomy_term', $this->vocabulary->id(), 'default')
+      ->setComponent('type')
+      ->save();
+    entity_get_form_display('taxonomy_term', $this->vocabulary->id(), 'default')
+      ->setComponent($field_name, ['type' => 'entity_reference_autocomplete'])
+      ->save();
+
+    // Create term1.
+    $term1 = $this->createTerm($this->vocabulary);
+    $term2 = $this->createTerm($vocabulary_target);
+    $term1->set('type', $term2->id());
+    $term1->save();
+
+    $this->configureContentHubContentTypes('taxonomy_term', [$vocabulary_target->get('vid')]);
+
+    // Check CH cdf response.
+    $output = $this->drupalGetJSON('acquia-contenthub-cdf/taxonomy/term/' . $term1->id(), [
+      'query' => [
+        '_format' => 'acquia_contenthub_cdf',
+        'include_references' => 'true',
+      ],
+    ]);
+    $this->assertResponse(200);
+
+    // Check that main taxonomy_term exists, with 'type' attribute.
+    $this->assertTrue(isset($output['entities']['0']['attributes']['type']), 'Type attribute is present.');
+    $this->assertEqual($term1->uuid(), $output['entities']['0']['uuid']);
+    $this->assertEqual($this->vocabulary->id(), $output['entities']['0']['attributes']['vocabulary']['value']['und']);
+    $this->assertEqual('array<reference>', $output['entities']['0']['attributes']['type']['type']);
+    $this->assertEqual($term2->uuid(), $output['entities']['0']['attributes']['type']['value']['und'][0]);
+
+    // Check that the taxonomy_term dependency has been included in the CDF.
+    $this->assertEqual($term2->uuid(), $output['entities']['1']['uuid']);
+    $this->assertEqual($vocabulary_target->id(), $output['entities']['1']['attributes']['vocabulary']['value']['und']);
   }
 
   /**

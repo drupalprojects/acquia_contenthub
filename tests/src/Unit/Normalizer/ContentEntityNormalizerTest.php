@@ -5,6 +5,7 @@ namespace Drupal\Tests\acquia_contenthub\Unit\Normalizer;
 use Acquia\ContentHubClient\Entity;
 use Drupal\acquia_contenthub\Normalizer\ContentEntityCdfNormalizer;
 use Drupal\acquia_contenthub\Session\ContentHubUserSession;
+use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Tests\UnitTestCase;
 
@@ -176,6 +177,10 @@ class ContentEntityNormalizerTest extends UnitTestCase {
       ->getMock();
 
     $this->entityTypeManager = $this->getMock('Drupal\Core\Entity\EntityTypeManagerInterface');
+    $entity_type = $this->prophesize(EntityTypeInterface::class);
+    $entity_type->getKey('bundle')->willReturn('type');
+    $entity_type->getKey('langcode')->willReturn('langcode');
+    $this->entityTypeManager->method('getDefinition')->willReturn($entity_type->reveal());
 
     $this->languageManager = $this->getMock('Drupal\Core\Language\LanguageManagerInterface');
 
@@ -748,7 +753,11 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    * @covers ::getFieldTypeMapping
    */
   public function testGetFieldTypeMapping() {
-    $mapping = $this->contentEntityNormalizer->getFieldTypeMapping();
+    $definitions = [
+      'title' => $this->createMockFieldListItem('title', 'string', TRUE, $this->userContext, ['0' => ['value' => 'test']]),
+    ];
+    $content_entity_mock = $this->createMockForContentEntity($definitions, ['en']);
+    $mapping = $this->contentEntityNormalizer->getFieldTypeMapping($content_entity_mock);
     $this->assertNotEmpty($mapping);
     $this->assertEquals('array<boolean>', $mapping['boolean']);
     $this->assertEquals(NULL, $mapping['password']);
