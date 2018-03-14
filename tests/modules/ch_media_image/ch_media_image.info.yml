@@ -6,7 +6,8 @@ package: Testing
 
 dependencies:
   - entity_browser
-  - media_entity_image
+  - drupal:media
+  - image
 
 # Information added by Drupal.org packaging script on 2016-08-02
 core: '8.x'

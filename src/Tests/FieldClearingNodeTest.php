@@ -65,9 +65,8 @@ class FieldClearingNodeTest extends WebTestBase {
     $this->configureContentHubContentTypes('node', ['article']);
 
     // Rendering the CDF, we can see the "Body" Field.
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), [
+    $output = $this->drupalGetCdf('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), [
       'query' => [
-        '_format' => 'acquia_contenthub_cdf',
         'include_references' => 'true',
       ],
     ]);
@@ -89,9 +88,8 @@ class FieldClearingNodeTest extends WebTestBase {
     $this->drupalPostForm($node_edit_url, $edit, t('Save'));
 
     // Rendering the CDF, we can see the "Body" Field.
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), [
+    $output = $this->drupalGetCdf('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), [
       'query' => [
-        '_format' => 'acquia_contenthub_cdf',
         'include_references' => 'true',
       ],
     ]);

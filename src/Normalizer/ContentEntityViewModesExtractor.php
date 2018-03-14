@@ -297,7 +297,7 @@ class ContentEntityViewModesExtractor implements ContentEntityViewModesExtractor
     $file_uri = $entity->getFileUri();
 
     // Process Image style.
-    $image_style = ImageStyle::load($preview_image_style);
+    $image_style = $this->entityTypeManager->getStorage('image_style')->load($preview_image_style);
     // Return empty if no such image style.
     if (empty($image_style)) {
       return '';

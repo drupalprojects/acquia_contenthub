@@ -4,6 +4,7 @@ namespace Drupal\acquia_contenthub\Tests;
 
 use Drupal\simpletest\WebTestBase as SimpletestWebTestBase;
 use Drupal\Component\Uuid\Uuid;
+use Drupal\Component\Serialization\Json;
 
 /**
  * Tests paragraphs support in Acquia Content Hub module.
@@ -114,11 +115,7 @@ class ParagraphsTest extends SimpletestWebTestBase {
    * Ensures the CDF output is what we expect it to be.
    */
   public function checkCdfOutput() {
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $this->node->getEntityTypeId() . '/' . $this->node->id(), [
-      'query' => [
-        '_format' => 'acquia_contenthub_cdf',
-      ],
-    ]);
+    $output = $this->drupalGetCdf('acquia-contenthub-cdf/' . $this->node->getEntityTypeId() . '/' . $this->node->id());
     $this->assertResponse(200);
 
     // Obtaining paragraphs' IDs and UUIDs to verify later.
@@ -132,11 +129,10 @@ class ParagraphsTest extends SimpletestWebTestBase {
     $this->assertEqual($output['entities']['0']['attributes']['field_client_data']['type'], 'array<reference>');
     $this->assertTrue(Uuid::isValid($paragraphs_uuid_0));
 
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/entity/paragraph/' . $paragraphs_id_0, [
+    $output = $this->drupalGetCdf('acquia-contenthub-cdf/entity/paragraph/' . $paragraphs_id_0, [
       'query' => [
         'entity_type' => 'paragraph',
         'entity_id' => $paragraphs_id_0,
-        '_format' => 'acquia_contenthub_cdf',
       ],
     ]);
     $this->assertResponse(200);
@@ -164,11 +160,10 @@ class ParagraphsTest extends SimpletestWebTestBase {
     $this->assertTrue(Uuid::isValid($paragraphs_uuid_1));
     $this->assertTrue(Uuid::isValid($paragraphs_uuid_2));
 
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/entity/paragraph/' . $paragraphs_id_1, [
+    $output = $this->drupalGetCdf('acquia-contenthub-cdf/entity/paragraph/' . $paragraphs_id_1, [
       'query' => [
         'entity_type' => 'paragraph',
         'entity_id' => $paragraphs_id_1,
-        '_format' => 'acquia_contenthub_cdf',
       ],
     ]);
     $this->assertResponse(200);
@@ -185,11 +180,10 @@ class ParagraphsTest extends SimpletestWebTestBase {
     $this->assertEqual($output['entities']['0']['attributes']['field_address']['value']['en']['0'], 'Test Address');
     $this->assertEqual($output['entities']['0']['attributes']['field_address_type']['value']['en']['0'], 'Work Address');
 
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/entity/paragraph/' . $paragraphs_id_2, [
+    $output = $this->drupalGetCdf('acquia-contenthub-cdf/entity/paragraph/' . $paragraphs_id_2, [
       'query' => [
         'entity_type' => 'paragraph',
         'entity_id' => $paragraphs_id_2,
-        '_format' => 'acquia_contenthub_cdf',
       ],
     ]);
     $this->assertResponse(200);
@@ -205,6 +199,23 @@ class ParagraphsTest extends SimpletestWebTestBase {
     $this->assertEqual($output['entities']['0']['attributes']['parent_field_name']['value']['en']['0'], 'field_client_location');
     $this->assertEqual($output['entities']['0']['attributes']['field_address']['value']['en']['0'], 'Another Test Address');
     $this->assertEqual($output['entities']['0']['attributes']['field_address_type']['value']['en']['0'], 'Shipping Address');
+  }
+
+  /**
+   * Retrieves a Drupal or an absolute CDF path and JSON decodes the result.
+   *
+   * @param \Drupal\Core\Url|string $path
+   *   Drupal path or URL to request AJAX from.
+   * @param array $options
+   *   Array of URL options.
+   * @param array $headers
+   *   Array of headers. Eg array('Accept: application/vnd.drupal-ajax').
+   *
+   * @return array
+   *   Decoded json.
+   */
+  protected function drupalGetCdf($path, array $options = [], array $headers = []) {
+    return Json::decode($this->drupalGetWithFormat($path, 'acquia_contenthub_cdf', $options, $headers));
   }
 
 }

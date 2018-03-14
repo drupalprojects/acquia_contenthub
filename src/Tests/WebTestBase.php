@@ -4,6 +4,7 @@ namespace Drupal\acquia_contenthub\Tests;
 
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\simpletest\WebTestBase as SimpletestWebTestBase;
+use Drupal\Component\Serialization\Json;
 
 /**
  * Provides the base class for web tests for Search API.
@@ -181,6 +182,23 @@ abstract class WebTestBase extends SimpletestWebTestBase {
 
     $this->drupalGet('admin/config/services/acquia-contenthub/configuration');
     $this->assertResponse(200);
+  }
+
+  /**
+   * Retrieves a Drupal or an absolute CDF path and JSON decodes the result.
+   *
+   * @param \Drupal\Core\Url|string $path
+   *   Drupal path or URL to request AJAX from.
+   * @param array $options
+   *   Array of URL options.
+   * @param array $headers
+   *   Array of headers. Eg array('Accept: application/vnd.drupal-ajax').
+   *
+   * @return array
+   *   Decoded json.
+   */
+  protected function drupalGetCdf($path, array $options = [], array $headers = []) {
+    return Json::decode($this->drupalGetWithFormat($path, 'acquia_contenthub_cdf', $options, $headers));
   }
 
 }

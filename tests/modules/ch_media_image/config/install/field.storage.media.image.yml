@@ -1,10 +1,11 @@
-langcode: en
+langcode: und
 status: true
 dependencies:
   module:
     - file
     - image
-    - media_entity
+    - media
+_core: {  }
 id: media.image
 field_name: image
 entity_type: media
@@ -12,7 +13,7 @@ type: image
 settings:
   uri_scheme: public
   default_image:
-    uuid: ''
+    uuid: null
     alt: ''
     title: ''
     width: null

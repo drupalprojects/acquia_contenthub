@@ -102,9 +102,8 @@ class TaxonomyTermTest extends WebTestBase {
     $this->configureContentHubContentTypes('taxonomy_term', [$vocabulary_target->get('vid')]);
 
     // Check CH cdf response.
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/taxonomy/term/' . $term1->id(), [
+    $output = $this->drupalGetCdf('acquia-contenthub-cdf/taxonomy/term/' . $term1->id(), [
       'query' => [
-        '_format' => 'acquia_contenthub_cdf',
         'include_references' => 'true',
       ],
     ]);
@@ -136,11 +135,7 @@ class TaxonomyTermTest extends WebTestBase {
     $this->drupalPostForm('taxonomy/term/' . $term2->id() . '/edit', $edit, t('Save'));
 
     // Check CH cdf response.
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/taxonomy/term/' . $term2->id(), [
-      'query' => [
-        '_format' => 'acquia_contenthub_cdf',
-      ],
-    ]);
+    $output = $this->drupalGetCdf('acquia-contenthub-cdf/taxonomy/term/' . $term2->id());
     $this->assertResponse(200);
 
     // Check cdf format.

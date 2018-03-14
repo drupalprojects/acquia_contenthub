@@ -2,6 +2,9 @@
 
 namespace Drupal\Tests\acquia_contenthub\Unit\Normalizer;
 
+use Drupal\Core\DependencyInjection\Container;
+use Drupal\Core\DependencyInjection\ContainerBuilder;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Render\HtmlResponse;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Tests\UnitTestCase;
@@ -25,63 +28,70 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
    *
    * @var \Drupal\Core\Session\AccountProxyInterface|\PHPUnit_Framework_MockObject_MockObject
    */
-  private $currentUser;
+  protected $currentUser;
 
   /**
    * Entity display repository.
    *
    * @var \Drupal\Core\Entity\EntityDisplayRepositoryInterface|\PHPUnit_Framework_MockObject_MockObject
    */
-  private $entityDisplayRepository;
+  protected $entityDisplayRepository;
 
   /**
    * Entity type manager.
    *
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface|\PHPUnit_Framework_MockObject_MockObject
    */
-  private $entityTypeManager;
+  protected $entityTypeManager;
+
+  /**
+   * Entity type repository.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeRepositoryInterface|\PHPUnit_Framework_MockObject_MockObject
+   */
+  protected $entityTypeRepository;
 
   /**
    * Entity Config Storage.
    *
    * @var \Drupal\Core\Entity\EntityStorageInterface|\PHPUnit_Framework_MockObject_MockObject
    */
-  private $entityConfigStorage;
+  protected $entityConfigStorage;
 
   /**
    * The entity type config.
    *
    * @var \Drupal\acquia_contenthub\ContentHubEntityTypeConfigInterface|\PHPUnit_Framework_MockObject_MockObject
    */
-  private $entityTypeConfig;
+  protected $entityTypeConfig;
 
   /**
    * Renderer.
    *
    * @var \Drupal\Core\Render\RendererInterface|\PHPUnit_Framework_MockObject_MockObject
    */
-  private $renderer;
+  protected $renderer;
 
   /**
    * The Kernel.
    *
    * @var \Symfony\Component\HttpKernel\HttpKernelInterface|\PHPUnit_Framework_MockObject_MockObject
    */
-  private $kernel;
+  protected $kernel;
 
   /**
    * Account Switcher Service.
    *
    * @var \Drupal\Core\Session\AccountSwitcherInterface|\PHPUnit_Framework_MockObject_MockObject
    */
-  private $accountSwitcher;
+  protected $accountSwitcher;
 
   /**
    * Content Entity.
    *
    * @var \Drupal\Core\Entity\ContentEntityInterface|\PHPUnit_Framework_MockObject_MockObject
    */
-  private $contentEntity;
+  protected $contentEntity;
 
   /**
    * Content Hub Subscription.
@@ -95,28 +105,28 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
    *
    * @var \Drupal\Core\Config\ConfigFactory|\PHPUnit_Framework_MockObject_MockObject
    */
-  private $configFactory;
+  protected $configFactory;
 
   /**
    * The Block Manager.
    *
    * @var \Drupal\Core\Block\BlockManagerInterface|\PHPUnit_Framework_MockObject_MockObject
    */
-  private $blockManager;
+  protected $blockManager;
 
   /**
    * Settings.
    *
    * @var \Drupal\Core\Config\Config|\PHPUnit_Framework_MockObject_MockObject
    */
-  private $settings;
+  protected $settings;
 
   /**
    * Content Entity View Modes Extractor.
    *
    * @var \Drupal\acquia_contenthub\Normalizer\ContentEntityViewModesExtractor
    */
-  private $contentEntityViewModesExtractor;
+  protected $contentEntityViewModesExtractor;
 
   /**
    * The Request Stack Service.
@@ -133,8 +143,10 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
 
     $this->currentUser = $this->getMock('Drupal\Core\Session\AccountProxyInterface');
     $this->entityDisplayRepository = $this->getMock('Drupal\Core\Entity\EntityDisplayRepositoryInterface');
-    $this->entityTypeManager = $this->getMock('Drupal\Core\Entity\EntityTypeManagerInterface');
+    $this->entityTypeManager = $this->prophesize(EntityTypeManagerInterface::class);
+    $this->entityTypeRepository = $this->getMock('Drupal\Core\Entity\EntityTypeRepositoryInterface');
     $this->entityConfigStorage = $this->getMock('\Drupal\Core\Entity\EntityStorageInterface');
+    $this->entityTypeManager->getStorage('acquia_contenthub_entity_config')->willReturn($this->entityConfigStorage);
     $this->entityTypeConfig = $this->getMock('Drupal\acquia_contenthub\ContentHubEntityTypeConfigInterface');
     $this->renderer = $this->getMock('Drupal\Core\Render\RendererInterface');
     $this->kernel = $this->getMock('Symfony\Component\HttpKernel\HttpKernelInterface');
@@ -162,9 +174,6 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
     $this->requestStack = $this->getMockBuilder('Symfony\Component\HttpFoundation\RequestStack')
       ->disableOriginalConstructor()
       ->getMock();
-
-    $this->contentEntityViewModesExtractor = new ContentEntityViewModesExtractor($this->currentUser, $this->entityDisplayRepository, $this->entityTypeManager, $this->renderer, $this->kernel, $this->accountSwitcher, $this->contentHubSubscription, $this->configFactory, $this->blockManager, $this->requestStack);
-
   }
 
   /**
@@ -183,16 +192,12 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
       ->method('isNew')
       ->willReturn(FALSE);
 
-    $this->entityTypeManager->expects($this->once())
-      ->method('getStorage')
-      ->with('acquia_contenthub_entity_config')
-      ->willReturn($this->entityConfigStorage);
     $this->entityConfigStorage->expects($this->once())
       ->method('loadMultiple')
       ->with(['entity_type_1'])
       ->willReturn([]);
-
-    $rendered_view_modes = $this->contentEntityViewModesExtractor->getRenderedViewModes($this->contentEntity);
+    $contentEntityViewModesExtractor = new ContentEntityViewModesExtractor($this->currentUser, $this->entityDisplayRepository, $this->entityTypeManager->reveal(), $this->renderer, $this->kernel, $this->accountSwitcher, $this->contentHubSubscription, $this->configFactory, $this->blockManager, $this->requestStack);
+    $rendered_view_modes = $contentEntityViewModesExtractor->getRenderedViewModes($this->contentEntity);
 
     $this->assertNull($rendered_view_modes);
   }
@@ -213,14 +218,6 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
       ->method('isNew')
       ->willReturn(FALSE);
 
-    $this->entityTypeManager->expects($this->at(0))
-      ->method('getStorage')
-      ->with('acquia_contenthub_entity_config')
-      ->willReturn($this->entityConfigStorage);
-    $this->entityTypeManager->expects($this->any(1))
-      ->method('getStorage')
-      ->with('acquia_contenthub_entity_config')
-      ->willReturn($this->entityConfigStorage);
     $this->entityConfigStorage->expects($this->any(0))
       ->method('loadMultiple')
       ->with(['entity_type_1'])
@@ -270,9 +267,10 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
     $this->contentEntity->field_media->entity->field_image = $field_image;
     $this->contentEntity->field_media->entity->field_image->entity = $image_entity;
 
-    $entity_manager = $this->getMock('Drupal\Core\Entity\EntityManagerInterface');
     $entity_storage = $this->getMock('Drupal\Core\Entity\EntityStorageInterface');
-    $container = $this->getMock('Drupal\Core\DependencyInjection\Container');
+    $this->entityTypeRepository = $this->getMock('Drupal\Core\Entity\EntityTypeRepositoryInterface');
+
+    //$container = $this->getMock('Drupal\Core\DependencyInjection\Container');
     $image_style = $this->getMockBuilder('Drupal\image\Entity\ImageStyle')
       ->disableOriginalConstructor()
       ->getMock();
@@ -283,29 +281,20 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
       ->method('getPathFromRoute')
       ->willReturn('a_generated_url');
 
+    // Setting up the Container.
+    $container = new ContainerBuilder();
+    $container->set('entity_type.manager', $this->entityTypeManager);
+    $container->set('entity_type.repository', $this->entityTypeRepository);
+    $container->set('url_generator', $url_generator);
     \Drupal::setContainer($container);
-    $container->expects($this->at(0))
-      ->method('get')
-      ->with('entity.manager')
-      ->willReturn($entity_manager);
-    $container->expects($this->at(1))
-      ->method('get')
-      ->with('url_generator')
-      ->willReturn($url_generator);
-    $entity_manager->expects($this->once())
-      ->method('getEntityTypeFromClass')
-      ->with('Drupal\image\Entity\ImageStyle')
-      ->willReturn($image_entity);
+
     $image_entity->expects($this->once())
       ->method('bundle')
       ->willReturn('file');
     $image_entity->expects($this->once())
       ->method('getFileUri')
       ->willReturn('a_file_uri');
-    $entity_manager->expects($this->once())
-      ->method('getStorage')
-      ->with($image_entity)
-      ->willReturn($entity_storage);
+    $this->entityTypeManager->getStorage('image_style')->willReturn($entity_storage);
     $entity_storage->expects($this->once())
       ->method('load')
       ->with('medium')
@@ -343,7 +332,9 @@ class ContentEntityViewModesExtractorTest extends UnitTestCase {
         return $response;
       });
 
-    $rendered_view_modes = $this->contentEntityViewModesExtractor->getRenderedViewModes($this->contentEntity);
+    $contentEntityViewModesExtractor = new ContentEntityViewModesExtractor($this->currentUser, $this->entityDisplayRepository, $this->entityTypeManager->reveal(), $this->renderer, $this->kernel, $this->accountSwitcher, $this->contentHubSubscription, $this->configFactory, $this->blockManager, $this->requestStack);
+
+    $rendered_view_modes = $contentEntityViewModesExtractor->getRenderedViewModes($this->contentEntity);
 
     $expected_rendered_view_modes = [
       'view_mode_2' => [

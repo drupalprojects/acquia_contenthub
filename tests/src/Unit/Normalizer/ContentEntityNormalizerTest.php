@@ -108,11 +108,11 @@ class ContentEntityNormalizerTest extends UnitTestCase {
   protected $entityManager;
 
   /**
-   * The Core Entity Manager.
+   * Entity type repository.
    *
-   * @var \Drupal\Core\Entity\EntityManagerInterface
+   * @var \Drupal\Core\Entity\EntityTypeRepositoryInterface|/PHPUnit_Framework_MockObject_MockObject
    */
-  protected $coreEntityManager;
+  protected $entityTypeRepository;
 
   /**
    * The Entity Type Manager Interface.
@@ -291,7 +291,7 @@ class ContentEntityNormalizerTest extends UnitTestCase {
    */
   public function testNormalizeOneFieldMultiValued() {
     $this->mockContainerResponseForNormalize();
-    $this->container->expects($this->at(2))->method('get')->with('entity.manager')->willReturn($this->coreEntityManager);
+    $this->container->expects($this->at(2))->method('get')->with('entity_type.manager')->willReturn($this->entityTypeManager);
 
     $definitions = [
       'field_1' => $this->createMockFieldListItem('field_1', 'string', TRUE, $this->userContext, [['value' => 'test'], ['value' => 'test2']]),
@@ -1135,15 +1135,15 @@ class ContentEntityNormalizerTest extends UnitTestCase {
         'uuid' => 'uuid',
       ]);
 
-    $this->coreEntityManager = $this->getMock('Drupal\Core\Entity\EntityManagerInterface');
-    $this->coreEntityManager
+    $this->entityTypeManager = $this->getMock('Drupal\Core\Entity\EntityTypeManagerInterface');
+    $this->entityTypeManager
       ->method('getDefinition')
       ->with('node')
       ->willReturn($entity_type);
 
     // Defining some services.
     $this->container->expects($this->at(0))->method('get')->with('request_stack')->willReturn($request_stack);
-    $this->container->expects($this->at(1))->method('get')->with('entity.manager')->willReturn($this->coreEntityManager);
+    $this->container->expects($this->at(1))->method('get')->with('entity_type.manager')->willReturn($this->entityTypeManager);
   }
 
 }

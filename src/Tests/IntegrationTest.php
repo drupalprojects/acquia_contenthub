@@ -2,6 +2,7 @@
 
 namespace Drupal\acquia_contenthub\Tests;
 
+use Drupal\Component\Serialization\Json;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
@@ -215,7 +216,7 @@ class IntegrationTest extends WebTestBase {
    *   Expected result.
    */
   public function checkCdfAccess(NodeInterface $entity, $access = TRUE) {
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), ['query' => ['_format' => 'acquia_contenthub_cdf']]);
+    $output = $this->drupalGetCdf('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id());
     $this->assertResponse(200);
 
     if ($access) {
@@ -233,19 +234,22 @@ class IntegrationTest extends WebTestBase {
    *   The entity to be used.
    */
   public function checkCdfFormat(NodeInterface $entity) {
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), ['query' => ['_format' => 'acquia_contenthub_cdf']]);
+    $output = $this->drupalGetCdf('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id());
     $this->assertResponse(200, 'Accept acquia_contenthub_cdf format.');
     $this->assertEqual($output['entities']['0']['uuid'], $entity->uuid(), 'CDF is present for acquia_contenthub_cdf format.');
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), ['query' => ['_format' => 'html']]);
+    $output = $this->drupalGetWithFormat('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), 'html');
+    $output = Json::decode($output);
     $this->assertResponse(200, 'Accept html format (browser default).');
     $this->assertEqual($output['entities']['0']['uuid'], $entity->uuid(), 'CDF is present for html format.');
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), ['query' => ['_format' => 'json']]);
+    $output = $this->drupalGetWithFormat('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), 'json');
+    $output = Json::decode($output);
     $this->assertResponse(200, 'Accept json format.');
     $this->assertEqual($output['entities']['0']['uuid'], $entity->uuid(), 'CDF is present for json format.');
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id());
+    $output = $this->drupalGet('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id());
+    $output = Json::decode($output);
     $this->assertResponse(200, 'Accept default format (json is default for tests).');
     $this->assertEqual($output['entities']['0']['uuid'], $entity->uuid(), 'CDF is present for default format.');
-    $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), ['query' => ['_format' => 'xml']]);
+    $this->drupalGetWithFormat('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), 'xml');
     $this->assertResponse(406, 'A 406 response was returned when XML was requested.');
   }
 
@@ -257,27 +261,32 @@ class IntegrationTest extends WebTestBase {
    */
   public function checkCdfMarkup(NodeInterface $entity) {
     $this->enableViewModeFor('node', 'article', ['default', 'full', 'teaser']);
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), ['query' => ['_format' => 'acquia_contenthub_cdf']]);
+    $output = $this->drupalGetCdf('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id());
+
+    // Drupal 8.5 has added off-canvas links to the main template.
+    // https://www.drupal.org/project/drupal/issues/2784443
+    $dialog_off_canvas_openning = ((floatval(\Drupal::VERSION) <= 8.4)) ? '' : '<div class="dialog-off-canvas-main-canvas" data-off-canvas-main-canvas>';
+    $dialog_off_canvas_closing = ((floatval(\Drupal::VERSION) <= 8.4)) ? '' : '</div>';
 
     $this->setRawContent($output['entities'][0]['metadata']['view_modes']['default']['html']);
     $this->removeWhiteSpace();
-    $expected = '</head><body><article role="article" class="node node--type-article node--promoted node--view-mode-default"><h2><a href="/node/1" rel="bookmark"><span class="field field--name-title field--type-string field--label-hidden">';
+    $expected = '</head><body>' . $dialog_off_canvas_openning . '<article role="article" class="node node--type-article node--promoted node--view-mode-default"><h2><a href="/node/1" rel="bookmark"><span class="field field--name-title field--type-string field--label-hidden">';
     $this->assertRaw($expected, 'Default view mode have no extra markup.');
-    $expected = '</article><div data-content-barrier-exclude="true"></div></body></html>';
+    $expected = '</article>' . $dialog_off_canvas_closing . '<div data-content-barrier-exclude="true"></div></body></html>';
     $this->assertRaw($expected, 'Default view mode footer JS is wrapped into div with data-content-barrier-exclude attribute.');
 
     $this->setRawContent($output['entities'][0]['metadata']['view_modes']['full']['html']);
     $this->removeWhiteSpace();
-    $expected = '</head><body><article role="article" class="node node--type-article node--promoted node--view-mode-full"><h2><a href="/node/1" rel="bookmark"><span class="field field--name-title field--type-string field--label-hidden">';
+    $expected = '</head><body>' . $dialog_off_canvas_openning . '<article role="article" class="node node--type-article node--promoted node--view-mode-full"><h2><a href="/node/1" rel="bookmark"><span class="field field--name-title field--type-string field--label-hidden">';
     $this->assertRaw($expected, 'Full view mode have no extra markup.');
-    $expected = '</article><div data-content-barrier-exclude="true"></div></body></html>';
+    $expected = '</article>' . $dialog_off_canvas_closing . '<div data-content-barrier-exclude="true"></div></body></html>';
     $this->assertRaw($expected, 'Full view mode footer JS is wrapped into div with data-content-barrier-exclude attribute.');
 
     $this->setRawContent($output['entities'][0]['metadata']['view_modes']['teaser']['html']);
     $this->removeWhiteSpace();
-    $expected = '</head><body><article role="article" class="node node--type-article node--promoted node--view-mode-teaser"><h2><a href="/node/1" rel="bookmark"><span class="field field--name-title field--type-string field--label-hidden">';
+    $expected = '</head><body>' . $dialog_off_canvas_openning . '<article role="article" class="node node--type-article node--promoted node--view-mode-teaser"><h2><a href="/node/1" rel="bookmark"><span class="field field--name-title field--type-string field--label-hidden">';
     $this->assertRaw($expected, 'Teaser view mode have no extra markup.');
-    $expected = '</article><div data-content-barrier-exclude="true"></div></body></html>';
+    $expected = '</article>' . $dialog_off_canvas_closing . '<div data-content-barrier-exclude="true"></div></body></html>';
     $this->assertRaw($expected, 'Teaser view mode footer JS is wrapped into div with data-content-barrier-exclude attribute.');
 
     $this->enableViewModeFor('node', 'article', 'teaser');
@@ -296,7 +305,7 @@ class IntegrationTest extends WebTestBase {
   public function checkCdfFieldAccess(NodeInterface $entity, $access = TRUE, $field_access = TRUE) {
     // Tell the test module to disable access to the field.
     \Drupal::state()->set('field.test_boolean_field_access_field', $field_access ? '' : 'test_field_01');
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), ['query' => ['_format' => 'acquia_contenthub_cdf']]);
+    $output = $this->drupalGetCdf('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id());
     $this->assertResponse(200);
 
     if ($access) {
@@ -326,7 +335,7 @@ class IntegrationTest extends WebTestBase {
    *   The view mode to check in the CDF.
    */
   public function checkCdfOutput(NodeInterface $entity, $view_mode = NULL) {
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), ['query' => ['_format' => 'acquia_contenthub_cdf']]);
+    $output = $this->drupalGetCdf('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id());
     $this->assertResponse(200);
     if (!empty($view_mode)) {
       $this->assertTrue(isset($output['entities']['0']['metadata']), 'Metadata is present');

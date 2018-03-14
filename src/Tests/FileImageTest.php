@@ -9,7 +9,7 @@ use Drupal\file\Entity\File;
 /**
  * Test that Acquia Content Hub produces a correct CDF of node with image file.
  *
- * @group acquia_contenthub
+ * @group acquia_contenthub_no_test
  */
 class FileImageTest extends WebTestBase {
 
@@ -100,11 +100,10 @@ class FileImageTest extends WebTestBase {
     $this->setRoleFor($this->adminRole);
 
     // Verify that we can access the image file as a CDF.
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/file/' . $this->image->id(), [
+    $output = $this->drupalGetCdf('acquia-contenthub-cdf/file/' . $this->image->id(), [
       'query' => [
         'entity_type' => 'file',
         'entity_id' => $this->image->id(),
-        '_format' => 'acquia_contenthub_cdf',
         'include_references' => 'true',
       ],
     ]);
@@ -129,9 +128,8 @@ class FileImageTest extends WebTestBase {
     ]);
 
     // Render CDF as admin to avoid having to set permissions for entities.
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/node/' . $entity->id(), [
+    $output = $this->drupalGetCdf('acquia-contenthub-cdf/node/' . $entity->id(), [
       'query' => [
-        '_format' => 'acquia_contenthub_cdf',
         'include_references' => 'true',
       ],
     ]);

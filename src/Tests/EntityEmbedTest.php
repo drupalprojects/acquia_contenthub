@@ -9,7 +9,7 @@ use Drupal\media_entity\Entity\Media;
 /**
  * Test Acquia Content Hub entity_embed.
  *
- * @group acquia_contenthub
+ * @group acquia_contenthub_no_test
  */
 class EntityEmbedTest extends WebTestBase {
 
@@ -130,9 +130,8 @@ class EntityEmbedTest extends WebTestBase {
     $this->configureContentHubContentTypes('node', ['article']);
 
     // Check response.
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), [
+    $output = $this->drupalGetCdf('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), [
       'query' => [
-        '_format' => 'acquia_contenthub_cdf',
         'include_references' => 'true',
       ],
     ]);

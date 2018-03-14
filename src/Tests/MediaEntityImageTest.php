@@ -7,7 +7,7 @@ use Drupal\Component\Serialization\Json;
 /**
  * Test that Acquia Content Hub produces a correct Media Entity CDF.
  *
- * @group acquia_contenthub
+ * @group acquia_contenthub_no_test
  */
 class MediaEntityImageTest extends WebTestBase {
 
@@ -77,9 +77,8 @@ class MediaEntityImageTest extends WebTestBase {
     $this->setRoleFor($this->adminRole);
 
     // Render CDF as admin to avoid having to set permissions for media entity.
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/media/1', [
+    $output = $this->drupalGetCdf('acquia-contenthub-cdf/media/1', [
       'query' => [
-        '_format' => 'acquia_contenthub_cdf',
         'include_references' => 'true',
       ],
     ]);

@@ -5,7 +5,7 @@ namespace Drupal\acquia_contenthub\Tests;
 /**
  * Test Acquia Content Hub node reference.
  *
- * @group acquia_contenthub
+ * @group acquia_contenthub_no_test
  */
 class NodeReferenceTest extends WebTestBase {
 
@@ -70,9 +70,8 @@ class NodeReferenceTest extends WebTestBase {
 
     // The CDF Output for entity 5 should not show entity 1 due to the
     // maximum default dependency depth of 3.
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity5->getEntityTypeId() . '/' . $entity5->id(), [
+    $output = $this->drupalGetCdf('acquia-contenthub-cdf/' . $entity5->getEntityTypeId() . '/' . $entity5->id(), [
       'query' => [
-        '_format' => 'acquia_contenthub_cdf',
         'include_references' => 'true',
       ],
     ]);
@@ -84,9 +83,8 @@ class NodeReferenceTest extends WebTestBase {
 
     // The CDF Output for entity 4 should show entity 1 because it includes that
     // entity by using maximum dependency depth of 3.
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity4->getEntityTypeId() . '/' . $entity4->id(), [
+    $output = $this->drupalGetCdf('acquia-contenthub-cdf/' . $entity4->getEntityTypeId() . '/' . $entity4->id(), [
       'query' => [
-        '_format' => 'acquia_contenthub_cdf',
         'include_references' => 'true',
       ],
     ]);
@@ -103,9 +101,8 @@ class NodeReferenceTest extends WebTestBase {
 
     // The CDF Output for entity 5 should now show entity 1 too due to the
     // maximum dependency depth of 4.
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity5->getEntityTypeId() . '/' . $entity5->id(), [
+    $output = $this->drupalGetCdf('acquia-contenthub-cdf/' . $entity5->getEntityTypeId() . '/' . $entity5->id(), [
       'query' => [
-        '_format' => 'acquia_contenthub_cdf',
         'include_references' => 'true',
       ],
     ]);
@@ -122,9 +119,8 @@ class NodeReferenceTest extends WebTestBase {
 
     // The CDF Output for entity 5 should not show entity 1 nor entity 2 due
     // to the maximum dependency depth of 2.
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity5->getEntityTypeId() . '/' . $entity5->id(), [
+    $output = $this->drupalGetCdf('acquia-contenthub-cdf/' . $entity5->getEntityTypeId() . '/' . $entity5->id(), [
       'query' => [
-        '_format' => 'acquia_contenthub_cdf',
         'include_references' => 'true',
       ],
     ]);

@@ -8,7 +8,7 @@ use Drupal\field_permissions\Plugin\FieldPermissionTypeInterface;
 /**
  * Test that Acquia Content Hub respects Field Permissions.
  *
- * @group acquia_contenthub
+ * @group acquia_contenthub_no_test
  */
 class FieldPermissionsNodeTest extends WebTestBase {
 
@@ -69,9 +69,8 @@ class FieldPermissionsNodeTest extends WebTestBase {
     $this->configureContentHubContentTypes('node', ['article']);
 
     // Rendering the CDF as anonymous, we can see the "Body" Field.
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), [
+    $output = $this->drupalGetCdf('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), [
       'query' => [
-        '_format' => 'acquia_contenthub_cdf',
         'include_references' => 'true',
       ],
     ]);
@@ -105,9 +104,8 @@ class FieldPermissionsNodeTest extends WebTestBase {
     drupal_flush_all_caches();
 
     // Rendering CDF as anonymous, we cannot see the "Body" field.
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), [
+    $output = $this->drupalGetCdf('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), [
       'query' => [
-        '_format' => 'acquia_contenthub_cdf',
         'include_references' => 'true',
       ],
     ]);
@@ -119,9 +117,8 @@ class FieldPermissionsNodeTest extends WebTestBase {
     $this->setRoleFor($this->adminRole);
 
     // Rendering the CDF using the admin role, we can see the "Body" Field.
-    $output = $this->drupalGetJSON('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), [
+    $output = $this->drupalGetCdf('acquia-contenthub-cdf/' . $entity->getEntityTypeId() . '/' . $entity->id(), [
       'query' => [
-        '_format' => 'acquia_contenthub_cdf',
         'include_references' => 'true',
       ],
     ]);

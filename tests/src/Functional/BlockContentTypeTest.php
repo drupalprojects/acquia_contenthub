@@ -7,7 +7,7 @@ use Drupal\block_content\Tests\BlockContentTestBase;
 /**
  * Create a block and test block markup by attempting to view the block.
  *
- * @group acquia_contenthub
+ * @group acquia_contenthub_no_test
  */
 class BlockContentTypeTest extends BlockContentTestBase {
 

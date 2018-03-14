@@ -2,6 +2,7 @@
 
 namespace Drupal\Tests\acquia_contenthub\Unit\Form;
 
+use Drupal\Component\DependencyInjection\Container;
 use Drupal\Tests\UnitTestCase;
 use Drupal\acquia_contenthub\Form\NodeTypePreviewImageForm;
 
@@ -29,6 +30,13 @@ class NodeTypePreviewImageFormTest extends UnitTestCase {
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface|\PHPUnit_Framework_MockObject_MockObject
    */
   private $entityTypeManager;
+
+  /**
+   * Entity type repository.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeRepositoryInterface|PHPUnit_Framework_MockObject_MockObject
+   */
+  private $entityTypeRepository;
 
   /**
    * Entity field manager.
@@ -234,20 +242,21 @@ class NodeTypePreviewImageFormTest extends UnitTestCase {
     $image_style->expects($this->once())
       ->method('save');
 
-    $entity_manager = $this->getMock('Drupal\Core\Entity\EntityManagerInterface');
+    $this->entityTypeRepository = $this->getMock('Drupal\Core\Entity\EntityTypeRepositoryInterface');
     $entity_storage = $this->getMock('Drupal\Core\Entity\EntityStorageInterface');
-    $container = $this->getMock('Drupal\Core\DependencyInjection\Container');
+    $this->entityTypeManager = $this->getMock('\Drupal\Core\Entity\EntityTypeManagerInterface');
 
+    // Setting up the Container.
+    $container = new Container();
+    $container->set('entity_type.manager', $this->entityTypeManager);
+    $container->set('entity_type.repository', $this->entityTypeRepository);
     \Drupal::setContainer($container);
-    $container->expects($this->any())
-      ->method('get')
-      ->with('entity.manager')
-      ->willReturn($entity_manager);
-    $entity_manager->expects($this->once())
+
+    $this->entityTypeRepository->expects($this->once())
       ->method('getEntityTypeFromClass')
       ->with('Drupal\image\Entity\ImageStyle')
       ->willReturn($image_style);
-    $entity_manager->expects($this->once())
+    $this->entityTypeManager->expects($this->once())
       ->method('getStorage')
       ->with($image_style)
       ->willReturn($entity_storage);

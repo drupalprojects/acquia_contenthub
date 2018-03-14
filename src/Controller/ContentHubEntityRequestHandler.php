@@ -7,8 +7,11 @@ use Drupal\Component\Plugin\PluginManagerInterface;
 use Drupal\Core\Render\RenderContext;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\rest\RequestHandler;
+use Drupal\rest\RestResourceConfigInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Serializer\SerializerInterface;
+use Drupal\Core\Render\RendererInterface;
 
 /**
  * Decorates the REST module's RequestHandler.
@@ -51,29 +54,54 @@ class ContentHubEntityRequestHandler extends RequestHandler {
   protected $entityManager;
 
   /**
+   * The serializer.
+   *
+   * @var \Symfony\Component\Serializer\SerializerInterface|\Symfony\Component\Serializer\Encoder\DecoderInterface
+   */
+  protected $serializer;
+
+  /**
+   * The Renderer Service.
+   *
+   * @var \Drupal\Core\Render\RendererInterface
+   */
+  protected $renderer;
+
+  /**
    * Creates a new RequestHandler instance.
    *
    * @param \Drupal\Component\Plugin\PluginManagerInterface $resource_plugin_manager
    *   The resource plugin manager.
    * @param \Drupal\acquia_contenthub\EntityManager $entity_manager
    *   The Content Hub Entity Manager.
+   * @param \Symfony\Component\Serializer\SerializerInterface|\Symfony\Component\Serializer\Encoder\DecoderInterface $serializer
+   *   The serializer.
+   * @param \Drupal\Core\Render\RendererInterface $renderer
+   *   The renderer service.
    */
-  public function __construct(PluginManagerInterface $resource_plugin_manager, EntityManager $entity_manager) {
+  public function __construct(PluginManagerInterface $resource_plugin_manager, EntityManager $entity_manager, SerializerInterface $serializer, RendererInterface $renderer) {
     $this->resourcePluginManager = $resource_plugin_manager;
     $this->entityManager = $entity_manager;
+    $this->serializer = $serializer;
+    $this->renderer = $renderer;
   }
 
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    return new static($container->get('plugin.manager.rest'), $container->get('acquia_contenthub.entity_manager'));
+    return new static(
+      $container->get('plugin.manager.rest'),
+      $container->get('acquia_contenthub.entity_manager'),
+      $container->get('serializer'),
+      $container->get('renderer')
+    );
   }
 
   /**
    * {@inheritdoc}
    */
-  public function handle(RouteMatchInterface $route_match, Request $request) {
+  public function handle(RouteMatchInterface $route_match, Request $request, RestResourceConfigInterface $_rest_resource_config = null) {
     // We only support one method, one format, and use one of the derivatives of
     // only one resource plugin. (We receive the exact plugin ID via the route
     // defaults).
@@ -99,16 +127,15 @@ class ContentHubEntityRequestHandler extends RequestHandler {
     }
 
     // Invoke the operation on the resource plugin.
-    $serializer = $this->container->get('serializer');
     $unserialized = NULL;
     $response = call_user_func_array([$resource, $method], array_merge($parameters, [$unserialized, $request]));
 
     // Render response.
     $data = $response->getResponseData();
     $context = new RenderContext();
-    $output = $this->container->get('renderer')
-      ->executeInRenderContext($context, function () use ($serializer, $data, $format) {
-        return $serializer->serialize($data, $format);
+    $output = $this->renderer
+      ->executeInRenderContext($context, function () use ($data, $format) {
+        return $this->serializer->serialize($data, $format);
       });
 
     if (!$context->isEmpty()) {
