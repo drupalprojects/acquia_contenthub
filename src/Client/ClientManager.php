@@ -472,7 +472,7 @@ class ClientManager implements ClientManagerInterface {
 
               case 'readEntity':
                 $uuid = $args[0];
-                $msg = new FormattableMarkup('Error reading entity with UUID="@uuid" from Content Hub (Error Code = @error_code: @error_message)', [
+                $msg = new FormattableMarkup('Entity with UUID="@uuid" was referenced by another entity, but could not be found in Content Hub. To resolve this warning, enable publishing of that entity type on the publishing site and re-export the entity. (Error Code = @error_code: @error_message)', [
                   '@error_code' => $error['code'],
                   '@uuid' => $uuid,
                   '@error_message' => $error['message'],
