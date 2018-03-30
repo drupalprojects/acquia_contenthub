@@ -41,7 +41,18 @@ services:
 
   acquia_contenthub.client_manager:
     class: Drupal\acquia_contenthub\Client\ClientManager
-    arguments: ['@logger.factory', '@config.factory', '@language_manager']
+    arguments: ['@logger.factory', '@config.factory', '@language_manager', '@acquia_contenthub.middleware_collector']
+
+  acquia_contenthub.middleware_hmac:
+    class: Drupal\acquia_contenthub\Middleware\HmacWrapper
+    arguments: ['@config.factory']
+    tags:
+      - { name: contenthub_middleware }
+
+  acquia_contenthub.middleware_collector:
+    class: Drupal\acquia_contenthub\Middleware\MiddlewareCollector
+    tags:
+      - { name: service_collector, call: addMiddleware, tag: contenthub_middleware }
 
   acquia_contenthub.normalizer.entity.acquia_contenthub_cdf:
     class: Drupal\acquia_contenthub\Normalizer\ContentEntityCdfNormalizer

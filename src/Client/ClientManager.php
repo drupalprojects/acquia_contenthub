@@ -2,8 +2,9 @@
 
 namespace Drupal\acquia_contenthub\Client;
 
-use Acquia\ContentHubClient\ContentHub;
 use Exception;
+use Acquia\ContentHubClient\ContentHub;
+use Drupal\acquia_contenthub\Middleware\MiddlewareCollector;
 use GuzzleHttp\Exception\ConnectException as ConnectException;
 use GuzzleHttp\Exception\RequestException as RequestException;
 use GuzzleHttp\Exception\ServerException as ServerException;
@@ -57,6 +58,13 @@ class ClientManager implements ClientManagerInterface {
   protected $config;
 
   /**
+   * The Service collector for middlewares
+   *
+   * @var MiddlewareCollector
+   */
+  protected $collector;
+
+  /**
    * ClientManager constructor.
    *
    * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_factory
@@ -65,11 +73,14 @@ class ClientManager implements ClientManagerInterface {
    *   The config factory.
    * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
    *   The language manager.
+   * @param MiddlewareCollector $collector
+   *   The middleware.
    */
-  public function __construct(LoggerChannelFactoryInterface $logger_factory, ConfigFactoryInterface $config_factory, LanguageManagerInterface $language_manager) {
+  public function __construct(LoggerChannelFactoryInterface $logger_factory, ConfigFactoryInterface $config_factory, LanguageManagerInterface $language_manager, MiddlewareCollector $collector) {
     $this->loggerFactory = $logger_factory;
     $this->configFactory = $config_factory;
     $this->languageManager = $language_manager;
+    $this->collector = $collector;
 
     // Get the content hub config settings.
     $this->config = $this->configFactory->get('acquia_contenthub.admin_settings');
@@ -123,7 +134,7 @@ class ClientManager implements ClientManagerInterface {
         return FALSE;
       }
 
-      $this->client = new ContentHub($api, $secret, $origin, $config);
+      $this->client = new ContentHub($origin, $this->collector->getMiddlewares(), $config);
     }
     return $this;
   }
@@ -147,8 +158,13 @@ class ClientManager implements ClientManagerInterface {
    *   The Configuration options.
    */
   public function resetConnection(array $variables, array $config = []) {
+    // Manually pass in the api/secret keys to the middlewares.
     $api = isset($variables['api']) ? $variables['api'] : '';
     $secret = isset($variables['secret']) ? $variables['secret'] : '';;
+    foreach ($this->collector->getMiddlewares() as $middleware) {
+      $middleware->setApiKey($api);
+      $middleware->setSecretKey($secret);
+    }
 
     // If not overwritten, these should use the same configured variables.
     $hostname = isset($variables['hostname']) ? $variables['hostname'] : $this->config->get('hostname');
@@ -169,7 +185,8 @@ class ClientManager implements ClientManagerInterface {
       ],
     ], $config);
 
-    $this->client = new ContentHub($api, $secret, $origin, $config);
+
+    $this->client = new ContentHub($origin, $this->collector->getMiddlewares(), $config);
   }
 
   /**

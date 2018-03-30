@@ -120,6 +120,21 @@ class ContentHubSettingsForm extends ConfigFormBase {
     ];
 
     $client_name = $config->get('client_name');
+
+    $form['settings']['hmac_version'] = [
+      '#type' => 'select',
+      '#title' => 'HMAC Version',
+      '#options' => [
+        'V1' => 'Version 1',
+        'V2' => 'Version 2',
+      ],
+      '#default' => 'V1',
+      '#description' => 'Choose which HMAC version your subscribers and publisher talk. Version 1 Is the only supported option, Version 2 is coming soon.',
+      '#attributes' => [
+        'disabled' => TRUE
+      ],
+    ];
+
     $readonly = empty($client_name) ? [] : ['readonly' => TRUE];
 
     $form['settings']['client_name'] = [

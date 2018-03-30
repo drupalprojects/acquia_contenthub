@@ -5,7 +5,7 @@ namespace Drupal\acquia_contenthub\Controller;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Symfony\Component\HttpFoundation\Request;
-use Acquia\ContentHubClient\ResponseSigner;
+use Acquia\ContentHubClient\hmacv1\ResponseSigner;
 use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\HttpFoundation\Response;

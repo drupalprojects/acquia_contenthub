@@ -25,6 +25,7 @@ mysql:
   encoding: utf8
 
 before_install:
+  - git config --global github.accesstoken $GITHUB_OAUTH_TOKEN
   - phpenv config-rm xdebug.ini
   - composer self-update
   - composer --version
@@ -47,7 +48,7 @@ before_install:
     composer require acquia/lightning:3.0.1 drupal/core:~8.4.0 --no-update;
     fi
   - if [[ $DRUPAL == '8.5.x' ]]; then
-    composer create-project acquia/lightning-project:8.4.1 drupal --no-interaction --no-install;
+    composer create-project acquia/lightning-project:~8.5.0 drupal --no-interaction --no-install;
     cd drupal;
     composer require acquia/lightning:~3.1 drupal/core:~8.5.0 --no-update;
     fi
