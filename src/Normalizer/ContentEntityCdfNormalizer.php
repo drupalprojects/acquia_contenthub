@@ -462,8 +462,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
 
         // Get taxonomy parent terms.
         if ($name === 'parent' && $entity->getEntityTypeId() === 'taxonomy_term') {
-          $storage = \Drupal::service('entity_type.manager')
-            ->getStorage('taxonomy_term');
+          $storage = $this->entityTypeManager->getStorage('taxonomy_term');
           $referenced_entities = $storage->loadParents($entity->id());
         }
         else {
@@ -623,6 +622,19 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     $exists_entity_embed = \Drupal::moduleHandler()->moduleExists('entity_embed');
 
     $referenced_entities = [];
+
+    // If it is a taxonomy term, check for parent information.
+    // https://www.drupal.org/node/2543726
+    if ($entity->getEntityTypeId() === 'taxonomy_term') {
+      $parents = $parent = $this->entityTypeManager->getStorage('taxonomy_term')->loadParents($entity->id());
+      foreach ($parents as $key => $parent) {
+        if (!$this->entityManager->isEligibleDependency($parent)) {
+          unset($parents[$key]);
+        }
+      }
+      $referenced_entities = array_merge($parents, $referenced_entities);
+    }
+
     // Ignore the entity ID and revision ID.
     // Excluded comes here.
     $excluded_fields = $this->excludedProperties($entity);

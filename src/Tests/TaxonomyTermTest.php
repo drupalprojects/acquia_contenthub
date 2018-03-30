@@ -135,7 +135,11 @@ class TaxonomyTermTest extends WebTestBase {
     $this->drupalPostForm('taxonomy/term/' . $term2->id() . '/edit', $edit, t('Save'));
 
     // Check CH cdf response.
-    $output = $this->drupalGetCdf('acquia-contenthub-cdf/taxonomy/term/' . $term2->id());
+    $output = $this->drupalGetCdf('acquia-contenthub-cdf/taxonomy/term/' . $term2->id(), [
+      'query' => [
+        'include_references' => 'true',
+      ],
+    ]);
     $this->assertResponse(200);
 
     // Check cdf format.
@@ -158,6 +162,10 @@ class TaxonomyTermTest extends WebTestBase {
 
     // Compare first uuid from response with term1 uuid.
     $this->assertEqual($term1->uuid(), $parent_uuid, 'Parent term looks correct.');
+
+    // Check that the parent is included in the CDF.
+    $this->assertEqual($term1->uuid(), $output['entities']['1']['uuid'], 'Parent Entity included in the CDF as a dependency.');
+    $this->assertEqual($term1->label(), $output['entities']['1']['attributes']['name']['value']['und'][0], 'Parent Name coincides with expected name.');
   }
 
 }
