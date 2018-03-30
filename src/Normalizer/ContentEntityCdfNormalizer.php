@@ -403,7 +403,12 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       }
 
       // Get the plain version of the field in regular json.
-      $serialized_field = $this->serializer->normalize($field, 'json', $context);
+      if ($name === 'metatag') {
+        $serialized_field = $this->serializer->normalize($field, 'json', $context);
+      }
+      else {
+        $serialized_field = $field->getValue();
+      }
       $items = $serialized_field;
 
       // @TODO: This is to make it work with vocabularies. It should be
@@ -516,6 +521,11 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         else {
           // Loop over the items to get the values for each field.
           foreach ($items as $item) {
+            // Hotfix
+            // @TODO: Find a better solution for this.
+            if (isset($item['_attributes'])) {
+              unset($item['_attributes']);
+            }
             $keys = is_array($item) ? array_keys($item) : [];
             if (count($keys) == 1 && isset($item['value'])) {
               $value = $item['value'];
