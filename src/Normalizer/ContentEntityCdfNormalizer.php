@@ -340,6 +340,14 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       $referenced_entities = $this->getMultilevelReferencedFields($entity, $referenced_entities, $context);
 
       foreach ($referenced_entities as $entity) {
+        // Only proceed to add the dependency if:
+        // - Entity is not a node and it is not translatable.
+        // - Entity is a node, its not translatable and it is published.
+        // - Entity is translatable and has at least one published translation.
+        if (!$this->entityManager->isPublished($entity)) {
+          continue;
+        }
+
         // Generate our URL where the isolated rendered view mode lives.
         // This is the best way to really make sure the content in Content Hub
         // and the content shown to any user is 100% the same.

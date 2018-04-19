@@ -752,7 +752,7 @@ class EntityManager {
         return FALSE;
       }
     }
-    return ($entity instanceof NodeInterface) ? $entity->isPublished() : FALSE;
+    return ($entity instanceof NodeInterface) ? $entity->isPublished() : TRUE;
   }
 
 }
