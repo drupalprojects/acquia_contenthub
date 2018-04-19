@@ -133,10 +133,6 @@ class ContentHubEntityRequestHandler extends RequestHandler {
     // Render response.
     $data = $response->getResponseData();
     $context = new RenderContext();
-    $output = $this->renderer
-      ->executeInRenderContext($context, function () use ($data, $format) {
-        return $this->serializer->serialize($data, $format);
-      });
 
     if (!$context->isEmpty()) {
       $response->addCacheableDependency($context->pop());
@@ -153,7 +149,6 @@ class ContentHubEntityRequestHandler extends RequestHandler {
       $response->addCacheableDependency($content_hub_config_entity);
     }
 
-    $response->setContent($output);
     $response->headers->set('Content-Type', $request->getMimeType($format));
 
     return $response;

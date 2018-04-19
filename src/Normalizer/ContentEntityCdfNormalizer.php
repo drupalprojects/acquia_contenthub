@@ -345,7 +345,8 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         // and the content shown to any user is 100% the same.
         try {
           // Obtain the Entity CDF by making an hmac-signed internal request.
-          $referenced_entity_list_cdf = $this->internalRequest->getEntityCdfByInternalRequest($entity->getEntityTypeId(), $entity->id(), FALSE);
+          $context['query_params']['include_references'] = 'false';
+          $referenced_entity_list_cdf = $this->normalize($entity, $format, $context);
           $referenced_entity_list_cdf = array_pop($referenced_entity_list_cdf);
           if (is_array($referenced_entity_list_cdf)) {
             foreach ($referenced_entity_list_cdf as $referenced_entity_cdf) {
