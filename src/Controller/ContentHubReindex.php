@@ -340,7 +340,7 @@ class ContentHubReindex extends ControllerBase {
       'operations' => [
         ['\Drupal\acquia_contenthub\Controller\ContentHubReindex::reExportEntities', [$batch_size]],
       ],
-      'finished' => 'acquia_contenthub_reexport_finished',
+      'finished' => '\Drupal\acquia_contenthub\Commands\AcquiaContenthubCommands::reexportFinished',
     ];
     batch_set($batch);
   }
