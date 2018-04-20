@@ -521,7 +521,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         else {
           // Loop over the items to get the values for each field.
           foreach ($items as $item) {
-            // Hotfix
+            // Hotfix.
             // @TODO: Find a better solution for this.
             if (isset($item['_attributes'])) {
               unset($item['_attributes']);
@@ -577,6 +577,8 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       switch ($entity->getEntityTypeId()) {
         case 'file':
           $value = file_create_url($entity->getFileUri());
+          $filepath_attribute = new Attribute(Attribute::TYPE_STRING);
+          $contenthub_entity->setAttribute('_filepath', $filepath_attribute->setValue($entity->getFileUri()));
           break;
 
         default:
@@ -589,8 +591,8 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
           break;
       }
       if (isset($value)) {
-        $att = new Attribute('string');
-        $contenthub_entity->setAttribute('url', $att->setValue($value, $langcode));
+        $url_attribute = new Attribute(Attribute::TYPE_STRING);
+        $contenthub_entity->setAttribute('url', $url_attribute->setValue($value, $langcode));
       }
     }
 
@@ -1154,7 +1156,8 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
           foreach ($langcodes as $lang) {
             if (isset($attribute['value'][$lang])) {
               $remote_uri = is_array($attribute['value'][$lang]) ? array_values($attribute['value'][$lang])[0] : $attribute['value'][$lang];
-              if ($file_drupal_path = system_retrieve_file($remote_uri, NULL, FALSE)) {
+              $filepath = $this->getFilePath($contenthub_entity);
+              if ($file_drupal_path = system_retrieve_file($remote_uri, $filepath, FALSE)) {
                 $values['uri'] = $file_drupal_path;
               }
               else {
@@ -1287,6 +1290,43 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       }
     }
     return NULL;
+  }
+
+  /**
+   * Extracts the filepath and creates directories so that files can be stored.
+   *
+   * @param \Acquia\ContentHubClient\Entity $contenthub_entity
+   *   The Content Hub Entity.
+   *
+   * @return null|string
+   *   The File URI if the directories can be created, NULL otherwise.
+   */
+  private function getFilePath(ContentHubEntity $contenthub_entity) {
+    if ($contenthub_entity->getType() !== 'file') {
+      return NULL;
+    }
+    if (!$attribute_filepath = $contenthub_entity->getAttribute('_filepath')) {
+      return NULL;
+    }
+    $uri = isset($attribute_filepath['value'][LanguageInterface::LANGCODE_NOT_SPECIFIED]) ? $attribute_filepath['value'][LanguageInterface::LANGCODE_NOT_SPECIFIED] : NULL;
+    if (substr($uri, 0, 9) !== 'public://') {
+      return NULL;
+    }
+    $file_uri = $uri;
+    // Create directories.
+    $path = pathinfo($file_uri);
+    $filepath = $path['dirname'];
+    if (!is_dir($filepath) || !is_writable($filepath)) {
+      if (!file_prepare_directory($filepath, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS)) {
+        // Log that directory could not be created.
+        \Drupal::logger('acquia_contenthub')
+          ->error('Cannot create files subdirectory "!dir". Please check filesystem permissions.', [
+            '!dir' => $filepath,
+          ]);
+        $file_uri = NULL;
+      }
+    }
+    return $file_uri;
   }
 
 }
