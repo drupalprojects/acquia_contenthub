@@ -253,7 +253,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     // it up to the dynamic page cache so that it varies by the query param
     // include_references. Do not remove.
     $cache = ['#cache' => ['contexts' => ['url.query_args:include_references']]];
-    $this->renderer->render($cache);
+    $this->renderer->renderPlain($cache);
 
     // Add query params to the context.
     $current_uri = \Drupal::request()->getRequestUri();
