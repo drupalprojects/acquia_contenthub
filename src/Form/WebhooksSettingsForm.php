@@ -93,15 +93,17 @@ class WebhooksSettingsForm extends ConfigFormBase {
     }
     $webhook_uuid = $config->get('webhook_uuid');
 
-    // Ask service about webhooks.
-    $webhooks = $this->contentHubSubscription->getSettings()->getWebhooks();
-
     // Match $remote_uuid via $webhook_url from service response.
     $remote_uuid = NULL;
-    foreach ($webhooks as $webhook) {
-      if ($webhook['url'] == $webhook_url) {
-        $remote_uuid = $webhook['uuid'];
-        break;
+    $settings = $this->contentHubSubscription->getSettings();
+    if ($settings) {
+      // Ask service about webhooks.
+      $webhooks = $settings->getWebhooks();
+      foreach ($webhooks as $webhook) {
+        if ($webhook['url'] === $webhook_url) {
+          $remote_uuid = $webhook['uuid'];
+          break;
+        }
       }
     }
 

@@ -744,7 +744,11 @@ class AcquiaContenthubCommands extends DrushCommands {
           break;
 
         case 'list':
-          $webhooks = $subscription->getSettings()->getWebhooks();
+          $settings = $subscription->getSettings();
+          if (!$settings) {
+            break;
+          }
+          $webhooks = $settings->getWebhooks();
           foreach ($webhooks as $index => $webhook) {
             $this->output()->writeln($index + 1 . '. ' . $webhook['url'] . ' - ' . $webhook['uuid']);
           }
