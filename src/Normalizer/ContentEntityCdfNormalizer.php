@@ -9,6 +9,7 @@ use Acquia\ContentHubClient\Asset;
 use Acquia\ContentHubClient\Attribute;
 use Drupal\acquia_contenthub\Session\ContentHubUserSession;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\path\Plugin\Field\FieldType\PathFieldItemList;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Component\Render\FormattableMarkup;
 use Drupal\acquia_contenthub\ContentHubException;
@@ -29,6 +30,7 @@ use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\taxonomy\Entity\Vocabulary;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\acquia_contenthub\ContentHubEntityLinkFieldHandler;
 
 /**
  * Converts the Drupal entity object to a Acquia Content Hub CDF array.
@@ -338,8 +340,17 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
 
       $referenced_entities = [];
       $referenced_entities = $this->getMultilevelReferencedFields($entity, $referenced_entities, $context);
+      $referenced_entities = array_values($referenced_entities);
 
       foreach ($referenced_entities as $entity) {
+        // Only proceed to add the dependency if:
+        // - Entity is not a node and it is not translatable.
+        // - Entity is a node, its not translatable and it is published.
+        // - Entity is translatable and has at least one published translation.
+        if (!$this->entityManager->isPublished($entity)) {
+          continue;
+        }
+
         // Generate our URL where the isolated rendered view mode lives.
         // This is the best way to really make sure the content in Content Hub
         // and the content shown to any user is 100% the same.
@@ -519,6 +530,11 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
           $values[$langcode] = NULL;
         }
         else {
+          // Only if it is a link type.
+          if ($link_field = ContentHubEntityLinkFieldHandler::load($field)->validate()) {
+            $items = $link_field->normalizeItems($items);
+          }
+
           // Loop over the items to get the values for each field.
           foreach ($items as $item) {
             // Hotfix.
@@ -531,6 +547,11 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
               $value = $item['value'];
             }
             else {
+              if ($field instanceof PathFieldItemList) {
+                $item = $field->first()->getValue();
+                $item['pid'] = "";
+                $item['source'] = "";
+              }
               $value = json_encode($item, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
             }
             $values[$langcode][] = $value;
@@ -618,97 +639,116 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     $content_hub_entity_type_ids = $this->entityManager->getContentHubEntityTypeConfigurationEntities();
     $bundle_key = $this->entityTypeManager->getDefinition($entity->getEntityTypeId())->getKey('bundle');
 
-    /** @var \Drupal\Core\Field\FieldItemListInterface[] $fields */
-    $fields = $entity->getFields();
-
     // Check if 'entity_embed' exists.
     $exists_entity_embed = \Drupal::moduleHandler()->moduleExists('entity_embed');
 
     $referenced_entities = [];
 
     // If it is a taxonomy term, check for parent information.
+    // We are considering the parent does not change per translation.
     // https://www.drupal.org/node/2543726
     if ($entity->getEntityTypeId() === 'taxonomy_term') {
-      $parents = $parent = $this->entityTypeManager->getStorage('taxonomy_term')->loadParents($entity->id());
+      $parents = $this->entityTypeManager->getStorage('taxonomy_term')->loadParents($entity->id());
       foreach ($parents as $key => $parent) {
-        if (!$this->entityManager->isEligibleDependency($parent)) {
-          unset($parents[$key]);
+        if ($this->entityManager->isEligibleDependency($parent)) {
+          $referenced_entities[$parent->uuid()] = $parent;
         }
       }
-      $referenced_entities = array_merge($parents, $referenced_entities);
     }
 
     // Ignore the entity ID and revision ID.
     // Excluded comes here.
     $excluded_fields = $this->excludedProperties($entity);
-    foreach ($fields as $name => $field) {
-      // Continue if this is an excluded field or the current user does not
-      // have access to view it.
-      $context['account'] = isset($context['account']) ? $context['account'] : NULL;
-      if (in_array($field->getFieldDefinition()->getName(), $excluded_fields) || !$field->access('view', $context['account']) || $name === $bundle_key) {
-        continue;
-      }
 
-      if ($exists_entity_embed) {
-        $entity_embed_handler = new ContentHubEntityEmbedHandler($field);
-        if ($entity_embed_handler->isProcessable()) {
-          $embed_entities = $entity_embed_handler->getReferencedEntities();
-          $referenced_entities = array_merge($embed_entities, $referenced_entities);
-        }
-      }
+    // Find all languages for the current entity.
+    $languages = $entity->getTranslationLanguages();
 
-      if ($field instanceof EntityReferenceFieldItemListInterface && !$field->isEmpty()) {
-        // Before checking each individual target entity, verify if we can skip
-        // all of them at once by checking if none of the target bundles are set
-        // to be exported in Content Hub configuration.
-        $skip_entities = FALSE;
-        $settings = $field->getFieldDefinition()->getSettings();
-        $target_type = isset($settings['target_type']) ? $settings['target_type'] : NULL;
-        if (isset($settings['handler_settings']['target_bundles'])) {
-          $target_bundles = $settings['handler_settings']['target_bundles'];
+    // Go through all the languages.
+    // We have to iterate over the entity translations and add all the
+    // references that are included per translation.
+    foreach ($languages as $language) {
+      $langcode = $language->getId();
+      $localized_entity = $entity->getTranslation($langcode);
+
+      /** @var \Drupal\Core\Field\FieldItemListInterface[] $fields */
+      $fields = $localized_entity->getFields();
+      foreach ($fields as $name => $field) {
+        // Continue if this is an excluded field or the current user does not
+        // have access to view it.
+        $context['account'] = isset($context['account']) ? $context['account'] : NULL;
+        if (in_array($field->getFieldDefinition()->getName(), $excluded_fields) || !$field->access('view', $context['account']) || $name === $bundle_key) {
+          continue;
         }
-        else {
-          // Certain field types such as file or user do not have target
-          // bundles. In this case, we have to inspect each referenced entity
-          // and collect all their bundles.
-          $target_bundles = [];
-          $field_entities = $field->referencedEntities();
-          foreach ($field_entities as $field_entity) {
-            if ($field_entity instanceof EntityInterface) {
-              $target_bundles[] = $field_entity->bundle();
-            }
-          }
-          $target_bundles = array_unique($target_bundles);
-          if (empty($target_bundles)) {
-            // In cases where there is no bundle defined, the default bundle
-            // name is the same as the entity type, e.g. 'file', 'user'.
-            $target_bundles = [$target_type];
-          }
-        }
-        // Compare the list of bundles with the bundles set to be exportable in
-        // the Content Hub Entity configuration form.
-        if (!empty($target_type)) {
-          $skip_entities = TRUE;
-          foreach ($target_bundles as $target_bundle) {
-            // If there is at least one bundle set to be exportable, it means
-            // this field cannot be skipped.
-            if (isset($content_hub_entity_type_ids[$target_type]) && $content_hub_entity_type_ids[$target_type]->isEnableIndex($target_bundle)) {
-              $skip_entities = FALSE;
-              break;
+
+        if ($exists_entity_embed) {
+          $entity_embed_handler = new ContentHubEntityEmbedHandler($field);
+          if ($entity_embed_handler->isProcessable()) {
+            $embed_entities = $entity_embed_handler->getReferencedEntities();
+            foreach ($embed_entities as $uuid => $embedded_entity) {
+              $referenced_entities[$uuid] = $embedded_entity;
             }
           }
         }
 
-        // Check each referenced entity to see if it should be exported.
-        if (!$skip_entities) {
-          $field_entities = $field->referencedEntities();
-          foreach ($field_entities as $key => $field_entity) {
-            if (!$this->entityManager->isEligibleDependency($field_entity)) {
-              unset($field_entities[$key]);
+        if ($link_field = ContentHubEntityLinkFieldHandler::load($field)->validate()) {
+          $link_entities = $link_field->getReferencedEntities($field->getValue());
+          foreach ($link_entities as $link_entity) {
+            $referenced_entities[$link_entity->uuid()] = $link_entity;
+          }
+        }
+
+        if ($field instanceof EntityReferenceFieldItemListInterface && !$field->isEmpty()) {
+          // Before checking each individual target entity, verify if we can skip
+          // all of them at once by checking if none of the target bundles are set
+          // to be exported in Content Hub configuration.
+          $skip_entities = FALSE;
+          $settings = $field->getFieldDefinition()->getSettings();
+          $target_type = isset($settings['target_type']) ? $settings['target_type'] : NULL;
+          if (isset($settings['handler_settings']['target_bundles'])) {
+            $target_bundles = $settings['handler_settings']['target_bundles'];
+          }
+          else {
+            // Certain field types such as file or user do not have target
+            // bundles. In this case, we have to inspect each referenced entity
+            // and collect all their bundles.
+            $target_bundles = [];
+            $field_entities = $field->referencedEntities();
+            foreach ($field_entities as $field_entity) {
+              if ($field_entity instanceof EntityInterface) {
+                $target_bundles[] = $field_entity->bundle();
+              }
+            }
+            $target_bundles = array_unique($target_bundles);
+            if (empty($target_bundles)) {
+              // In cases where there is no bundle defined, the default bundle
+              // name is the same as the entity type, e.g. 'file', 'user'.
+              $target_bundles = [$target_type];
             }
           }
-          /** @var \Drupal\Core\Entity\EntityInterface[] $referenced_entities */
-          $referenced_entities = array_merge($field_entities, $referenced_entities);
+          // Compare the list of bundles with the bundles set to be exportable in
+          // the Content Hub Entity configuration form.
+          if (!empty($target_type)) {
+            $skip_entities = TRUE;
+            foreach ($target_bundles as $target_bundle) {
+              // If there is at least one bundle set to be exportable, it means
+              // this field cannot be skipped.
+              if (isset($content_hub_entity_type_ids[$target_type]) && $content_hub_entity_type_ids[$target_type]->isEnableIndex($target_bundle)) {
+                $skip_entities = FALSE;
+                break;
+              }
+            }
+          }
+
+          // Check each referenced entity to see if it should be exported.
+          if (!$skip_entities) {
+            $field_entities = $field->referencedEntities();
+            foreach ($field_entities as $key => $field_entity) {
+              if ($this->entityManager->isEligibleDependency($field_entity)) {
+                /** @var \Drupal\Core\Entity\EntityInterface[] $referenced_entities */
+                $referenced_entities[$field_entity->uuid()] = $field_entity;
+              }
+            }
+          }
         }
       }
     }
@@ -741,18 +781,15 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     $maximum_depth = is_int($maximum_depth) ? $maximum_depth : 3;
 
     // Collecting all referenced_entities UUIDs.
-    $uuids = [];
-    foreach ($referenced_entities as $entity) {
-      $uuids[] = $entity->uuid();
-    }
+    $uuids = array_keys($referenced_entities);
 
     // Obtaining all the referenced entities for the current entity.
     $ref_entities = $this->getReferencedFields($entity, $context);
-    foreach ($ref_entities as $entity) {
-      if (!in_array($entity->uuid(), $uuids)) {
+    foreach ($ref_entities as $uuid => $entity) {
+      if (!in_array($uuid, $uuids)) {
         // @TODO: This if-condition is a hack to avoid Vocabulary entities.
         if ($entity instanceof ContentEntityInterface) {
-          $referenced_entities[] = $entity;
+          $referenced_entities[$uuid] = $entity;
 
           // Only search for dependencies if we are below the maximum depth
           // configured by the admin. If not set, a default of 3 will be used.
@@ -864,6 +901,10 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
                 $decoded = json_decode($item, TRUE);
                 if (json_last_error() === JSON_ERROR_NONE) {
                   $item = $decoded;
+                  // Only do this if we are dealing with a link field type.
+                  if ($link_field = ContentHubEntityLinkFieldHandler::load($field)->validate()) {
+                    $item = $link_field->denormalizeItem($item);
+                  }
                 }
               }
               $field->appendItem($item);
@@ -1004,9 +1045,10 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         'changed',
         'uri',
         'uid',
+        'langcode',
 
         // Getting rid of workflow fields.
-        'status',
+        //'status',
 
         // Do not send revisions.
         'revision_uid',
@@ -1014,10 +1056,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         'revision_timestamp',
 
         // Translation fields.
-        'content_translation_outdated',
-        'content_translation_source',
         'content_translation_uid',
-        'default_langcode',
 
         // Do not include comments.
         'comment',
@@ -1026,9 +1065,6 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
 
         // Do not include moderation state.
         'moderation_state',
-
-        // Do not include path settings.
-        'path',
       ],
 
       // Excluded fields for nodes.
@@ -1098,11 +1134,26 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     $entity_type = $contenthub_entity->getType();
     $bundle_key = $this->entityTypeManager->getDefinition($entity_type)->getKey('bundle');
     $bundle = $contenthub_entity->getAttribute($bundle_key) ? reset($contenthub_entity->getAttribute($bundle_key)['value']) : NULL;
-    $langcodes = $contenthub_entity->getAttribute('langcode')['value'];
+    $langcodes = !empty($contenthub_entity->getAttribute('default_langcode')['value']) ?  array_keys($contenthub_entity->getAttribute('default_langcode')['value']) : [$this->languageManager->getDefaultLanguage()->getId()];
+    // Get default langcode and remove from attributes.
+    foreach ($contenthub_entity->getAttribute('default_langcode')['value'] AS $key => $value) {
+      if ($value[0] == true) {
+        $default_langcode = $key;
+        continue;
+      }
+    }
+    if (empty($default_langcode)) {
+      $default_langcode = $this->languageManager->getDefaultLanguage()->getId();
+    }
+    // Default Langcode is only used for initial entity creation. Remove now.
+    $contenthub_entity->removeAttribute('default_langcode');
+    // Store the translation source outside the CDF.
+    $content_translation_source = $contenthub_entity->getAttribute('content_translation_source');
+    $contenthub_entity->removeAttribute('content_translation_source');
 
     // Does this entity exist in this site already?
-    $entity = $this->entityRepository->loadEntityByUuid($entity_type, $contenthub_entity->getUuid());
-    if ($entity == NULL) {
+    $source_entity = $this->entityRepository->loadEntityByUuid($entity_type, $contenthub_entity->getUuid());
+    if ($source_entity == NULL) {
 
       // Transforming Content Hub Entity into a Drupal Entity.
       $values = [
@@ -1112,25 +1163,20 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         $values[$bundle_key] = $bundle;
       }
 
+      // Set the content_translation source of whatever the default langcode says.
+      $values['content_translation_source'] = $content_translation_source['value'][$default_langcode][0];
+
       // Special treatment according to entity types.
       switch ($entity_type) {
         case 'node':
-          foreach ($langcodes as $language) {
-            // Set the author as coming from the CDF.
-            $author = $contenthub_entity->getAttribute('author') ? $contenthub_entity->getAttribute('author')['value'][$language] : FALSE;
-            $user = Uuid::isValid($author) ? $this->entityRepository->loadEntityByUuid('user', $author) : \Drupal::currentUser();
-            $values['uid'] = $user->id() ? $user->id() : 0;
+          $author = $contenthub_entity->getAttribute('author') ? $contenthub_entity->getAttribute('author')['value'][$default_langcode] : FALSE;
+          $user = Uuid::isValid($author) ? $this->entityRepository->loadEntityByUuid('user', $author) : \Drupal::currentUser();
+          $values['uid'] = $user->id() ? $user->id() : 0;
 
-            // Set the status as coming from the CDF.
-            // If it doesn't have a status attribute, set it as 0 (unpublished).
-            $status = $contenthub_entity->getAttribute('status') ? $contenthub_entity->getAttribute('status')['value'][$language] : 0;
-            $values['status'] = $status ? $status : 0;
-
-            // Check if Workbench Moderation is enabled.
-            $workbench_moderation_enabled = \Drupal::moduleHandler()->moduleExists('workbench_moderation');
-            if ($status && $workbench_moderation_enabled) {
-              $values['moderation_state'] = 'published';
-            }
+          // Check if Workbench Moderation is enabled.
+          $workbench_moderation_enabled = \Drupal::moduleHandler()->moduleExists('workbench_moderation');
+          if ($workbench_moderation_enabled) {
+            $values['moderation_state'] = 'published';
           }
           break;
 
@@ -1213,31 +1259,28 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
           break;
       }
 
-      $langcode_key = $this->entityTypeManager->getDefinition($entity_type)->getKey('langcode');
-      $values[$langcode_key] = array_values($langcodes);
-      $entity = $this->entityTypeManager->getStorage($entity_type)->create($values);
+      //$langcode_key = $this->entityTypeManager->getDefinition($source_entity)->getKey('langcode');
+      //$values[$langcode_key] = array_values($langcodes);
+      $source_entity = $this->entityTypeManager->getStorage($entity_type)->create($values);
     }
 
-    // We have to iterate over the entity translations and add all the
-    // translations versions.
-    $languages = $this->languageManager->getLanguages(LanguageInterface::STATE_ALL);
-    foreach ($languages as $language => $languagedata) {
+
+    $entity = $source_entity;
+    foreach ($langcodes as $langcode) {
       // Make sure the entity language is one of the language contained in the
       // Content Hub Entity.
-      if (in_array($language, array_keys($langcodes))) {
-        if ($entity->hasTranslation($language)) {
-          $localized_entity = $entity->getTranslation($language);
-          $entity = $this->addFieldsToDrupalEntity($localized_entity, $contenthub_entity, $language, $context);
+      if ($source_entity->hasTranslation($langcode)) {
+        $localized_entity = $source_entity->getTranslation($langcode);
+        $entity = $this->addFieldsToDrupalEntity($localized_entity, $contenthub_entity, $langcode, $context);
+      }
+      else {
+        if ($langcode == LanguageInterface::LANGCODE_NOT_SPECIFIED || $langcode == LanguageInterface::LANGCODE_NOT_APPLICABLE) {
+          $entity = $this->addFieldsToDrupalEntity($source_entity, $contenthub_entity, $langcode, $context);
         }
         else {
-          if ($language == LanguageInterface::LANGCODE_NOT_SPECIFIED || $language == LanguageInterface::LANGCODE_NOT_APPLICABLE) {
-            $entity = $this->addFieldsToDrupalEntity($entity, $contenthub_entity, $language, $context);
-          }
-          else {
-            $localized_entity = $entity->addTranslation($language, $entity->toArray());
-            $localized_entity->content_translation_source = $entity->language()->getId();
-            $entity = $this->addFieldsToDrupalEntity($localized_entity, $contenthub_entity, $language, $context);
-          }
+          $localized_entity = $source_entity->addTranslation($langcode, $source_entity->toArray());
+          $localized_entity->content_translation_source = $content_translation_source['value'][$langcode][0];
+          $entity = $this->addFieldsToDrupalEntity($localized_entity, $contenthub_entity, $langcode, $context);
         }
       }
     }
@@ -1328,5 +1371,4 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     }
     return $file_uri;
   }
-
 }
