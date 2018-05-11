@@ -423,12 +423,19 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       }
       $items = $serialized_field;
 
-      // @TODO: This is to make it work with vocabularies. It should be
-      // replaced with appropriate handling of taxonomy vocabulary entities.
+      // Given that vocabularies are configuration entities, they are not
+      // supported in Content Hub. Instead we use the vocabulary machine name
+      // as mechanism to syndicate and import them in the right vocabulary.
       if ($name === 'vid' && $entity->getEntityTypeId() === 'taxonomy_term') {
-        $attribute = new Attribute(Attribute::TYPE_STRING);
-        $attribute->setValue($items[0]['target_id'], $langcode);
-        $contenthub_entity->setAttribute('vocabulary', $attribute);
+        // Initialize vocabulary attribute if it doesn't exist yet.
+        if (!$contenthub_entity->getAttribute('vocabulary')) {
+          $attribute = new Attribute(Attribute::TYPE_STRING);
+          $attribute->setValue($items[0]['target_id'], $langcode);
+          $contenthub_entity->setAttribute('vocabulary', $attribute);
+        }
+        else {
+          $contenthub_entity->setAttributeValue('vocabulary', $items[0]['target_id'], $langcode);
+        }
         continue;
       }
 
