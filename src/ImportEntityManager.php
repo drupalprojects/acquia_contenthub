@@ -476,8 +476,8 @@ class ImportEntityManager {
       $dependencies = $this->getAllRemoteDependencies($contenthub_entity, $dependencies, TRUE);
     }
 
-    // We're already importing as published, so set the status to true.
-    $status = TRUE;
+    // Obtaining the Status of the parent entity, if it is a node and
+    // setting the publishing status of that entity.
     $contenthub_entity->setStatus($status);
 
     // Assigning author to this entity and dependencies.
