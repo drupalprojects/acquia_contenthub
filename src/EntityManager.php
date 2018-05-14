@@ -3,6 +3,7 @@
 namespace Drupal\acquia_contenthub;
 
 use Drupal\Core\Entity\RevisionableInterface;
+use Drupal\Core\Entity\TranslatableInterface;
 use Drupal\file\FileInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\acquia_contenthub\Client\ClientManagerInterface;
@@ -529,12 +530,13 @@ class EntityManager {
     }
 
     $status = $entity->getEntityType()->hasKey("status") ? $entity->getEntityType()->getKey("status") : NULL;
-    $revision_col = $entity->getEntityType()->hasKey("revision") ? $entity->getEntityType()->getKey("revision") : NULL;
-    if ($status && $revision_col && $entity instanceof RevisionableInterface) {
+    if ($status) {
       $definition = $entity->getFieldDefinition($status);
       $property = $definition->getFieldStorageDefinition()->getMainPropertyName();
-      $value = $entity->get($status)->$property;
-      if (!$value) {
+      $status_value = $entity->get($status)->$property;
+      $revision_col = $entity->getEntityType()->hasKey("revision") ? $entity->getEntityType()->getKey("revision") : NULL;
+      // Entity is unpublished AND not the current revision; it's not eligible.
+      if (!$status_value && $revision_col && $entity instanceof RevisionableInterface) {
         $table = $entity->getEntityType()->getBaseTable();
         $id_col = $entity->getEntityType()->getKey("id");
         $query = \Drupal::database()->select($table)
@@ -542,6 +544,20 @@ class EntityManager {
         $query->condition("$table.$id_col", $entity->id());
         $revision_id = $query->execute()->fetchField();
         if ($revision_id != $entity->getRevisionId()) {
+          return FALSE;
+        }
+      }
+
+      // If any translation of the entity is still published it IS eligible.
+      if (!$status_value && $entity instanceof TranslatableInterface) {
+        foreach ($entity->getTranslationLanguages() as $language) {
+          $translation = $entity->getTranslation($language->getId());
+          if ($translation->get($status)->$property) {
+            $status_value = TRUE;
+            break;
+          }
+        }
+        if (!$status_value) {
           return FALSE;
         }
       }
