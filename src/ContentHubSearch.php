@@ -5,6 +5,7 @@ namespace Drupal\acquia_contenthub;
 use Drupal\acquia_contenthub\Client\ClientManagerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
+use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 
 /**
@@ -187,19 +188,18 @@ class ContentHubSearch {
 
         // For bundles.
         case 'bundle':
-          // Obtaining default language.
-          $language_default = $this->languageManager->getDefaultLanguage()->getId();
           // Obtaining bundle_key for this bundle.
           $bundle_key = $this->entityTypeManager->getDefinition($asset_type)->getKey('bundle');
-          if (!empty($bundle_key)) {
+          if (empty($bundle_key)) {
+            break;
+          }
+
+          // Test all supported languages.
+          $supported_languages = array_keys($this->languageManager->getLanguages(LanguageInterface::STATE_ALL));
+          foreach ($supported_languages as $supported_language) {
             $query['query']['bool']['should'][] = [
               'term' => [
-                "data.attributes.{$bundle_key}.value.{$language_default}" => $value,
-              ],
-            ];
-            $query['query']['bool']['should'][] = [
-              'term' => [
-                "data.attributes.{$bundle_key}.value.und" => $value,
+                "data.attributes.{$bundle_key}.value.{$supported_language}" => $value,
               ],
             ];
           }
@@ -271,8 +271,8 @@ class ContentHubSearch {
       // Together, they verify if a particular content hub filter applies to
       // an entity UUID or not.
       $query = $query_filter;
-
     }
+
     return $this->executeSearchQuery($query);
   }
 
