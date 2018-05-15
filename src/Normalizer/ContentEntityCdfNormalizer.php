@@ -1052,10 +1052,6 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         'changed',
         'uri',
         'uid',
-        'langcode',
-
-        // Getting rid of workflow fields.
-        'status',
 
         // Do not send revisions.
         'revision_uid',
@@ -1161,7 +1157,6 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       }
     }
     // Default Langcode is only used for initial entity creation. Remove now.
-    $contenthub_entity->removeAttribute('default_langcode');
     $contenthub_entity->removeAttribute('langcode');
     // Store the translation source outside the CDF.
     $content_translation_source = $contenthub_entity->getAttribute('content_translation_source');
@@ -1283,6 +1278,9 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       $langcode_key = $this->entityTypeManager->getDefinition($entity_type)->getKey('langcode');
       $values[$langcode_key] = [$default_langcode];
       $source_entity = $this->entityTypeManager->getStorage($entity_type)->create($values);
+    }
+    else {
+      $contenthub_entity->removeAttribute('default_langcode');
     }
 
     $entity = $source_entity;
