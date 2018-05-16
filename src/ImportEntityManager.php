@@ -390,7 +390,7 @@ class ImportEntityManager {
    * @return \Symfony\Component\HttpFoundation\JsonResponse
    *   A JSON Response.
    */
-  public function import($uuid, $include_dependencies = TRUE, $author = NULL, $status = 0) {
+  public function import($uuid, $include_dependencies = TRUE, $author = NULL, $status = NULL) {
     if (\Drupal::config('acquia_contenthub.entity_config')->get('import_with_queue')) {
       return $this->addEntityToImportQueue($uuid, $include_dependencies, $author, $status);
     }
@@ -421,7 +421,7 @@ class ImportEntityManager {
    * @return \Symfony\Component\HttpFoundation\JsonResponse
    *   A JSON Response.
    */
-  public function importRemoteEntity($uuid, $include_dependencies = TRUE, $author = NULL, $status = 0) {
+  public function importRemoteEntity($uuid, $include_dependencies = TRUE, $author = NULL, $status = NULL) {
     // Checking that the parameter given is a UUID.
     if (!Uuid::isValid($uuid)) {
       // We will just show a standard "access denied" page in this case.
@@ -476,8 +476,8 @@ class ImportEntityManager {
       $dependencies = $this->getAllRemoteDependencies($contenthub_entity, $dependencies, TRUE);
     }
 
-    // We're already importing as published, so set the status to true.
-    $status = TRUE;
+    // Obtaining the Status of the parent entity, if it is a node and
+    // setting the publishing status of that entity.
     $contenthub_entity->setStatus($status);
 
     // Assigning author to this entity and dependencies.
@@ -609,7 +609,7 @@ class ImportEntityManager {
         foreach ($languages as $language) {
           $entity = $entity->getTranslation($language->getId());
           $path = $entity->get('path')->first()->getValue();
-          if (empty($path['pid'])) {
+          if (empty($path['pid']) && !empty($path['alias'])) {
             $raw_path = $alias_manager->getPathByAlias($path['alias'], $path['langcode']);
             if ($raw_path) {
               $query = \Drupal::database()->select('url_alias', 'ua')

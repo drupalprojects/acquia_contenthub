@@ -4,6 +4,7 @@ namespace Drupal\acquia_contenthub\Controller;
 
 use Drupal\acquia_contenthub\EntityManager;
 use Drupal\Component\Plugin\PluginManagerInterface;
+use Drupal\Core\Entity\TranslatableInterface;
 use Drupal\Core\Render\RenderContext;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\rest\RequestHandler;
@@ -121,6 +122,24 @@ class ContentHubEntityRequestHandler extends RequestHandler {
     $parameters = [];
     // Filter out all internal parameters starting with "_".
     foreach ($route_parameters as $key => $parameter) {
+      if ($parameter instanceof TranslatableInterface) {
+        $entity_type = $parameter->getEntityType();
+        $status = $entity_type->hasKey("status") ? $entity_type->getKey("status") : NULL;
+        if ($status) {
+          $definition = $parameter->getFieldDefinition($status);
+          $property = $definition->getFieldStorageDefinition()->getMainPropertyName();
+          $status_value = $parameter->get($status)->$property;
+          if (!$status_value) {
+            foreach ($parameter->getTranslationLanguages() as $language) {
+              $translation = $parameter->getTranslation($language->getId());
+              if ($translation->get($status)->$property) {
+                $parameter = $translation;
+                break;
+              }
+            }
+          }
+        }
+      }
       if ($key{0} !== '_') {
         $parameters[] = $parameter;
       }
