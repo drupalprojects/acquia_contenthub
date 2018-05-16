@@ -313,16 +313,6 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       $langcode = $language->getId();
       $localized_entity = $entity->getTranslation($langcode);
 
-      // If content_translation is enabled, then check whether the current
-      // translation revision of the content has been published.
-      if (!empty($this->translationManager) && $this->translationManager->isEnabled($entity_type_id, $entity->bundle())) {
-        /** @var \Drupal\content_translation\ContentTranslationMetadataWrapperInterface $translation_metadata */
-        $translation_metadata = $this->translationManager->getTranslationMetadata($localized_entity);
-        if (!$translation_metadata->isPublished()) {
-          continue;
-        }
-      }
-
       $contenthub_entity = $this->addFieldsToContentHubEntity($contenthub_entity, $localized_entity, $langcode, $context);
     }
 
