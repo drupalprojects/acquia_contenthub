@@ -547,20 +547,6 @@ class EntityManager {
           return FALSE;
         }
       }
-
-      // If any translation of the entity is still published it IS eligible.
-      if (!$status_value && $entity instanceof TranslatableInterface) {
-        foreach ($entity->getTranslationLanguages() as $language) {
-          $translation = $entity->getTranslation($language->getId());
-          if ($translation->get($status)->$property) {
-            $status_value = TRUE;
-            break;
-          }
-        }
-        if (!$status_value) {
-          return FALSE;
-        }
-      }
     }
 
     /** @var \Drupal\Core\Extension\ModuleHandlerInterface $module_handler */

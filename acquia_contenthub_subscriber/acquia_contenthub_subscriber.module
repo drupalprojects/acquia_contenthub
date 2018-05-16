@@ -88,7 +88,7 @@ function acquia_contenthub_subscriber_process_filters(ImportEntityManager $impor
       $user = User::load($uid);
 
       // If Filter condition evaluates to TRUE, save entity with dependencies.
-      $import_entity_manager->import($asset['uuid'], TRUE, $user->uuid(), $status);
+      $import_entity_manager->import($asset['uuid'], TRUE, $user->uuid(), $status ? $status : NULL);
 
       // If this filter matches, then stop processing other filters.
       // @TODO: Find a better way of handling different filters (ie. priority).
