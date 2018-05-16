@@ -18,6 +18,8 @@ require_once __DIR__ . '/Polyfill/Drupal.php';
  */
 class ImportEntityManagerTest extends UnitTestCase {
 
+  use ContentHubEntityTrait;
+
   /**
    * The Content Hub Entities Tracking Service.
    *
@@ -507,8 +509,10 @@ class ImportEntityManagerTest extends UnitTestCase {
   public function testImportRemoteEntityMissingEntityWithRequiredBundle() {
     $uuid = '11111111-1111-1111-1111-111111111111';
     $site_origin = '11111111-2222-1111-1111-111111111111';
-
-    $entity = $this->getMock('Acquia\ContentHubClient\Entity');
+    $entity_ch = $this->createContentHubEntity([
+      'uuid' => $uuid,
+    ]);
+    $entity = $this->getMock('\Drupal\node\NodeInterface');
     $original_node = $this->getMock('\Drupal\node\NodeInterface');
     $entity->original = $original_node;
 
@@ -518,19 +522,6 @@ class ImportEntityManagerTest extends UnitTestCase {
     $entity->expects($this->any())
       ->method('getEntityTypeId')
       ->willReturn('node');
-    $entity->expects($this->any())
-      ->method('getUuid')
-      ->willReturn($uuid);
-    $entity->expects($this->any())
-      ->method('getType')
-      ->willReturn('node');
-    $entity->expects($this->any())
-      ->method('getOrigin')
-      ->willReturn($uuid);
-    $entity->expects($this->any())
-      ->method('getAttribute')
-      ->with('type')
-      ->willReturn(['value' => ['test_1']]);
 
     $this->contentHubEntitiesTracking->expects($this->any())
       ->method('getSiteOrigin')
@@ -539,7 +530,7 @@ class ImportEntityManagerTest extends UnitTestCase {
     $this->clientManager->expects($this->any())
       ->method('createRequest')
       ->with('readEntity', [$uuid])
-      ->willReturn($entity);
+      ->willReturn($entity_ch);
 
     $this->entityManager->expects($this->any())
       ->method('getAllowedEntityTypes')
@@ -551,7 +542,7 @@ class ImportEntityManagerTest extends UnitTestCase {
       ->with('acquia_contenthub')
       ->willReturn($loggerChannelInterface);
 
-    $this->loggerFactory->expects($this->any())
+    $loggerChannelInterface->expects($this->any())
       ->method('warning');
 
     $result = $this->importEntityManager->importRemoteEntity($uuid, FALSE);
