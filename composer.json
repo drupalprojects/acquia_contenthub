@@ -10,11 +10,11 @@
     }
   },
   "require": {
-    "acquia/content-hub-php": "1.3.0"
+    "acquia/content-hub-php": "1.3.0",
+    "drupal/diff": "1.x-dev"
   },
   "require-dev": {
     "drupal/entity_reference_revisions": "1.4",
-    "drupal/diff": "*@dev",
     "drupal/workbench_moderation": "*",
     "drupal/paragraphs": "1.2",
     "drupal/field_permissions": "^1.0@beta",
