@@ -14,7 +14,7 @@ use Drupal\acquia_contenthub_diagnostic\ContentHubRequirementBase;
  */
 class ModuleInstallationRequirement extends ContentHubRequirementBase {
 
-  const MODULE_PACKAGE_NAME = 'acquia/content-hub-d8';
+  const MODULE_PACKAGE_NAME = 'acquia/content-hub-php';
 
   /**
    * The path of the Composer lock file.
