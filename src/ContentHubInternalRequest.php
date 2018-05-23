@@ -143,7 +143,7 @@ class ContentHubInternalRequest {
     }
     catch (\Exception $e) {
       // Do nothing, route does not exist, just log a message about it.
-      $this->loggerFactory->get('acquia_contenthub')->debug($this->t('Exception: %msg', ['%msg' => $e->getMessage()]));
+      $this->loggerFactory->get('acquia_contenthub')->debug('Exception: %msg', ['%msg' => $e->getMessage()]);
       $bulk_cdf = [];
     }
 
