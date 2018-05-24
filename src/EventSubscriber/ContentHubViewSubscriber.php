@@ -11,7 +11,6 @@ use Symfony\Component\HttpKernel\Event\FilterControllerEvent;
 use Symfony\Component\HttpKernel\Event\FinishRequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
-use Drupal\Core\StringTranslation\StringTranslationTrait;
 
 /**
  * View subscriber rendering main content render arrays into responses.
@@ -26,8 +25,6 @@ use Drupal\Core\StringTranslation\StringTranslationTrait;
  * @see \Drupal\Core\Render\MainContentControllerPass
  */
 class ContentHubViewSubscriber implements EventSubscriberInterface {
-
-  use StringTranslationTrait;
 
   /**
    * The current route match.
@@ -108,9 +105,9 @@ class ContentHubViewSubscriber implements EventSubscriberInterface {
         $this->accountSwitcher->switchBack();
       }
       catch (\RuntimeException $e) {
-        $this->loggerFactory->get('acquia_contenthub')->debug($this->t("Not able to switch back from Content Hub user's account because it was never changed. Current user ID: %id", [
+        $this->loggerFactory->get('acquia_contenthub')->debug("Not able to switch back from Content Hub user's account because it was never changed. Current user ID: %id", [
           '%id' => \Drupal::currentUser()->id(),
-        ]));
+        ]);
       }
     }
   }

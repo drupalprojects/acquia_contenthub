@@ -16,7 +16,6 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Component\Utility\UrlHelper;
 use GuzzleHttp\Exception\RequestException;
-use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\node\NodeInterface;
 use Drupal\paragraphs\ParagraphInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
@@ -27,8 +26,6 @@ use Drupal\Core\Entity\ContentEntityInterface;
  * @TODO To be renamed to "ExportEntityManager".
  */
 class EntityManager {
-
-  use StringTranslationTrait;
 
   // Possible actions that the Entity Manager can queue entities for.
   const EXPORT = 'EXPORT';
@@ -350,7 +347,7 @@ class EntityManager {
       '%id' => $entity->id(),
     ];
     if (!$resource_url) {
-      $this->loggerFactory->get('acquia_contenthub')->error($this->t('Error trying to form a unique resource Url for %type with uuid %uuid and id %id', $args));
+      $this->loggerFactory->get('acquia_contenthub')->error('Error trying to form a unique resource Url for %type with uuid %uuid and id %id', $args);
       return;
     }
 
@@ -362,7 +359,7 @@ class EntityManager {
         '%type' => $entity->getEntityTypeId(),
         '%id' => $entity->id(),
       ];
-      $this->loggerFactory->get('acquia_contenthub')->debug($this->t('Deleting remote entity with UUID = %uuid (%type, %id)', $args));
+      $this->loggerFactory->get('acquia_contenthub')->debug('Deleting remote entity with UUID = %uuid (%type, %id)', $args);
       $exported_entity = $this->contentHubEntitiesTracking->loadExportedByUuid($uuid);
       if ($exported_entity) {
         $exported_entity->delete();
@@ -370,14 +367,14 @@ class EntityManager {
     }
     catch (RequestException $e) {
       $args['%error'] = $e->getMessage();
-      $this->loggerFactory->get('acquia_contenthub')->error($this->t('Error trying to post the resource url for %type with uuid %uuid and id %id with a response from the API: %error', $args));
+      $this->loggerFactory->get('acquia_contenthub')->error('Error trying to post the resource url for %type with uuid %uuid and id %id with a response from the API: %error', $args);
       return;
     }
 
     // Make sure it is within the 2XX range. Expected response is a 202.
     $status_code = $response->getStatusCode();
     if (substr($status_code, 0, 2) !== '20') {
-      $this->loggerFactory->get('acquia_contenthub')->error($this->t('Error trying to post the resource url for %type with uuid %uuid and id %id: Response status code was not 20X as expected.', $args));
+      $this->loggerFactory->get('acquia_contenthub')->error('Error trying to post the resource url for %type with uuid %uuid and id %id: Response status code was not 20X as expected.', $args);
     }
   }
 

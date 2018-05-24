@@ -258,7 +258,7 @@ class ContentHubEntityExportController extends ControllerBase {
             '!id' => $id,
             '!msg' => $e->getMessage(),
           ];
-          $this->loggerFactory->get('acquia_contenthub')->error($this->t('Could not obtain the CDF for entity (!type, !id) : !msg', $args));
+          $this->loggerFactory->get('acquia_contenthub')->error('Could not obtain the CDF for entity (!type, !id) : !msg', $args);
         }
       }
     }
