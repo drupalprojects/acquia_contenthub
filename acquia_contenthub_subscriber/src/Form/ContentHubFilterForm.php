@@ -130,28 +130,10 @@ class ContentHubFilterForm extends EntityForm {
     // The Source.
     $form['source'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Source'),
+      '#title' => $this->t('Sources'),
       '#maxlength' => 255,
       '#default_value' => $contenthub_filter->source,
-      '#description' => $this->t('Source'),
-    ];
-
-    // The Source.
-    $form['entity_types'] = [
-      '#type' => 'textarea',
-      '#title' => $this->t('Entity Types'),
-      '#rows' => 4,
-      '#default_value' => implode("\n", $contenthub_filter->getEntityTypes()),
-      '#description' => $this->t('Entity types (one entity type per line)'),
-    ];
-
-    // The Source.
-    $form['bundles'] = [
-      '#type' => 'textarea',
-      '#title' => $this->t('Bundles'),
-      '#rows' => 4,
-      '#default_value' => implode("\n", $contenthub_filter->getBundles()),
-      '#description' => $this->t('Bundles (one bundle per line)'),
+      '#description' => $this->t('Source origin site UUIDs, delimited by comma ","'),
     ];
 
     // The Tags.
@@ -160,7 +142,25 @@ class ContentHubFilterForm extends EntityForm {
       '#title' => $this->t('Tags'),
       '#maxlength' => 255,
       '#default_value' => $contenthub_filter->tags,
-      '#description' => $this->t('Tags'),
+      '#description' => $this->t('Tag UUIDs, delimited by comma ","'),
+    ];
+
+    // The Entity types.
+    $form['entity_types'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Entity Types'),
+      '#rows' => 4,
+      '#default_value' => implode("\n", $contenthub_filter->getEntityTypes()),
+      '#description' => $this->t('Entity types (one entity type id per line)'),
+    ];
+
+    // The Bundles.
+    $form['bundles'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Bundles'),
+      '#rows' => 4,
+      '#default_value' => implode("\n", $contenthub_filter->getBundles()),
+      '#description' => $this->t('Bundles (one bundle id per line)'),
     ];
 
     return $form;
