@@ -7,6 +7,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Database\Query\Merge;
 use Drupal\Component\Uuid\Uuid;
+use Drupal\Core\Database\IntegrityConstraintViolationException;
 
 /**
  * Tracks in a table the list of all entities imported from Content Hub.
@@ -532,7 +533,7 @@ class ContentHubEntitiesTracking {
    */
   public function save() {
     // If we reached here then we have a valid input and can save safely.
-    $result = $this->database->merge(self::TABLE)
+    $query = $this->database->merge(self::TABLE)
       ->key([
         'entity_id' => $this->getEntityId(),
         'entity_type' => $this->getEntityType(),
@@ -543,8 +544,31 @@ class ContentHubEntitiesTracking {
         'status_import' => $this->getImportStatus(),
         'modified' => $this->getModified(),
         'origin' => $this->getOrigin(),
-      ])
-      ->execute();
+      ]);
+
+    try {
+      $result = $query->execute();
+    }
+    catch (IntegrityConstraintViolationException $exception) {
+      // There is an entity in the database with the same ID but different UUID.
+      // It needs to be deleted before we can proceed.
+      if ($record = ContentHubEntitiesTracking::loadByDrupalEntity($this->getEntityType(), $this->getEntityId())) {
+        $record->delete();
+        \Drupal::logger('acquia_contenthub')->debug('An outdated record for entity (%id, %type, %uuid) was deleted from the Entities Tracking table due to UUID mismatch.', [
+          '%id' => $record->getEntityId(),
+          '%type' => $record->getEntityType(),
+          '%uuid' => $record->getUuid(),
+        ]);
+
+        // Now retry the original query.
+        $result = $query->execute();
+      }
+      else {
+        // If there is no duplicate record with different UUID, then the error
+        // is unknown. Just throw the exception as it would normally happen.
+        throw $exception;
+      }
+    }
 
     switch ($result) {
       case Merge::STATUS_INSERT:
