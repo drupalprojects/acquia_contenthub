@@ -189,9 +189,19 @@ class ContentHubFilter extends ConfigEntityBase implements ContentHubFilterInter
       $conditions[] = 'search_term:' . $this->search_term;
     }
 
-    // <Date From>to<Date-To>.
-    if (!empty($this->from_date) || !empty($this->to_date)) {
-      $conditions[] = 'modified:' . $this->from_date . 'to' . $this->to_date;
+    // Building entity type condition.
+    if (!empty($this->entity_types)) {
+      $conditions[] = 'entity_types:' . implode(',', $this->entity_types);
+    }
+
+    // Building bundle condition.
+    if (!empty($this->bundles)) {
+      $conditions[] = 'bundle:' . implode(',', $this->bundles);
+    }
+
+    // Building tags condition.
+    if (!empty($this->tags)) {
+      $conditions[] = 'tags:' . $this->tags;
     }
 
     // Building origin condition.
@@ -199,25 +209,11 @@ class ContentHubFilter extends ConfigEntityBase implements ContentHubFilterInter
       $conditions[] = 'origins:' . $this->source;
     }
 
-    // Building field_tags condition.
-    if (!empty($this->tags)) {
-      $field_tags = explode(',', $this->tags);
-      foreach ($field_tags as $field_tag) {
-        $conditions[] = 'tags:' . $field_tag;
-      }
+    // <Date From>to<Date-To>.
+    if (!empty($this->from_date) || !empty($this->to_date)) {
+      $conditions[] = 'modified:' . $this->from_date . 'to' . $this->to_date;
     }
 
-    // Buildling entity type condition.
-    if (!empty($this->entity_types)) {
-      $conditions[] = 'entity_types:' . implode(',', $this->entity_types);
-    }
-
-    // Buildling bundle condition.
-    if (!empty($this->bundles)) {
-      foreach ($this->bundles as $bundle) {
-        $conditions[] = 'bundle:' . $bundle;
-      }
-    }
     return $conditions;
   }
 

@@ -158,7 +158,6 @@ class ContentHubSearch {
       'query' => [
         'bool' => [
           'must' => [],
-          'should' => [],
         ],
       ],
       'size' => !empty($options['count']) ? $options['count'] : 10,
@@ -177,9 +176,20 @@ class ContentHubSearch {
       // Tweak ES query for each filter condition.
       switch ($filter) {
 
+        // For Search Term (Keyword).
+        case 'search_term':
+          if (!empty($value)) {
+            $query['query']['bool']['must'][] = [
+              'match' => [
+                '_all' => "*{$value}*",
+              ],
+            ];
+          }
+          break;
+
         // For entity types.
         case 'entity_types':
-          $query['query']['bool']['should'][] = [
+          $query['query']['bool']['must'][] = [
             'terms' => [
               'data.type' => explode(',', $value),
             ],
@@ -196,45 +206,59 @@ class ContentHubSearch {
 
           // Test all supported languages.
           $supported_languages = array_keys($this->languageManager->getLanguages(LanguageInterface::STATE_ALL));
-          foreach ($supported_languages as $supported_language) {
-            $query['query']['bool']['should'][] = [
-              'term' => [
-                "data.attributes.{$bundle_key}.value.{$supported_language}" => $value,
-              ],
-            ];
+          if (empty($supported_languages)) {
+            break;
           }
-          break;
 
-        // For Search Term (Keyword).
-        case 'search_term':
-          if (!empty($value)) {
-            $query['query']['bool']['must'][] = [
-              'match' => [
-                "_all" => "*{$value}*",
-              ],
-            ];
+          // Create and add bundle's bool queries.
+          $bundle_bool_queries = [
+            'bool' => [
+              'should' => [],
+            ],
+          ];
+          $bundles = explode(',', $value);
+          foreach ($bundles as $bundle) {
+            foreach ($supported_languages as $supported_language) {
+              $bundle_bool_queries['bool']['should'][] = [
+                'term' => [
+                  "data.attributes.{$bundle_key}.value.{$supported_language}" => $bundle,
+                ],
+              ];
+            }
           }
+          $query['query']['bool']['must'][] = $bundle_bool_queries;
           break;
 
         // For Tags.
         case 'tags':
-          $query['query']['bool']['must'][] = [
-            'match' => [
-              "_all" => $value,
+          // Create and add bundle's bool queries.
+          $tags_bool_queries = [
+            'bool' => [
+              'should' => [],
             ],
           ];
+          $tags = explode(',', $value);
+          foreach ($tags as $tag) {
+            $tags_bool_queries['bool']['should'][] = [
+              'match' => [
+                '_all' => $tag,
+              ],
+            ];
+          }
+          $query['query']['bool']['must'][] = $tags_bool_queries;
           break;
 
         // For Origin / Source.
         case 'origins':
           $query['query']['bool']['must'][] = [
             'match' => [
-              "_all" => $value,
+              'data.origin' => $value,
             ],
           ];
           break;
 
         case 'modified':
+          $date_modified['time_zone'] = '+1:00';
           $dates = explode('to', $value);
           $from = isset($dates[0]) ? trim($dates[0]) : '';
           $to = isset($dates[1]) ? trim($dates[1]) : '';
@@ -244,33 +268,23 @@ class ContentHubSearch {
           if (!empty($to)) {
             $date_modified['lte'] = $to;
           }
-          $date_modified['time_zone'] = '+1:00';
           $query['query']['bool']['must'][] = [
             'range' => [
-              "data.modified" => $date_modified,
+              'data.modified' => $date_modified,
             ],
           ];
           break;
-
       }
     }
     if (!empty($options['sort']) && strtolower($options['sort']) !== 'relevance') {
       $query['sort']['data.modified'] = strtolower($options['sort']);
     }
     if (isset($asset_uuid)) {
-      // This part of the query references the entity UUID and goes in its
-      // separate "must" condition to only filter this single entity.
-      $query_filter['query']['bool']['must'][] = [
+      $query['query']['bool']['must'][] = [
         'term' => [
           '_id' => $asset_uuid,
         ],
       ];
-      // This part of the query is to filter all entities according to the
-      // content hub filter selection and it goes on its own "must" condition.
-      $query_filter['query']['bool']['must'][] = $query['query'];
-      // Together, they verify if a particular content hub filter applies to
-      // an entity UUID or not.
-      $query = $query_filter;
     }
 
     return $this->executeSearchQuery($query);
