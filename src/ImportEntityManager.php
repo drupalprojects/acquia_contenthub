@@ -870,7 +870,7 @@ class ImportEntityManager {
    * @return \Symfony\Component\HttpFoundation\JsonResponse
    *   A valid response.
    */
-  public function addEntityToImportQueue($uuid, $include_dependencies = TRUE, $author = NULL, $status = 0) {
+  public function addEntityToImportQueue($uuid, $include_dependencies = TRUE, $author = NULL, $status = NULL) {
     $item = (object) ['data' => []];
     $item->data[] = new ImportQueueItem($uuid, $include_dependencies, $author, $status);
     $queue = $this->queue->get('acquia_contenthub_import_queue');
