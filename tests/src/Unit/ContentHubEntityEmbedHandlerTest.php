@@ -93,10 +93,9 @@ class ContentHubEntityEmbedHandlerTest extends UnitTestCase {
     $uuid = "00000000-1111-0000-0000-000000000000";
     $type = "media";
     $entity = $this->getMock('\Drupal\Core\Entity\EntityInterface');
-    $entity->method('uuid')->willReturn($uuid);
     $entity_storage = $this->getMock('\Drupal\Core\Entity\EntityStorageInterface');
     $expected = [
-      $uuid => $entity,
+      $entity,
     ];
     $entity_storage->expects($this->once())->method('loadByProperties')->with(['uuid' => $uuid])->willReturn($expected);
     $this->entityTypeManager->expects($this->once())->method('getStorage')->with($type)->willReturn($entity_storage);

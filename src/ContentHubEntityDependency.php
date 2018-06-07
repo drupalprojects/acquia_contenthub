@@ -225,7 +225,7 @@ class ContentHubEntityDependency {
    * Obtains remote dependencies for this particular entity.
    *
    * @return array
-   *   An array of UUIDs
+   *   An array or UUIDs
    */
   public function getRemoteDependencies() {
     $dependencies = [];
@@ -264,7 +264,7 @@ class ContentHubEntityDependency {
             $dependencies = array_merge($dependencies, $attribute['value'][$lang]);
           }
         }
-        elseif ($type == Attribute::TYPE_ARRAY_STRING) {
+        elseif ($exists_entity_embed && $type == Attribute::TYPE_ARRAY_STRING) {
           // Obtaining values for every language.
           $languages = array_keys($attribute['value']);
           foreach ($languages as $lang) {
@@ -276,24 +276,19 @@ class ContentHubEntityDependency {
             foreach ($attribute['value'][$lang] as $item) {
               $field = json_decode($item, TRUE);
               $value = isset($field['value']) ? $field['value'] : '';
-              if ($exists_entity_embed && !empty($value)) {
+
+              if (!empty($value)) {
                 // Parse uuid from text.
                 $entity_embed_handler = new ContentHubEntityEmbedHandler();
                 $uuids = $entity_embed_handler->getReferencedUuids($value);
                 $dependencies = array_merge($dependencies, $uuids);
-              }
-
-              // Check for the existence of Link Fields that might link to
-              // other entities (which should be considered dependencies).
-              if ($uuid = ContentHubEntityLinkFieldHandler::load()->getDependentEntityUuid($field)) {
-                $dependencies[] = $uuid;
               }
             }
           }
         }
       }
     }
-    return array_unique($dependencies);
+    return $dependencies;
   }
 
   /**

@@ -3,8 +3,6 @@
 namespace Drupal\acquia_contenthub;
 
 use Drupal\acquia_contenthub\QueueItem\ImportQueueItem;
-use Drupal\acquia_contenthub\Session\ContentHubUserSession;
-use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Queue\QueueFactory;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -476,8 +474,8 @@ class ImportEntityManager {
       $dependencies = $this->getAllRemoteDependencies($contenthub_entity, $dependencies, TRUE);
     }
 
-    // We're already importing as published, so set the status to true.
-    $status = TRUE;
+    // Obtaining the Status of the parent entity, if it is a node and
+    // setting the publishing status of that entity.
     $contenthub_entity->setStatus($status);
 
     // Assigning author to this entity and dependencies.
@@ -601,38 +599,14 @@ class ImportEntityManager {
     try {
       // Add synchronization flag.
       $entity->__contenthub_entity_syncing = TRUE;
-
-      if ($entity instanceof ContentEntityInterface && $entity->hasField('path')) {
-        $languages = $entity->getTranslationLanguages();
-        /** @var \Drupal\Core\Path\AliasManagerInterface $alias_manager */
-        $alias_manager = \Drupal::service('path.alias_manager');
-        foreach ($languages as $language) {
-          $entity = $entity->getTranslation($language->getId());
-          $path = $entity->get('path')->first()->getValue();
-          if (empty($path['pid'])) {
-            $raw_path = $alias_manager->getPathByAlias($path['alias'], $path['langcode']);
-            if ($raw_path) {
-              $query = \Drupal::database()->select('url_alias', 'ua')
-                ->fields('ua', ['pid']);
-              $query->condition('ua.source', $raw_path);
-              $alias = $query->execute()->fetchObject();
-              if ($alias->pid) {
-                $path['pid'] = $alias->pid;
-                $path['source'] = $raw_path;
-                $entity->set('path', [$path]);
-              }
-            }
-          }
-        }
-      }
-
       // Save the entity.
+      $is_new_entity = $entity->isNew();
       $entity->save();
       // Remove synchronization flag.
       unset($entity->__contenthub_entity_syncing);
 
       // Save this entity in the tracking for importing entities.
-      $is_new_entity = $this->trackImportedEntity($contenthub_entity);
+      $this->trackImportedEntity($contenthub_entity);
 
       // If this is a post-dependency (paragraphs or field collections), then
       // we will need to update the host entity ONLY if we are creating this
@@ -640,36 +614,6 @@ class ImportEntityManager {
       // If we are updating a paragraph, the reference is already set.
       if ($is_new_entity && $contenthub_entity->isEntityDependent()) {
         $this->updateHostEntity($entity);
-      }
-
-      // Do we need to create an path alias?
-      $moduleHandler = \Drupal::service('module_handler');
-      if ($moduleHandler->moduleExists('pathauto')) {
-        /** @var \Drupal\Core\Session\AccountSwitcherInterface $accountSwitcher */
-        $accountSwitcher = \Drupal::service('account_switcher');
-        $roles = \Drupal::entityTypeManager()->getStorage('user_role')->loadByProperties([
-          'is_admin' => TRUE,
-        ]);
-        $role = reset($roles);
-        if ($role) {
-          $renderUser = new ContentHubUserSession($role->id());
-          $accountSwitcher->switchTo($renderUser);
-          try {
-            /** @var \Drupal\pathauto\PathautoGenerator $path_generator */
-            $path_generator = \Drupal::service('pathauto.generator');
-            $op = $is_new_entity ? 'insert' : 'update';
-            $path_generator->createEntityAlias($entity, $op);
-          }
-          catch (\Exception $e) {
-            $this->loggerFactory->get('acquia_contenthub')
-              ->debug('Could not generate path alias for (!entity_type, !entity_id). Error message: !message', [
-                '!entity_type' => $entity->getEntityTypeId(),
-                '!entity_id' => $entity->id(),
-                '!message' => $e->getMessage(),
-              ]);
-          }
-          $accountSwitcher->switchBack();
-        }
       }
 
     }
@@ -737,9 +681,6 @@ class ImportEntityManager {
    *
    * @param \Drupal\acquia_contenthub\ContentHubEntityDependency $contenthub_entity
    *   The Content Hub Entity.
-   *
-   * @return bool
-   *   TRUE if entity is new, FALSE otherwise.
    */
   private function trackImportedEntity(ContentHubEntityDependency $contenthub_entity) {
     $cdf = (array) $contenthub_entity->getRawEntity();
@@ -752,7 +693,7 @@ class ImportEntityManager {
       }
       $imported_entity->setModified($cdf['modified']);
       $this->saveImportedEntity();
-      return FALSE;
+      return;
     }
     // If the entity is new, create a new imported entity.
     $entity = $this->entityRepository->loadEntityByUuid($cdf['type'], $cdf['uuid']);
@@ -768,7 +709,7 @@ class ImportEntityManager {
         $this->contentHubEntitiesTracking->setDependent();
       }
       $this->saveImportedEntity();
-      return TRUE;
+      return;
     }
     // We should never reach this far.
     $this->loggerFactory->get('acquia_contenthub')->error('Error trying to track imported entity with uuid=%uuid, type=%type. Check if the entity exists and is being tracked properly.', [

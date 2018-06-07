@@ -95,7 +95,7 @@ class ContentHubEntityEmbedHandler {
           }
 
           if ($entity) {
-            $result[$entity->uuid()] = $entity;
+            $result[] = $entity;
           }
         }
         catch (\Exception $e) {
