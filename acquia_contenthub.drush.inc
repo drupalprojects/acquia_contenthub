@@ -934,11 +934,7 @@ function drush_acquia_contenthub_webhooks($op, $webhook_url = NULL) {
         break;
 
       case 'list':
-        $settings = $subscription->getSettings();
-        if (!$settings) {
-          break;
-        }
-        $webhooks = $settings->getWebhooks();
+        $webhooks = $subscription->getSettings()->getWebhooks();
         foreach ($webhooks as $index => $webhook) {
           drush_print($index + 1 . '. ' . $webhook['url'] . ' - ' . $webhook['uuid']);
         }
