@@ -236,6 +236,7 @@ class ContentHubEntityExportController extends ControllerBase {
     $normalized = [
       'entities' => [],
     ];
+    $normalized_entities = [];
     $request_from_contenthub = $this->isRequestFromAcquiaContentHub();
     $entities = $_GET;
     foreach ($entities as $entity => $entity_ids) {
@@ -246,20 +247,28 @@ class ContentHubEntityExportController extends ControllerBase {
           $bulk_cdf = array_pop($bulk_cdf);
           if (is_array($bulk_cdf)) {
             foreach ($bulk_cdf as $cdf) {
-              $uuids = array_column($normalized['entities'], 'uuid');
-              if (!in_array($cdf['uuid'], $uuids)) {
-                $normalized['entities'][] = $cdf;
-                if ($request_from_contenthub) {
-                  $this->trackExportedEntity($cdf, TRUE);
-                }
-              }
+              $normalized_entities[$cdf['uuid']] = $cdf;
             }
           }
-
         }
         catch (\Exception $e) {
-          // Do nothing, route does not exist.
+          // Do nothing, route does not exist, but report it..
+          $args = [
+            '!type' => $entity,
+            '!id' => $id,
+            '!msg' => $e->getMessage(),
+          ];
+          $this->loggerFactory->get('acquia_contenthub')->error($this->t('Could not obtain the CDF for entity (!type, !id) : !msg', $args));
         }
+      }
+    }
+
+    // If we reach here, then there was no error processing the sub-requests.
+    // Save all entities in the tracking entities and return the response.
+    $normalized['entities'] = array_values($normalized_entities);
+    if ($request_from_contenthub) {
+      foreach ($normalized['entities'] as $cdf) {
+        $this->trackExportedEntity($cdf, TRUE);
       }
     }
     return JsonResponse::create($normalized);

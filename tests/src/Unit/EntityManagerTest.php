@@ -468,6 +468,20 @@ class EntityManagerTest extends UnitTestCase {
     $this->assertFalse($result);
 
     // Testing an qualified entity that was not previously imported or exported.
+    $type = $this->getMock('\Drupal\Core\Entity\EntityTypeInterface');
+
+    $type->expects($this->any())->method('hasKey')->willReturnMap([['status', TRUE], ['revision', TRUE]]);
+    $type->expects($this->any())->method('getKey')->willReturnMap([['status', 'status'], ['revision', 'vid']]);
+    $field_storage = $this->getMock('\Drupal\Core\Field\FieldStorageDefinitionInterface');
+    $field_storage->expects($this->any())->method('getMainPropertyName')->willReturn('value');
+    $field_definition = $this->getMock('\Drupal\Core\Field\FieldDefinitionInterface');
+    $field_definition->expects($this->any())->method('getFieldStorageDefinition')->willReturn($field_storage);
+    $node->expects($this->any())->method('getFieldDefinition')->with('status')->willReturn($field_definition);
+    $status_field = new \stdClass();
+    $status_field->value = TRUE;
+    $node->expects($this->any())->method('get')->with('status')->willReturn($status_field);
+
+    $node->expects($this->any())->method('getEntityType')->willReturn($type);
     $node->expects($this->at(1))->method('bundle')->willReturn('article');
     $this->contentHubEntitiesTracking->expects($this->any())->method('loadImportedByDrupalEntity')->willReturn(FALSE);
     $this->contentHubEntitiesTracking->expects($this->any())->method('loadExportedByUuid')->willReturn(FALSE);
@@ -485,6 +499,10 @@ class EntityManagerTest extends UnitTestCase {
     $this->assertFalse($result);
 
     // Testing a file entity with status = PERMANENT.
+    // Testing an qualified entity that was not previously imported or exported.
+    $type = $this->getMock('\Drupal\Core\Entity\EntityTypeInterface');
+    $type->expects($this->any())->method('hasKey')->willReturnMap([['status', FALSE], ['revision', FALSE]]);
+    $file->expects($this->any())->method('getEntityType')->willReturn($type);
     $result = $entity_manager->isEligibleDependency($file);
     $this->assertTrue($result);
   }

@@ -2,6 +2,7 @@
 
 namespace Drupal\acquia_contenthub;
 
+use Drupal\Core\Entity\RevisionableInterface;
 use Drupal\file\FileInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\acquia_contenthub\Client\ClientManagerInterface;
@@ -356,6 +357,12 @@ class EntityManager {
     try {
       $uuid = $entity->uuid();
       $response = $client->deleteEntity($uuid);
+      $args = [
+        '%uuid' => $uuid,
+        '%type' => $entity->getEntityTypeId(),
+        '%id' => $entity->id(),
+      ];
+      $this->loggerFactory->get('acquia_contenthub')->debug($this->t('Deleting remote entity with UUID = %uuid (%type, %id)', $args));
       $exported_entity = $this->contentHubEntitiesTracking->loadExportedByUuid($uuid);
       if ($exported_entity) {
         $exported_entity->delete();
@@ -510,6 +517,25 @@ class EntityManager {
         // $this->loggerFactory->get('acquia_contenthub')->error($message);
       }
       return FALSE;
+    }
+
+    $status = $entity->getEntityType()->hasKey("status") ? $entity->getEntityType()->getKey("status") : NULL;
+    $revision_col = $entity->getEntityType()->hasKey("revision") ? $entity->getEntityType()->getKey("revision") : NULL;
+    if ($status && $revision_col && $entity instanceof RevisionableInterface) {
+      $definition = $entity->getFieldDefinition($status);
+      $property = $definition->getFieldStorageDefinition()->getMainPropertyName();
+      $value = $entity->get($status)->$property;
+      if (!$value) {
+        $table = $entity->getEntityType()->getBaseTable();
+        $id_col = $entity->getEntityType()->getKey("id");
+        $query = \Drupal::database()->select($table)
+          ->fields($table, [$revision_col]);
+        $query->condition("$table.$id_col", $entity->id());
+        $revision_id = $query->execute()->fetchField();
+        if ($revision_id != $entity->getRevisionId()) {
+          return FALSE;
+        }
+      }
     }
 
     /** @var \Drupal\Core\Extension\ModuleHandlerInterface $module_handler */
@@ -752,7 +778,7 @@ class EntityManager {
         return FALSE;
       }
     }
-    return ($entity instanceof NodeInterface) ? $entity->isPublished() : FALSE;
+    return ($entity instanceof NodeInterface) ? $entity->isPublished() : TRUE;
   }
 
 }
