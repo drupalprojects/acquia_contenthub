@@ -176,11 +176,7 @@ class EntityManager {
         $unexporting_entities += $this->getReferencedEntities($entity->original);
       }
     }
-    // Only add references to be exported if the entity is to be exported. In
-    // the case of unexporting/deletion, references should not be exported.
-    if ($do_export) {
-      $exporting_entities += $this->getReferencedEntities($entity);
-    }
+    $exporting_entities += $this->getReferencedEntities($entity);
 
     // If "to published", we have to move any disassociated entities exporting
     // list to unexporting list.
@@ -338,11 +334,6 @@ class EntityManager {
    *   The Content Hub Entity.
    */
   private function deleteRemoteEntity(EntityInterface $entity) {
-    // Check if the entity was never exported first, to avoid sending a DELETE
-    // request to the Content Hub service.
-    if ($this->contentHubEntitiesTracking->loadExportedByUuid($entity->uuid()) === FALSE) {
-      return;
-    }
     /** @var \Drupal\acquia_contenthub\Client\ClientManagerInterface $client_manager */
     try {
       $client = $this->clientManager->getConnection();
