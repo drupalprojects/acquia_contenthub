@@ -94,9 +94,10 @@ class ContentHubEntityLinkFieldHandler {
       $entity = $entities ? reset($entities) : NULL;
       if ($entity) {
         $item['uri'] = str_replace($entity->uuid(), $entity->id(), $item['uri']);
+        return $item;
       }
     }
-    return $item;
+    return NULL;
   }
 
   /**
