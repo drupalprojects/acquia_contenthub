@@ -258,20 +258,11 @@ class ContentHubSearch {
       $query['sort']['data.modified'] = strtolower($options['sort']);
     }
     if (isset($asset_uuid)) {
-      // This part of the query references the entity UUID and goes in its
-      // separate "must" condition to only filter this single entity.
-      $query_filter['query']['bool']['must'][] = [
+      $query['query']['bool']['must'][] = [
         'term' => [
           '_id' => $asset_uuid,
         ],
       ];
-      // This part of the query is to filter all entities according to the
-      // content hub filter selection and it goes on its own "must" condition.
-      $query_filter['query']['bool']['must'][] = $query['query'];
-      // Together, they verify if a particular content hub filter applies to
-      // an entity UUID or not.
-      $query = $query_filter;
-
     }
     return $this->executeSearchQuery($query);
   }
