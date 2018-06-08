@@ -1045,7 +1045,6 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         'changed',
         'uri',
         'uid',
-        'langcode',
 
         // Getting rid of workflow fields.
         'status',
@@ -1136,17 +1135,25 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
     $bundle = $contenthub_entity->getAttribute($bundle_key) ? reset($contenthub_entity->getAttribute($bundle_key)['value']) : NULL;
     $langcodes = !empty($contenthub_entity->getAttribute('default_langcode')['value']) ?  array_keys($contenthub_entity->getAttribute('default_langcode')['value']) : [$this->languageManager->getDefaultLanguage()->getId()];
     // Get default langcode and remove from attributes.
-    foreach ($contenthub_entity->getAttribute('default_langcode')['value'] AS $key => $value) {
-      if ($value[0] == true) {
-        $default_langcode = $key;
-        continue;
+    if (!empty($contenthub_entity->getAttribute('default_langcode')['value'])) {
+      foreach ($contenthub_entity->getAttribute('default_langcode')['value'] as $key => $value) {
+        if ($value[0] == TRUE) {
+          $default_langcode = $key;
+          continue;
+        }
       }
     }
-    if (empty($default_langcode)) {
-      $default_langcode = $this->languageManager->getDefaultLanguage()->getId();
+    else {
+      if ($entity_type == 'file') {
+        $default_langcode = key($data['attributes']['url']['value']);
+        $langcodes = array_keys($data['attributes']['url']['value']);
+      }
+      else {
+        $default_langcode = $this->languageManager->getDefaultLanguage()->getId();
+      }
     }
     // Default Langcode is only used for initial entity creation. Remove now.
-    $contenthub_entity->removeAttribute('default_langcode');
+    $contenthub_entity->removeAttribute('langcode');
     // Store the translation source outside the CDF.
     $content_translation_source = $contenthub_entity->getAttribute('content_translation_source');
     $contenthub_entity->removeAttribute('content_translation_source');
@@ -1166,6 +1173,8 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       // Set the content_translation source of whatever the default langcode says.
       $values['content_translation_source'] = $content_translation_source['value'][$default_langcode][0];
 
+      // Set the default langcode of the parent entity.
+      $values['default_langcode'] = $default_langcode;
       // Special treatment according to entity types.
       switch ($entity_type) {
         case 'node':
@@ -1262,6 +1271,9 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
       //$langcode_key = $this->entityTypeManager->getDefinition($source_entity)->getKey('langcode');
       //$values[$langcode_key] = array_values($langcodes);
       $source_entity = $this->entityTypeManager->getStorage($entity_type)->create($values);
+    }
+    else {
+      $contenthub_entity->removeAttribute('default_langcode');
     }
 
 
