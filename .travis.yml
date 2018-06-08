@@ -103,7 +103,6 @@ install:
 
   # Install Lightning.
   - cd $LIGHTNING_ROOT
-  - patch -p1 < $CH_ROOT/2949449-traits-webtestbase-fatal-php56-3.patch
   - drush site-install lightning --db-url=mysql://root:@127.0.0.1/drupal --yes install_configure_form.enable_update_status_emails=NULL
   #- cd ../..
 
