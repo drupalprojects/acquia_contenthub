@@ -15,11 +15,11 @@ abstract class ContentHubQueueItemBase implements ContentHubQueueItemInterface {
    * @param string $property
    *   The queue item property.
    *
-   * @return bool|mixed
-   *   The property value if exists, FALSE otherwise.
+   * @return mixed
+   *   The property value if exists, NULL otherwise.
    */
   public function get($property) {
-    return isset($this->{$property}) ? $this->{$property} : FALSE;
+    return isset($this->{$property}) ? $this->{$property} : NULL;
   }
 
 }

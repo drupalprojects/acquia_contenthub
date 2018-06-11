@@ -60,6 +60,10 @@ abstract class ContentHubImportQueueBase extends QueueWorkerBase implements Cont
 
     /** @var \Drupal\acquia_contenthub\QueueItem\ImportQueueItem $data */
     foreach ($item as $data) {
+      // Values for status $data->get('status'):
+      // - NULL : Follow the status from Content Hub
+      // - 0    : Unpublish item.
+      // - 1    : Publish item.
       $this->getEntityManager()->importRemoteEntity($data->get('uuid'), $data->get('dependencies'), $data->get('author'), $data->get('status'));
     }
   }
