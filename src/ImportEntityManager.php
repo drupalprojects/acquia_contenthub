@@ -658,7 +658,12 @@ class ImportEntityManager {
             /** @var \Drupal\pathauto\PathautoGenerator $path_generator */
             $path_generator = \Drupal::service('pathauto.generator');
             $op = $is_new_entity ? 'insert' : 'update';
-            $path_generator->createEntityAlias($entity, $op);
+            $languages = $entity->getTranslationLanguages();
+            foreach ($languages as $key => $language) {
+              if ($entity = $entity->getTranslation($language->getId())) {
+                $path_generator->createEntityAlias($entity, $op);
+              }
+            }
           }
           catch (\Exception $e) {
             $this->loggerFactory->get('acquia_contenthub')
