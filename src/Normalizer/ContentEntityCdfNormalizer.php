@@ -1190,6 +1190,10 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
           $user = Uuid::isValid($author) ? $this->entityRepository->loadEntityByUuid('user', $author) : \Drupal::currentUser();
           $values['uid'] = $user->id() ? $user->id() : 0;
 
+          // Set a status for the default language entity.
+          $status = $contenthub_entity->getAttribute('status') ? $contenthub_entity->getAttribute('status')['value'][$default_langcode] : 0;
+          $values['status'] = $status ? $status : 0;
+
           // Check if Workbench Moderation is enabled.
           $workbench_moderation_enabled = \Drupal::moduleHandler()->moduleExists('workbench_moderation');
           if ($workbench_moderation_enabled) {
@@ -1302,6 +1306,11 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         else {
           $localized_entity = $source_entity->addTranslation($langcode, $source_entity->toArray());
           $localized_entity->content_translation_source = $content_translation_source['value'][$langcode][0];
+
+          // Grab status for the language.
+          $status = $contenthub_entity->getAttribute('status') ? $contenthub_entity->getAttribute('status')['value'][$langcode] : 0;
+          $localized_entity->status = $status ? $status : 0;
+
           $entity = $this->addFieldsToDrupalEntity($localized_entity, $contenthub_entity, $langcode, $context);
         }
       }
