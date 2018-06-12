@@ -868,6 +868,7 @@ class ContentEntityCdfNormalizer extends NormalizerBase {
         $settings = $field->getFieldDefinition()->getSettings();
         $value = $attribute['value'][$langcode];
         $field->setValue([]);
+        $field->setLangcode($langcode);
 
         if ($field instanceof EntityReferenceFieldItemListInterface) {
           $entity_type = $settings['target_type'];
