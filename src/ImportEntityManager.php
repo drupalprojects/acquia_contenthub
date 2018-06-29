@@ -655,13 +655,15 @@ class ImportEntityManager {
           $renderUser = new ContentHubUserSession($role->id());
           $accountSwitcher->switchTo($renderUser);
           try {
-            /** @var \Drupal\pathauto\PathautoGenerator $path_generator */
-            $path_generator = \Drupal::service('pathauto.generator');
-            $op = $is_new_entity ? 'insert' : 'update';
+            /** @var \Drupal\pathauto\AliasStorageHelperInterface $alias_storage_helper */
+            $alias_storage_helper = \Drupal::service('pathauto.alias_storage_helper');
             $languages = $entity->getTranslationLanguages();
             foreach ($languages as $key => $language) {
               if ($entity = $entity->getTranslation($language->getId())) {
-                $path_generator->createEntityAlias($entity, $op);
+                $path = reset($entity->get('path')->getValue());
+                $path['source'] = empty($path['source']) ? base_path() . $entity->toUrl()->getInternalPath() : $path['source'];
+                $path['language'] = isset($path['langcode']) ? $path['langcode'] : $language->getId();
+                $alias_storage_helper->save($path);
               }
             }
           }
