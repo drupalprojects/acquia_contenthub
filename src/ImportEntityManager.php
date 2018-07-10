@@ -610,11 +610,13 @@ class ImportEntityManager {
           $entity = $entity->getTranslation($language->getId());
           $path = $entity->get('path')->first()->getValue();
           if (empty($path['pid']) && !empty($path['alias'])) {
-            $raw_path = $alias_manager->getPathByAlias($path['alias'], $path['langcode']);
-            if ($raw_path) {
+            $raw_path = '/' . $entity->toUrl()->getInternalPath();
+            $raw_alias = $alias_manager->getAliasByPath($raw_path, $path['langcode']);
+            if ($raw_alias !== $raw_path) {
               $query = \Drupal::database()->select('url_alias', 'ua')
-                ->fields('ua', ['pid']);
-              $query->condition('ua.source', $raw_path);
+                ->fields('ua', ['pid'])
+                ->condition('ua.source', $raw_path)
+                ->condition('ua.langcode', $path['langcode']);
               $alias = $query->execute()->fetchObject();
               if ($alias->pid) {
                 $path['pid'] = $alias->pid;
@@ -661,7 +663,7 @@ class ImportEntityManager {
             foreach ($languages as $key => $language) {
               if ($entity = $entity->getTranslation($language->getId())) {
                 $path = reset($entity->get('path')->getValue());
-                $path['source'] = empty($path['source']) ? base_path() . $entity->toUrl()->getInternalPath() : $path['source'];
+                $path['source'] = empty($path['source']) ? '/' . $entity->toUrl()->getInternalPath() : $path['source'];
                 $path['language'] = isset($path['langcode']) ? $path['langcode'] : $language->getId();
                 $alias_storage_helper->save($path);
               }
