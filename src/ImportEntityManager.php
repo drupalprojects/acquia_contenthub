@@ -662,10 +662,12 @@ class ImportEntityManager {
             $languages = $entity->getTranslationLanguages();
             foreach ($languages as $key => $language) {
               if ($entity = $entity->getTranslation($language->getId())) {
-                $path = reset($entity->get('path')->getValue());
-                $path['source'] = empty($path['source']) ? '/' . $entity->toUrl()->getInternalPath() : $path['source'];
-                $path['language'] = isset($path['langcode']) ? $path['langcode'] : $language->getId();
-                $alias_storage_helper->save($path);
+                if ($path = reset($entity->get('path')->getValue())) {
+                  $path['source'] = empty($path['source']) ? '/' . $entity->toUrl()
+                      ->getInternalPath() : $path['source'];
+                  $path['language'] = isset($path['langcode']) ? $path['langcode'] : $language->getId();
+                  $alias_storage_helper->save($path);
+                }
               }
             }
           }
