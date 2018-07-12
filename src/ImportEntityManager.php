@@ -183,7 +183,7 @@ class ImportEntityManager {
   private function excludeCompareReferencedEntities(EntityInterface $entity) {
 
     // Currently Content Hub does not support configuration entities.
-    if ($entity->getEntityType()->isSubclassOf('\Drupal\Core\Config\Entity\ConfigEntityInterface')) {
+    if ($entity->getEntityType()->entityClassImplements('\Drupal\Core\Config\Entity\ConfigEntityInterface')) {
       return FALSE;
     }
 
@@ -241,7 +241,7 @@ class ImportEntityManager {
     if ($field_type == 'entity_reference') {
       $field_references = $entity->get($field_name)->referencedEntities();
       foreach ($field_references as $field_reference) {
-        if ($field_reference->getEntityType()->isSubclassOf($subclass)) {
+        if ($field_reference->getEntityType()->entityClassImplements($subclass)) {
           return TRUE;
         }
       }

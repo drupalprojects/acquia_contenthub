@@ -6,6 +6,7 @@ use Drupal\Tests\UnitTestCase;
 use Drupal\acquia_contenthub\ImportEntityManager;
 use Drupal\acquia_contenthub\QueueItem\ImportQueueItem;
 use Drupal\Core\DependencyInjection\ContainerBuilder;
+use Drupal\node\NodeInterface;
 
 require_once __DIR__ . '/Polyfill/Drupal.php';
 
@@ -512,16 +513,14 @@ class ImportEntityManagerTest extends UnitTestCase {
     $entity_ch = $this->createContentHubEntity([
       'uuid' => $uuid,
     ]);
-    $entity = $this->getMock('\Drupal\node\NodeInterface');
-    $original_node = $this->getMock('\Drupal\node\NodeInterface');
-    $entity->original = $original_node;
 
-    $entity->expects($this->any())
-      ->method('id')
-      ->willReturn(12);
-    $entity->expects($this->any())
-      ->method('getEntityTypeId')
-      ->willReturn('node');
+    $original_node = $this->prophesize(NodeInterface::class);
+
+    $entity = $this->prophesize(NodeInterface::class);
+    $entity->id()->willReturn(12);
+    $entity->getEntityTypeId()->willReturn('node');
+    $entity->original = $original_node->reveal();
+    $entity->reveal();
 
     $this->contentHubEntitiesTracking->expects($this->any())
       ->method('getSiteOrigin')
@@ -597,7 +596,7 @@ class ImportEntityManagerTest extends UnitTestCase {
       ->method('getEntityType')
       ->will($this->returnValue($entity_type));
     $entity_type->expects($this->once())
-      ->method('isSubclassOf')
+      ->method('entityClassImplements')
       ->willReturn(FALSE);
     $referenced_entities[] = $entity1;
 
@@ -682,7 +681,7 @@ class ImportEntityManagerTest extends UnitTestCase {
       ->method('getEntityType')
       ->will($this->returnValue($entity_type));
     $entity_type->expects($this->once())
-      ->method('isSubclassOf')
+      ->method('entityClassImplements')
       ->willReturn(TRUE);
     $referenced_entities[] = $entity1;
 
@@ -794,7 +793,7 @@ class ImportEntityManagerTest extends UnitTestCase {
     $entity1->method('uuid')
       ->willReturn('test-uuid-reference-1');
     $entity_type->expects($this->any())
-      ->method('isSubclassOf')
+      ->method('entityClassImplements')
       ->willReturn(TRUE);
     $referenced_entities1[] = $entity1;
 
@@ -806,7 +805,7 @@ class ImportEntityManagerTest extends UnitTestCase {
     $entity2->method('uuid')
       ->willReturn('test-uuid-reference-2');
     $entity_type->expects($this->any())
-      ->method('isSubclassOf')
+      ->method('entityClassImplements')
       ->willReturn(TRUE);
     $referenced_entities2[] = $entity2;
 
@@ -890,7 +889,7 @@ class ImportEntityManagerTest extends UnitTestCase {
     $entity1->method('uuid')
       ->willReturn('test-uuid-reference-1');
     $entity_type->expects($this->any())
-      ->method('isSubclassOf')
+      ->method('entityClassImplements')
       ->willReturn(FALSE);
     $referenced_entities1[] = $entity1;
 
@@ -902,7 +901,7 @@ class ImportEntityManagerTest extends UnitTestCase {
     $entity2->method('uuid')
       ->willReturn('test-uuid-reference-2');
     $entity_type->expects($this->any())
-      ->method('isSubclassOf')
+      ->method('entityClassImplements')
       ->willReturn(FALSE);
     $referenced_entities2[] = $entity2;
 
