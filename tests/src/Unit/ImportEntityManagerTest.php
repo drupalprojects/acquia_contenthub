@@ -514,14 +514,6 @@ class ImportEntityManagerTest extends UnitTestCase {
       'uuid' => $uuid,
     ]);
 
-    $original_node = $this->prophesize(NodeInterface::class);
-
-    $entity = $this->prophesize(NodeInterface::class);
-    $entity->id()->willReturn(12);
-    $entity->getEntityTypeId()->willReturn('node');
-    $entity->original = $original_node->reveal();
-    $entity->reveal();
-
     $this->contentHubEntitiesTracking->expects($this->any())
       ->method('getSiteOrigin')
       ->willReturn($site_origin);
