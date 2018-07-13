@@ -25,6 +25,8 @@ mysql:
   encoding: utf8
 
 before_install:
+  # Make sure to delete the acquia_contenthub package from the cache.
+  - rm -rf $HOME/.composer/cache/files/drupal/acquia_contenthub
   - git config --global github.accesstoken $GITHUB_OAUTH_TOKEN
   - phpenv config-rm xdebug.ini
   - composer self-update
