@@ -646,10 +646,21 @@ class AcquiaContenthubCommands extends DrushCommands {
   /**
    * Connects a site with contenthub.
    *
+   * @param array $options
+   *
    * @command acquia:contenthub-connect-site
    * @aliases ach-connect,acquia-contenthub-connect-site
+   *
+   * @option hostname
+   *   Content Hub API URL.
+   * @option api_key
+   *   Content Hub API Key.
+   * @option secret
+   *   Content Hub API Secret.
+   * @option client_name
+   *   The client name for this site.
    */
-  public function contenthubConnectSite() {
+  public function contenthubConnectSite(array $options = ['hostname' => null, 'api_key' => null, 'secret' => null, 'client_name' => null]) {
     $config_factory = \Drupal::configFactory();
     $uuid_service = \Drupal::service('uuid');
 
@@ -661,11 +672,11 @@ class AcquiaContenthubCommands extends DrushCommands {
       return;
     }
 
-    $hostname = !empty($hostname) ? $hostname : $this->io()->ask(dt('What is the Content Hub API URL?'), 'https://us-east-1.content-hub.acquia.com');
-    $api_key = !empty($api_key) ? $api_key : $this->io()->ask(dt('What is your Content Hub API Key?'));
-    $secret = !empty($secret) ? $secret : $this->io()->ask(dt('What is your Content Hub API Secret?'));
+    $hostname = !empty($options['hostname']) ? $options['hostname'] : $this->io()->ask(dt('What is the Content Hub API URL?'), 'https://us-east-1.content-hub.acquia.com');
+    $api_key = !empty($options['api_key']) ? $options['api_key'] : $this->io()->ask(dt('What is your Content Hub API Key?'));
+    $secret = !empty($options['secret']) ? $options['secret'] : $this->io()->ask(dt('What is your Content Hub API Secret?'));
     $client_uuid = $uuid_service->generate();
-    $client_name = !empty($client_name) ? $client_name : $this->io()->ask(dt('What is the client name for this site?'), $client_uuid);
+    $client_name = !empty($options['client_name']) ? $options['client_name'] : $this->io()->ask(dt('What is the client name for this site?'), $client_uuid);
 
     $form_state = new FormState();
     $values['api_key'] = $api_key;
@@ -736,7 +747,7 @@ class AcquiaContenthubCommands extends DrushCommands {
           break;
 
         case 'unregister':
-          $webhook_url = $config->get('webhook_url');
+          $webhook_url = isset($options['webhook_url']) ? $options['webhook_url'] : $config->get('webhook_url');
           $success = $subscription->unregisterWebhook($webhook_url);
           if (!$success) {
             $this->logger()->log(LogLevel::CANCEL, dt('There was an error unregistering the URL: @url', ['@url' => $webhook_url]));
