@@ -3,12 +3,11 @@
 namespace Drupal\acquia_contenthub\Plugin\QueueWorker;
 
 /**
- * Process the import queue for content.
+ * Import content from the Acquia Content Hub service.
  *
  * @QueueWorker(
  *   id = "acquia_contenthub_import_queue",
- *   title = @Translation("Acquia Content Hub: Import Queue"),
- *   cron = {"time": 60}
+ *   title = @Translation("Import Content from Acquia Content Hub")
  * )
  */
 class ContentHubImportQueue extends ContentHubImportQueueBase {}
