@@ -610,7 +610,7 @@ class ImportEntityManager {
           $entity = $entity->getTranslation($language->getId());
           $path = $entity->get('path')->first()->getValue();
           if (empty($path['pid']) && !empty($path['alias'])) {
-            $raw_path = '/' . $entity->toUrl()->getInternalPath();
+            $raw_path = $entity->id() ? '/' . $entity->toUrl()->getInternalPath() : $alias_manager->getPathByAlias($path['alias'], $path['langcode']);
             $raw_alias = $alias_manager->getAliasByPath($raw_path, $path['langcode']);
             if ($raw_alias !== $raw_path) {
               $query = \Drupal::database()->select('url_alias', 'ua')
