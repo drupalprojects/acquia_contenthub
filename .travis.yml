@@ -25,9 +25,8 @@ mysql:
   encoding: utf8
 
 before_install:
-  # Make sure to delete the acquia_contenthub package from the cache.
-  - rm -rf $HOME/.composer/cache/files/drupal/acquia_contenthub
   - git config --global github.accesstoken $GITHUB_OAUTH_TOKEN
+  - composer config --global github-oauth.github.com $GITHUB_OAUTH_TOKEN
   - phpenv config-rm xdebug.ini
   - composer self-update
   - composer --version
@@ -39,20 +38,17 @@ before_install:
   - cd ~/build
 
   # Build the Lightning code base.
-  - if [[ $DRUPAL == '8.3.x' ]]; then
-    composer create-project acquia/lightning-project:8.4.1 drupal --no-interaction --no-install;
-    cd drupal;
-    composer require acquia/lightning:2.1.8 drupal/core:~8.3.0 --no-update;
-    fi
-  - if [[ $DRUPAL == '8.4.x' ]]; then
-    composer create-project acquia/lightning-project:8.4.1 drupal --no-interaction --no-install;
-    cd drupal;
-    composer require acquia/lightning:3.0.1 drupal/core:~8.4.0 --no-update;
-    fi
   - if [[ $DRUPAL == '8.5.x' ]]; then
     composer create-project acquia/lightning-project:~8.5.0 drupal --no-interaction --no-install;
     cd drupal;
     composer require acquia/lightning:~3.1 drupal/core:~8.5.0 --no-update;
+    fi
+
+  # Define the GIT Branch.
+  - if [[ $TRAVIS_PULL_REQUEST != false ]]; then
+      export GIT_BRANCH=$TRAVIS_PULL_REQUEST_BRANCH;
+    else
+      export GIT_BRANCH=$TRAVIS_BRANCH;
     fi
 
   # add composer's global bin directory to the path
@@ -78,15 +74,17 @@ install:
   - composer config --unset repositories.drupal
   - composer config --unset repositories.assets
   - composer config --unset repositories.dev
-  - composer config repositories.acquia_contenthub '{"type":"path","url":"~/build/acquia/content-hub-d8","options":{"symlink":false}}'
+  - composer config repositories.acquia_contenthub '{"type":"vcs","url":"https:\/\/github.com\/acquia\/content-hub-d8.git","no-api":true}'
   - composer config repositories.drupal composer https://packages.drupal.org/8
   - composer config repositories.assets composer https://asset-packagist.org
   - composer config repositories.dev vcs https://github.com/acquia/lightning-dev
-  - composer require drupal/acquia_contenthub:* --no-update
+  - composer require drupal/acquia_contenthub:dev-$GIT_BRANCH --no-update
 
   - composer require --dev drupal/coder ^8.2@stable --no-update
   - php -dmemory_limit=-1 /home/travis/.phpenv/versions/$TRAVIS_PHP_VERSION/bin/composer update
   - composer install
+
+  # - TODO: put diff command here to compare installed with initial cloned
 
   - vendor/bin/phpcs --config-set installed_paths vendor/drupal/coder/coder_sniffer
 
@@ -140,8 +138,8 @@ script:
   - cd core
 
   # Use phpunit assigned require in the composer in drupal. Otherwise drupal 8.3 does not pass all the tests for PHP 7.1.
-  - if [[ ( $DRUPAL == '8.4.x' && ${TRAVIS_PHP_VERSION:0:3} != '5.6' ) || ( $DRUPAL == '8.3.x' ) ]]; then ../../vendor/phpunit/phpunit/phpunit --debug --group acquia_contenthub; fi
-  - if [[ ( $DRUPAL == '8.4.x' && ${TRAVIS_PHP_VERSION:0:3} != '5.6' ) || ( $DRUPAL == '8.3.x' ) ]]; then ../../vendor/phpunit/phpunit/phpunit --debug --group acquia_contenthub_status; fi
+  # - if [[ ( $DRUPAL == '8.4.x' && ${TRAVIS_PHP_VERSION:0:3} != '5.6' ) || ( $DRUPAL == '8.3.x' ) ]]; then ../../vendor/phpunit/phpunit/phpunit --debug --group acquia_contenthub; fi
+  # - if [[ ( $DRUPAL == '8.4.x' && ${TRAVIS_PHP_VERSION:0:3} != '5.6' ) || ( $DRUPAL == '8.3.x' ) ]]; then ../../vendor/phpunit/phpunit/phpunit --debug --group acquia_contenthub_status; fi
   - cd ..
 
   # fix this first: The always_populate_raw_post_data PHP setting should be set to -1
