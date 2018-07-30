@@ -182,7 +182,7 @@ class NodeTypePreviewImageForm {
 
       // 2) Entity Reference type whose entity is Fieldable.
       if ($field_type === 'entity_reference' &&
-        $this->entityTypeManager->getDefinition($field_target_type)->isSubclassOf('\Drupal\Core\Entity\FieldableEntityInterface')
+        $this->entityTypeManager->getDefinition($field_target_type)->entityClassImplements('\Drupal\Core\Entity\FieldableEntityInterface')
       ) {
         // Track this field, since it is about to be processed.
         $this->processedFieldHashes[$field_hash] = TRUE;

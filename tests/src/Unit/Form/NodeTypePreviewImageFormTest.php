@@ -178,7 +178,7 @@ class NodeTypePreviewImageFormTest extends UnitTestCase {
       ->with('entity_reference_setting')
       ->willReturn($entity_type_definition);
     $entity_type_definition->expects($this->once())
-      ->method('isSubclassOf')
+      ->method('entityClassImplements')
       ->with('\Drupal\Core\Entity\FieldableEntityInterface')
       ->willReturn(TRUE);
     $this->entityFieldManager->expects($this->at(1))
