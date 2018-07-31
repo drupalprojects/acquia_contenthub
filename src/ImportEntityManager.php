@@ -662,7 +662,8 @@ class ImportEntityManager {
             $languages = $entity->getTranslationLanguages();
             foreach ($languages as $key => $language) {
               if ($entity = $entity->getTranslation($language->getId())) {
-                if ($path = reset($entity->get('path')->getValue())) {
+                $path = $entity->get('path')->getValue();
+                if ($path = reset($path)) {
                   $path['source'] = empty($path['source']) ? '/' . $entity->toUrl()
                       ->getInternalPath() : $path['source'];
                   $path['language'] = isset($path['langcode']) ? $path['langcode'] : $language->getId();
