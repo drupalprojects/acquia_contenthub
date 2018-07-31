@@ -243,6 +243,9 @@ function acquia_contenthub_drush_command() {
       'api' => 'API Key',
       'secret' => 'Secret Key',
     ],
+    'options' => [
+      'bundle' => dt('The entity bundle to reset (optional). All bundles of this entity type will be reset if not specified.'),
+    ],
   ];
   return $items;
 }
@@ -981,7 +984,10 @@ function drush_acquia_contenthub_reset_entities($entity_type = NULL, $api = NULL
   /** @var \Drupal\acquia_contenthub\Client\ClientManager $client_manager */
   $client_manager = \Drupal::service('acquia_contenthub.client_manager');
 
-  $warning_message = "Are you sure you want to remotely DELETE entities of type '@entity_type', REINDEX subscription and RE-EXPORT deleted entities in this Content Hub Subscription?\n" .
+  // Defining the bundle.
+  $bundle = drush_get_option("bundle");
+
+  $warning_message = "Are you sure you want to remotely DELETE entities of type = %s %s, REINDEX subscription and RE-EXPORT deleted entities in this Content Hub Subscription?\n" .
     "*************************************************************************************\n" .
     "PROCEED WITH CAUTION. THIS ACTION WILL REBUILD THE ELASTIC SEARCH INDEX IN YOUR CONTENT HUB SUBSCRIPTION.\n" .
     "This command will rebuild your index from the data currently stored in Content Hub. Make sure to first 'unpublish' all the entities that contain undesired\n" .
@@ -990,7 +996,8 @@ function drush_acquia_contenthub_reset_entities($entity_type = NULL, $api = NULL
     For more information, check https://docs.acquia.com/content-hub.\n" .
     "*************************************************************************************\n" .
     "Are you sure you want to proceed?\n";
-  $warning_message = sprintf($warning_message, ['@entity_type' => $entity_type]);
+  $warning_bundle = sprintf("and bundle = %s", $bundle);
+  $warning_message = sprintf($warning_message, $entity_type, $warning_bundle);
   if (drush_confirm($warning_message)) {
     // If API/Secret Keys have been given, reset the connection to use those
     // keys instead of the ones set in the configuration.
@@ -1043,8 +1050,11 @@ function drush_acquia_contenthub_reset_entities($entity_type = NULL, $api = NULL
             return drush_set_error(dt("Error trying to re-index your subscription. You have entities that do not belong to this site."));
           }
 
+          // Defining the bundle.
+          $bundle = drush_get_option("bundle");
+
           // Delete entities and reindex subscription.
-          $success = $reindex->setExportedEntitiesToReindex($entity_type);
+          $success = $reindex->setExportedEntitiesToReindex($entity_type, $bundle);
           if ($success && $reindex->isReindexSent()) {
             drush_print("Your Subscription is being re-indexed. All clients who have registered to received webhooks will be notified with a reindex webhook when the process has been completed.\n");
           }
@@ -1052,8 +1062,12 @@ function drush_acquia_contenthub_reset_entities($entity_type = NULL, $api = NULL
             return drush_set_error(dt("Error trying to re-index your subscription. You might require elevated keys to perform this operation."));
           }
           elseif (!$success && $reindex->isReindexNone()) {
-            return drush_set_error(dt("You are trying to reset entities of type = '@entity_type' but none of them have been exported.", [
+            $bundle_msg = empty($bundle) ? '' : dt("and bundle = @bundle", [
+              '@bundle' => $bundle,
+            ]);
+            return drush_set_error(dt("You are trying to reset entities of type = '@entity_type' @bundle_msg but none of them have been exported.", [
               '@entity_type' => $entity_type,
+              '@bundle_msg' => $bundle_msg,
             ]));
           }
         }

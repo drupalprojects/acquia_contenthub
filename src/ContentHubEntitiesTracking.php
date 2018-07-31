@@ -819,21 +819,56 @@ class ContentHubEntitiesTracking {
    *
    * @param string $entity_type_id
    *   The Entity type.
+   * @param string $bundle_id
+   *   The Entity bundle.
    *
    * @return bool|\Drupal\Core\Database\StatementInterface|int|null
    *   The new Update Object if given a valid origin, FALSE otherwise.
    */
-  public function setExportedEntitiesForReindex($entity_type_id = '') {
+  public function setExportedEntitiesForReindex($entity_type_id = '', $bundle_id = NULL) {
     $origin = $this->getSiteOrigin();
     if (Uuid::isValid($origin)) {
-      return $this->database->update(self::TABLE)
-        ->condition('entity_type', $entity_type_id)
-        ->condition('status_export', self::EXPORTED)
-        ->condition('origin', $origin)
-        ->fields([
-          'status_export' => self::REINDEX,
-        ])
-        ->execute();
+      if (empty($bundle_id)) {
+        return $this->database->update(self::TABLE)
+          ->condition('entity_type', $entity_type_id)
+          ->condition('status_export', self::EXPORTED)
+          ->condition('origin', $origin)
+          ->fields([
+            'status_export' => self::REINDEX,
+          ])
+          ->execute();
+      }
+      else {
+        // Capture all tracked entities from a specific bundle stored in the
+        // tracking table to re-export later on.
+        $entity_type = \Drupal::entityTypeManager()->getDefinition($entity_type_id);
+        $base_table = $entity_type->getBaseTable();
+        $id_col = $entity_type->getKey("id");
+        $bundle_col = $entity_type->getKey("bundle");
+        $query = $this->database->select(self::TABLE, 'a')
+          ->fields('a', ['entity_id']);
+        $query->addJoin('INNER', $base_table, 'b', "a.entity_id = b.{$id_col}");
+        $query
+          ->condition('a.entity_type', $entity_type_id)
+          ->condition('a.status_export', self::EXPORTED)
+          ->condition('a.origin', $origin)
+          ->condition("b.{$bundle_col}", $bundle_id);
+        $entity_ids = $query->execute()->fetchCol("entity_id");
+
+        // If there are entities matching this condition, mark them for
+        // re-export after reindexation.
+        if (!empty($entity_ids)) {
+          return $this->database->update(self::TABLE)
+            ->condition('entity_type', $entity_type_id)
+            ->condition('status_export', self::EXPORTED)
+            ->condition('entity_id', $entity_ids, 'IN')
+            ->condition('origin', $origin)
+            ->fields([
+              'status_export' => self::REINDEX,
+            ])
+            ->execute();
+        }
+      }
     }
     return FALSE;
   }
